@@ -905,7 +905,7 @@ kbd {
             <div class="pill-row" id="player-count-selector">
               <button class="pill-btn selected" data-players="1">👤 單人闖關</button>
               <button class="pill-btn" data-players="2">👥 同機雙人</button>
-              <button class="pill-btn" data-players="net">🌐 區網/連線對戰</button>
+              <button class="pill-btn" data-players="net">🌐 4人區網/連線</button>
             </div>
           </div>
 
@@ -933,7 +933,7 @@ kbd {
             <input id="room-code-input" type="text" maxlength="6" placeholder="輸入4碼房號" />
             <button id="join-room-btn" class="pill-btn">🔗 加入房間</button>
           </div>
-          <span id="net-status" class="net-status">同一 Wi-Fi（區網）或跨網輸入房號即可 P2P 對戰！</span>
+          <span id="net-status" class="net-status">最多 4 人同房！同一 Wi-Fi（區網）或跨網輸入 4 碼房號即可開戰</span>
         </div>
 
         <!-- Row 2: 6 Tracks with Unlock Progression -->
@@ -1325,12 +1325,12 @@ const KART_ORDER = ['yellow', 'cyan', 'red', 'purple', 'green', 'desert', 'ice',
 const DRIVER_ORDER = ['racer_red', 'racer_black', 'astronaut', 'police', 'knight', 'ninja'];
 
 const DRIVER_PRESETS = {
-  racer_red: { id: 'racer_red', name: '紅盔車手', icon: '🏎️', helmet: 0xd92323, suit: 0x154596, accent: 0xe53935, hand: 0xd92323, visor: 0xdff6ff, visorOp: 0.45, style: 'helmet', beard: false },
-  racer_black: { id: 'racer_black', name: '暗影車手', icon: '🕶️', helmet: 0x1c1f26, suit: 0x2b303a, accent: 0xe91e8c, hand: 0x454c59, visor: 0x111827, visorOp: 0.68, style: 'helmet', beard: true },
-  astronaut: { id: 'astronaut', name: '太空人', icon: '👨‍🚀', helmet: 0xf8fafc, suit: 0xf1f5f9, accent: 0x0284c7, hand: 0xe2e8f0, visor: 0xffc400, visorOp: 0.85, style: 'astro', beard: false },
-  police: { id: 'police', name: '積木警長', icon: '👮', helmet: 0x0f2b5b, suit: 0x1e3a8a, accent: 0xffd700, hand: 0xffd500, visor: 0x111111, visorOp: 0.35, style: 'cap', beard: true },
-  knight: { id: 'knight', name: '黃金騎士', icon: '⚔️', helmet: 0xffc107, suit: 0x94a3b8, accent: 0xffc107, hand: 0x64748b, visor: 0x334155, visorOp: 0.72, style: 'knight', beard: false },
-  ninja: { id: 'ninja', name: '烈焰忍者', icon: '🥷', helmet: 0xb91c1c, suit: 0x18181b, accent: 0xef4444, hand: 0x18181b, visor: 0x000000, visorOp: 0.2, style: 'ninja', beard: false },
+  racer_red: { id: 'racer_red', name: '紅盔車手', icon: '🏎️', helmet: 0xd92323, suit: 0x154596, accent: 0xe53935, hand: 0xd92323, visor: 0xdff6ff, visorOp: 0.22, style: 'helmet', beard: false },
+  racer_black: { id: 'racer_black', name: '暗影車手', icon: '🕶️', helmet: 0x1c1f26, suit: 0x2b303a, accent: 0xe91e8c, hand: 0x454c59, visor: 0x222a3a, visorOp: 0.3, style: 'helmet', beard: true },
+  astronaut: { id: 'astronaut', name: '太空人', icon: '👨‍🚀', helmet: 0xf8fafc, suit: 0xf1f5f9, accent: 0x0284c7, hand: 0xe2e8f0, visor: 0xffc400, visorOp: 0.42, style: 'astro', beard: false },
+  police: { id: 'police', name: '積木警長', icon: '👮', helmet: 0x0f2b5b, suit: 0x1e3a8a, accent: 0xffd700, hand: 0xffd500, visor: 0x111111, visorOp: 0.2, style: 'cap', beard: true },
+  knight: { id: 'knight', name: '黃金騎士', icon: '⚔️', helmet: 0xffc107, suit: 0x94a3b8, accent: 0xffc107, hand: 0x64748b, visor: 0x334155, visorOp: 0.25, style: 'knight', beard: false },
+  ninja: { id: 'ninja', name: '烈焰忍者', icon: '🥷', helmet: 0xb91c1c, suit: 0x18181b, accent: 0xef4444, hand: 0x18181b, visor: 0x000000, visorOp: 0.12, style: 'ninja', beard: false },
 };
 
 const KART_PRESETS = {
@@ -1685,8 +1685,31 @@ function createLegoKart(presetKey = 'yellow', driverKey = 'racer_red') {
   const headMat = new THREE.MeshStandardMaterial({ map: createLegoFaceTexture(driver.beard), roughness: 0.25 });
   const head = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.46, 18), [headMat, skinMat, skinMat]);
   head.position.set(0, 0.96, 0);
-  head.rotation.y = Math.PI;
+  // Keep u=0.5 facing -Z (forward)!
+  head.rotation.y = 0;
   driverGroup.add(head);
+
+  // Crisp 3D LEGO facial features right on front (-Z) so face is unmistakably clear!
+  const eyeMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+  const sparkleMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const mouthMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+  for (const ex of [-0.095, 0.095]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.036, 8, 8), eyeMat);
+    eye.position.set(ex, 1.0, -0.262);
+    const sparkle = new THREE.Mesh(new THREE.SphereGeometry(0.013, 6, 6), sparkleMat);
+    sparkle.position.set(ex - 0.01, 1.014, -0.292);
+    driverGroup.add(eye, sparkle);
+  }
+  const smile = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.018, 6, 12, Math.PI), mouthMat);
+  smile.position.set(0, 0.915, -0.268);
+  smile.rotation.z = Math.PI;
+  driverGroup.add(smile);
+  if (driver.beard) {
+    const beard = new THREE.Mesh(new THREE.TorusGeometry(0.115, 0.025, 6, 12, Math.PI), mouthMat);
+    beard.position.set(0, 0.905, -0.262);
+    beard.rotation.z = Math.PI;
+    driverGroup.add(beard);
+  }
 
   if (driver.style === 'cap') {
     // Police cap + badge
@@ -1699,20 +1722,20 @@ function createLegoKart(presetKey = 'yellow', driverKey = 'racer_red') {
     driverGroup.add(capTop, brim, badge);
   } else {
     const helmetShell = new THREE.Mesh(
-      new THREE.SphereGeometry(driver.style === 'astro' ? 0.42 : 0.37, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.7),
+      new THREE.SphereGeometry(driver.style === 'astro' ? 0.42 : 0.37, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.54),
       helmetMat
     );
-    helmetShell.position.set(0, 1.02, 0.02);
+    helmetShell.position.set(0, 1.04, 0.02);
     const helmetBack = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.365, 0.35, 0.3, 18, 1, true, -Math.PI * 0.65, Math.PI * 1.3),
+      new THREE.CylinderGeometry(0.365, 0.35, 0.32, 18, 1, true, -Math.PI * 0.62, Math.PI * 1.24),
       helmetMat
     );
-    helmetBack.position.set(0, 0.92, 0.02);
+    helmetBack.position.set(0, 0.93, 0.02);
     const visor = new THREE.Mesh(
-      new THREE.CylinderGeometry(driver.style === 'astro' ? 0.42 : 0.38, driver.style === 'astro' ? 0.42 : 0.38, 0.25, 16, 1, true, Math.PI * 0.65, Math.PI * 0.7),
-      new THREE.MeshStandardMaterial({ color: driver.visor, roughness: 0.08, metalness: 0.35, transparent: true, opacity: driver.visorOp })
+      new THREE.CylinderGeometry(driver.style === 'astro' ? 0.42 : 0.38, driver.style === 'astro' ? 0.42 : 0.38, 0.24, 16, 1, true, Math.PI * 0.65, Math.PI * 0.7),
+      new THREE.MeshStandardMaterial({ color: driver.visor, roughness: 0.08, metalness: 0.25, transparent: true, opacity: driver.visorOp })
     );
-    visor.position.set(0, 0.97, 0);
+    visor.position.set(0, 0.98, 0);
     driverGroup.add(helmetShell, helmetBack, visor);
 
     if (driver.style === 'knight') {
@@ -3518,16 +3541,18 @@ class ItemManager {
 }
 
 // === network.js ===
-// Lightweight PeerJS WebRTC P2P Room Manager (works on LAN & Internet, zero server!)
+// 4-Player Star-Topology PeerJS WebRTC Room Manager (Host + up to 3 Guests = 4 Human Players!)
 class RoomNetwork {
   constructor(callbacks) {
-    this.cb = callbacks; // { onStatus, onPeerJoined, onStartRace, onRemoteState, onDisconnect }
+    this.cb = callbacks; // { onStatus, onRoster, onStartRace, onRemoteState }
     this.peer = null;
-    this.conn = null;
     this.role = null; // 'host' | 'guest'
     this.roomCode = '';
+    this.mySlot = 0;
+    this.hostConn = null; // guest -> host
+    this.guestConns = new Map(); // host: slotIndex (1..3) -> conn
+    this.roster = []; // [{ slot, name, kartId, driverId }]
     this.connected = false;
-    this.remoteInfo = null; // { name, kartId }
     this.lastSendTime = 0;
   }
 
@@ -3536,18 +3561,23 @@ class RoomNetwork {
   }
 
   disconnect() {
-    if (this.conn) {
-      try { this.conn.close(); } catch (_) {}
-      this.conn = null;
+    if (this.hostConn) {
+      try { this.hostConn.close(); } catch (_) {}
+      this.hostConn = null;
     }
+    for (const conn of this.guestConns.values()) {
+      try { conn.close(); } catch (_) {}
+    }
+    this.guestConns.clear();
     if (this.peer) {
       try { this.peer.destroy(); } catch (_) {}
       this.peer = null;
     }
     this.role = null;
     this.roomCode = '';
+    this.mySlot = 0;
+    this.roster = [];
     this.connected = false;
-    this.remoteInfo = null;
   }
 
   createRoom(localInfo) {
@@ -3557,27 +3587,76 @@ class RoomNetwork {
       return;
     }
     this.role = 'host';
+    this.mySlot = 0;
     this.roomCode = String(1000 + Math.floor(Math.random() * 9000));
-    const peerId = `kartlego3d-${this.roomCode}`;
-    this.cb.onStatus(`建立房間 ${this.roomCode} 中...`, 'info');
+    this.roster = [{ slot: 0, ...localInfo }];
+    this.cb.onStatus(`建立 4 人房間 ${this.roomCode} 中...`, 'info');
 
-    this.peer = new window.Peer(peerId);
+    this.peer = new window.Peer(`kartlego3d-${this.roomCode}`);
     this.peer.on('open', () => {
-      this.cb.onStatus(`房間已開啟！房號：${this.roomCode}（等待對手加入...）`, 'ready');
+      this.connected = true;
+      this._emitHostRoster();
     });
 
     this.peer.on('connection', (conn) => {
-      if (this.conn) {
-        conn.close();
+      // Find first free slot in [1, 2, 3]
+      let freeSlot = -1;
+      for (const s of [1, 2, 3]) {
+        if (!this.guestConns.has(s)) {
+          freeSlot = s;
+          break;
+        }
+      }
+      if (freeSlot === -1) {
+        conn.on('open', () => {
+          conn.send({ type: 'full' });
+          setTimeout(() => conn.close(), 200);
+        });
         return;
       }
-      this.conn = conn;
-      this._bindConn(conn, localInfo);
+
+      this.guestConns.set(freeSlot, conn);
+      conn.on('open', () => {
+        conn.send({ type: 'assign', slot: freeSlot, roomCode: this.roomCode });
+      });
+
+      conn.on('data', (msg) => {
+        if (!msg || typeof msg !== 'object') return;
+        if (msg.type === 'hello') {
+          this.roster = this.roster.filter((r) => r.slot !== freeSlot);
+          this.roster.push({ slot: freeSlot, ...msg.info });
+          this.roster.sort((a, b) => a.slot - b.slot);
+          this._emitHostRoster();
+        } else if (msg.type === 'state') {
+          this.cb.onRemoteState(freeSlot, msg);
+          // Relay to other guests
+          for (const [otherSlot, otherConn] of this.guestConns.entries()) {
+            if (otherSlot !== freeSlot && otherConn.open) {
+              otherConn.send({ ...msg, slot: freeSlot });
+            }
+          }
+        }
+      });
+
+      conn.on('close', () => {
+        this.guestConns.delete(freeSlot);
+        this.roster = this.roster.filter((r) => r.slot !== freeSlot);
+        this._emitHostRoster();
+      });
     });
 
     this.peer.on('error', (err) => {
       this.cb.onStatus(`連線錯誤：${err.type || err.message}`, 'error');
     });
+  }
+
+  _emitHostRoster() {
+    const names = this.roster.map((r) => r.name).join('、');
+    this.cb.onStatus(`房號 ${this.roomCode}｜已加入 ${this.roster.length}/4 人：${names}`, 'connected');
+    this.cb.onRoster(this.roster);
+    for (const conn of this.guestConns.values()) {
+      if (conn.open) conn.send({ type: 'roster', roster: this.roster });
+    }
   }
 
   joinRoom(code, localInfo) {
@@ -3598,8 +3677,40 @@ class RoomNetwork {
     this.peer = new window.Peer();
     this.peer.on('open', () => {
       const conn = this.peer.connect(`kartlego3d-${clean}`, { reliable: false });
-      this.conn = conn;
-      this._bindConn(conn, localInfo);
+      this.hostConn = conn;
+
+      conn.on('open', () => {
+        this.connected = true;
+        conn.send({ type: 'hello', info: localInfo });
+      });
+
+      conn.on('data', (msg) => {
+        if (!msg || typeof msg !== 'object') return;
+        if (msg.type === 'full') {
+          this.cb.onStatus(`房間 ${clean} 已滿（4/4 人）`, 'error');
+          this.disconnect();
+        } else if (msg.type === 'assign') {
+          this.mySlot = msg.slot;
+          conn.send({ type: 'hello', info: localInfo });
+        } else if (msg.type === 'roster') {
+          this.roster = msg.roster || [];
+          const names = this.roster.map((r) => r.name).join('、');
+          this.cb.onStatus(`已加入房間 ${this.roomCode}（${this.roster.length}/4 人：${names}）等待房主開始`, 'connected');
+          this.cb.onRoster(this.roster);
+        } else if (msg.type === 'start') {
+          if (msg.roster) this.roster = msg.roster;
+          this.cb.onStartRace(msg);
+        } else if (msg.type === 'state') {
+          if (typeof msg.slot === 'number' && msg.slot !== this.mySlot) {
+            this.cb.onRemoteState(msg.slot, msg);
+          }
+        }
+      });
+
+      conn.on('close', () => {
+        this.connected = false;
+        this.cb.onStatus('已與房主斷線', 'error');
+      });
     });
 
     this.peer.on('error', (err) => {
@@ -3607,49 +3718,37 @@ class RoomNetwork {
     });
   }
 
-  _bindConn(conn, localInfo) {
-    conn.on('open', () => {
-      this.connected = true;
-      conn.send({ type: 'hello', info: localInfo });
-      this.cb.onStatus(`已連線房間 ${this.roomCode}！準備開始比賽`, 'connected');
-    });
-
-    conn.on('data', (msg) => {
-      if (!msg || typeof msg !== 'object') return;
-      if (msg.type === 'hello') {
-        this.remoteInfo = msg.info;
-        this.cb.onPeerJoined(msg.info);
-      } else if (msg.type === 'start') {
-        this.cb.onStartRace(msg);
-      } else if (msg.type === 'state') {
-        this.cb.onRemoteState(msg);
-      }
-    });
-
-    conn.on('close', () => {
-      this.connected = false;
-      this.cb.onStatus('對手已離線', 'error');
-      this.cb.onDisconnect();
-    });
-  }
-
   sendHello(localInfo) {
-    if (this.connected && this.conn) {
-      this.conn.send({ type: 'hello', info: localInfo });
+    if (!this.connected) return;
+    if (this.role === 'host') {
+      this.roster = this.roster.filter((r) => r.slot !== 0);
+      this.roster.unshift({ slot: 0, ...localInfo });
+      this._emitHostRoster();
+    } else if (this.hostConn && this.hostConn.open) {
+      this.hostConn.send({ type: 'hello', info: localInfo });
     }
   }
 
   sendStart(payload) {
-    if (this.connected && this.conn) {
-      this.conn.send({ type: 'start', ...payload });
+    if (this.role !== 'host') return;
+    const msg = { type: 'start', roster: this.roster, ...payload };
+    for (const conn of this.guestConns.values()) {
+      if (conn.open) conn.send(msg);
     }
   }
 
   sendState(stateObj, nowMs) {
-    if (!this.connected || !this.conn) return;
-    if (nowMs - this.lastSendTime < 33) return; // ~30Hz sync
+    if (!this.connected) return;
+    if (nowMs - this.lastSendTime < 33) return;
     this.lastSendTime = nowMs;
-    this.conn.send({ type: 'state', ...stateObj });
+    const msg = { type: 'state', slot: this.mySlot, ...stateObj };
+    if (this.role === 'host') {
+      for (const conn of this.guestConns.values()) {
+        if (conn.open) conn.send(msg);
+      }
+    } else if (this.hostConn && this.hostConn.open) {
+      this.hostConn.send(msg);
+    }
   }
 }
 
@@ -3846,31 +3945,32 @@ let activePickSlot = 0; // 0 = P1, 1 = P2
 
 let racers = [];
 let humanRacers = []; // [p1] or [p1, p2]
-let remoteRacer = null;
+let remoteRacers = new Map(); // slotIndex -> racer (for 4-player LAN/Online room)
 let raceTime = 0;
 let countdownTimer = 0;
 let lastCountdownNum = 4;
 let showcaseAngle = 0;
 
-// --- LAN / Online Room Network ---
+// --- 4-Player LAN / Online Room Network ---
 const net = new RoomNetwork({
   onStatus(text, kind) {
     netStatusEl.textContent = text;
     netStatusEl.className = 'net-status' + (kind === 'connected' ? ' connected' : kind === 'error' ? ' error' : '');
   },
-  onPeerJoined(info) {
-    netStatusEl.textContent = `對手「${info.name}」已加入！房主請按「開始比賽」`;
-    netStatusEl.className = 'net-status connected';
+  onRoster() {
+    if (gameState === 'menu') setupShowcase();
   },
   onStartRace(msg) {
     selectedTrackId = msg.trackId || 'village';
     selectedMode = msg.mode || 'item';
     startRace(false, msg);
   },
-  onRemoteState(msg) {
-    if (!remoteRacer) return;
-    remoteRacer.remoteTarget = {
+  onRemoteState(slot, msg) {
+    const r = remoteRacers.get(slot);
+    if (!r) return;
+    r.remoteTarget = {
       x: msg.x,
+      y: msg.y || 0,
       z: msg.z,
       yaw: msg.yaw,
       speed: msg.speed,
@@ -3885,9 +3985,6 @@ const net = new RoomNetwork({
       finished: !!msg.fin,
       finishTime: msg.ft || 0,
     };
-  },
-  onDisconnect() {
-    remoteRacer = null;
   },
 });
 
@@ -4194,7 +4291,7 @@ function clearRacers() {
   for (const r of racers) scene.remove(r.kart.root);
   racers = [];
   humanRacers = [];
-  remoteRacer = null;
+  remoteRacers.clear();
 }
 
 function pickRemainingKarts(used, count) {
@@ -4220,18 +4317,31 @@ function setupShowcase(netStartMsg = null) {
     racers = [r0, r1, r2, r3];
     humanRacers = [r0, r1];
   } else if (playType === 'net' && net.connected) {
-    const isHost = net.role === 'host';
-    const hostInfo = isHost ? getLocalNetInfo() : (netStartMsg?.hostInfo || net.remoteInfo || { name: '房主', kartId: 'yellow', driverId: 'racer_red' });
-    const guestInfo = !isHost ? getLocalNetInfo() : (netStartMsg?.guestInfo || net.remoteInfo || { name: '對手', kartId: 'cyan', driverId: 'racer_black' });
-    const others = pickRemainingKarts([hostInfo.kartId, guestInfo.kartId], 2);
+    const roster = (netStartMsg && netStartMsg.roster) ? netStartMsg.roster : net.roster;
+    const bySlot = new Map(roster.map((item) => [item.slot, item]));
+    const usedKarts = roster.map((item) => item.kartId);
+    const aiKarts = pickRemainingKarts(usedKarts, 4);
 
-    const rHost = createRacer(hostInfo.kartId, 0, hostInfo.name, isHost ? 'human' : 'remote', isHost ? 0 : -1, hostInfo.driverId || 'racer_red');
-    const rGuest = createRacer(guestInfo.kartId, 1, guestInfo.name, !isHost ? 'human' : 'remote', !isHost ? 0 : -1, guestInfo.driverId || 'racer_black');
-    const r2 = createRacer(others[0], 2, AI_NAMES[0], 'ai', -1, DRIVER_ORDER[4]);
-    const r3 = createRacer(others[1], 3, AI_NAMES[1], 'ai', -1, DRIVER_ORDER[5]);
-    racers = [rHost, rGuest, r2, r3];
-    humanRacers = [isHost ? rHost : rGuest];
-    remoteRacer = isHost ? rGuest : rHost;
+    racers = [];
+    humanRacers = [];
+    remoteRacers.clear();
+    let aiIdx = 0;
+
+    for (let slot = 0; slot < 4; slot++) {
+      const info = bySlot.get(slot);
+      if (info) {
+        const isMe = slot === net.mySlot;
+        const r = createRacer(info.kartId || 'yellow', slot, info.name || `玩家 ${slot + 1}`, isMe ? 'human' : 'remote', isMe ? 0 : -1, info.driverId || 'racer_red');
+        racers.push(r);
+        if (isMe) humanRacers.push(r);
+        else remoteRacers.set(slot, r);
+      } else {
+        const r = createRacer(aiKarts[aiIdx], slot, AI_NAMES[aiIdx % AI_NAMES.length], 'ai', -1, DRIVER_ORDER[(slot + 2) % DRIVER_ORDER.length]);
+        racers.push(r);
+        aiIdx++;
+      }
+    }
+    if (humanRacers.length === 0 && racers.length > 0) humanRacers.push(racers[0]);
   } else {
     const others = pickRemainingKarts([selectedKarts[0]], 3);
     const r0 = createRacer(selectedKarts[0], 0, p1Name, 'human', 0, selectedDrivers[0]);
@@ -4487,6 +4597,7 @@ function updateRacerPhysics(r, dt) {
       const t = r.remoteTarget;
       const lerpAmt = Math.min(1, dt * 16);
       r.pos.x = THREE.MathUtils.lerp(r.pos.x, t.x, lerpAmt);
+      r.pos.y = THREE.MathUtils.lerp(r.pos.y, t.y || 0, lerpAmt);
       r.pos.z = THREE.MathUtils.lerp(r.pos.z, t.z, lerpAmt);
       r.yaw = t.yaw;
       r.speed = t.speed;
@@ -5008,6 +5119,7 @@ function animate(now) {
       const me = humanRacers[0];
       net.sendState({
         x: me.pos.x,
+        y: me.pos.y,
         z: me.pos.z,
         yaw: me.yaw,
         speed: me.speed,
