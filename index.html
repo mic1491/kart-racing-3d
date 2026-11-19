@@ -987,11 +987,10 @@ kbd {
           <span id="net-status" class="net-status">最多 4 人同房！同一 Wi-Fi（區網）或跨網輸入 4 碼房號即可開戰</span>
         </div>
 
-        <!-- Row 2: 6 Tracks with Unlock Progression -->
+        <!-- Row 2: 8 Selectable Tracks (All Open!) -->
         <div class="selector-bar track-bar">
           <div class="track-header-row">
-            <span class="group-label">賽道闖關進度：<strong id="unlock-progress">1 / 6</strong>（單場前 2 名解鎖下一關）</span>
-            <button id="unlock-all-btn" class="mini-btn" title="立即解鎖全部賽道">🔓 全部解鎖</button>
+            <span class="group-label">選擇賽道場景（8 張立體賽道全開放・已獲獎牌：<strong id="unlock-progress">0 / 8</strong>）</span>
           </div>
           <div class="pill-row" id="track-selector"></div>
         </div>
@@ -4427,20 +4426,17 @@ upgradeButtons.forEach((btn) => {
 
 function renderTrackButtons() {
   trackSelectorEl.innerHTML = '';
-  unlockProgressEl.textContent = `${saveData.unlockedCount} / ${TRACK_ORDER.length}`;
+  const medalCount = Object.values(saveData.medals || {}).filter(Boolean).length;
+  unlockProgressEl.textContent = `${medalCount} / ${TRACK_ORDER.length}`;
 
   TRACK_ORDER.forEach((id, idx) => {
     const cfg = TRACK_CONFIGS[id];
-    const unlocked = idx < saveData.unlockedCount;
     const medal = saveData.medals[id] || '';
     const btn = document.createElement('button');
-    btn.className = 'pill-btn' + (id === selectedTrackId ? ' selected' : '') + (!unlocked ? ' locked' : '');
-    btn.textContent = unlocked ? `${cfg.icon} ${idx + 1}. ${cfg.name} ${medal}`.trim() : `🔒 ${idx + 1}. ${cfg.name}`;
-    btn.title = unlocked
-      ? (saveData.bestTimes[id] ? `最快紀錄：${formatTime(saveData.bestTimes[id])}` : cfg.name)
-      : '在前一張賽道取得前 2 名即可解鎖！';
+    btn.className = 'pill-btn' + (id === selectedTrackId ? ' selected' : '');
+    btn.textContent = `${cfg.icon} ${idx + 1}. ${cfg.name} ${medal}`.trim();
+    btn.title = saveData.bestTimes[id] ? `最快紀錄：${formatTime(saveData.bestTimes[id])}` : cfg.name;
     btn.addEventListener('click', () => {
-      if (!unlocked) return;
       selectedTrackId = id;
       renderTrackButtons();
       loadTrack(id);
@@ -4566,11 +4562,13 @@ modeButtons.forEach((btn) => {
   });
 });
 
-unlockAllBtn.addEventListener('click', () => {
-  saveData.unlockedCount = TRACK_ORDER.length;
-  writeSave();
-  renderTrackButtons();
-});
+if (unlockAllBtn) {
+  unlockAllBtn.addEventListener('click', () => {
+    saveData.unlockedCount = TRACK_ORDER.length;
+    writeSave();
+    renderTrackButtons();
+  });
+}
 
 // --- Track & Racers ---
 function loadTrack(trackId) {
@@ -5511,11 +5509,6 @@ function onRaceFinish() {
   }
 
   const curIdx = TRACK_ORDER.indexOf(selectedTrackId);
-  let unlockedNext = false;
-  if (bestHumanRank <= 2 && curIdx + 1 >= saveData.unlockedCount && curIdx + 1 < TRACK_ORDER.length) {
-    saveData.unlockedCount = curIdx + 2;
-    unlockedNext = true;
-  }
   writeSave();
   renderTrackButtons();
   renderGarageUI();
@@ -5524,16 +5517,9 @@ function onRaceFinish() {
     finishRewardEl.textContent = `+${totalReward} 🪙` + (savedNewGhost ? ' ・ 👻 新幽靈紀錄！' : '');
   }
 
-  const hasNextTrack = curIdx + 1 < TRACK_ORDER.length && curIdx + 1 < saveData.unlockedCount;
+  const hasNextTrack = curIdx + 1 < TRACK_ORDER.length;
   nextTrackBtn.classList.toggle('hidden', !hasNextTrack);
-
-  if (unlockedNext) {
-    const nextCfg = TRACK_CONFIGS[TRACK_ORDER[curIdx + 1]];
-    unlockBannerEl.textContent = `🎉 破關成功！解鎖新賽道：${nextCfg.icon} ${nextCfg.name}！`;
-    unlockBannerEl.classList.remove('hidden');
-  } else {
-    unlockBannerEl.classList.add('hidden');
-  }
+  unlockBannerEl.classList.add('hidden');
 
   finishMetaEl.textContent = `${track.config.icon} ${track.config.name}・${selectedMode === 'item' ? '道具模式' : '競速模式'}`;
   finishTimeEl.textContent = formatTime(p1.finishTime);
