@@ -408,7 +408,7 @@ html, body {
   justify-content: center;
   flex-shrink: 0;
   font-weight: 900;
-  font-size: 14px;
+  font-size: 11px;
   border: 2px solid rgba(255, 255, 255, 0.35);
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
@@ -1498,7 +1498,7 @@ class SoundEngine {
 }
 
 // === kart.js ===
-const KART_ORDER = ['yellow', 'cyan', 'red', 'purple', 'green', 'desert', 'ice', 'cyber', 'hsr', 'shuttle', 'ufo', 'duck'];
+const KART_ORDER = ['yellow', 'cyan', 'red', 'purple', 'green', 'desert', 'ice', 'cyber', 'hsr', 'shuttle', 'ufo', 'duck', 'carriage'];
 
 const DRIVER_ORDER = ['racer_red', 'racer_black', 'astronaut', 'police', 'knight', 'ninja'];
 
@@ -1595,6 +1595,13 @@ const KART_PRESETS = {
     decalBg: '#ffd600', decalText: '#ff6d00', decalStroke: '#ffffff',
     swatchCss: 'linear-gradient(135deg, #ffd600 60%, #ff6d00 60%)',
     statSpeed: 90, statDrift: 96, maxSpeed: 55.6, accel: 37, driftGrip: 0.96, mapColor: '#ffee00',
+  },
+  carriage: {
+    id: 'carriage', bodyStyle: 'carriage', styleLabel: '🐴 皇家馬車', name: '皇家黃金馬車', desc: '白馬拉車・童話飆車', number: '00',
+    primary: 0xc62828, secondary: 0xffd54f, accent: 0xffffff, bumper: 0xffd54f, exhaust: 0xffb300,
+    decalBg: '#c62828', decalText: '#ffd54f', decalStroke: '#ffffff',
+    swatchCss: 'linear-gradient(135deg, #c62828 50%, #ffd54f 50%)',
+    statSpeed: 92, statDrift: 95, maxSpeed: 56.2, accel: 38, driftGrip: 0.95, mapColor: '#ffd54f',
   },
 };
 
@@ -1842,6 +1849,80 @@ function createLegoKart(presetKey = 'yellow', driverKey = 'racer_red') {
     duckTail.position.set(0, 1.25, 1.45);
     duckTail.rotation.x = 0.65;
     bodyGroup.add(duckBody, duckNeck, billTop, billBot, duckTail);
+  } else if (style === 'carriage') {
+    // 🐴 Royal Gold & Crimson LEGO Horse-Drawn Carriage!
+    const cabinBase = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.72, 2.0), primaryMat);
+    cabinBase.position.set(0, 0.78, 0.45);
+    const goldTrim = new THREE.Mesh(new THREE.BoxGeometry(2.02, 0.16, 2.1), secondaryMat);
+    goldTrim.position.set(0, 1.12, 0.45);
+    // 4 Golden Canopy Pillars + Royal Crown Roof
+    for (const px of [-0.82, 0.82]) {
+      for (const pz of [-0.4, 1.28]) {
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1.45, 8), secondaryMat);
+        post.position.set(px, 1.85, pz);
+        bodyGroup.add(post);
+      }
+    }
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.22, 1.9), primaryMat);
+    roof.position.set(0, 2.58, 0.45);
+    const crown = new THREE.Mesh(new THREE.ConeGeometry(0.45, 0.45, 6), secondaryMat);
+    crown.position.set(0, 2.9, 0.45);
+    bodyGroup.add(cabinBase, goldTrim, roof, crown);
+
+    // 3D LEGO White Horse pulling in front!
+    const horseMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.28 });
+    const maneMat = new THREE.MeshStandardMaterial({ color: 0xffca28, roughness: 0.4 });
+    const hoofMat = new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.6 });
+    const horse = new THREE.Group();
+    horse.position.set(0, 0.0, -1.95);
+
+    const hBody = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.72, 1.45), horseMat);
+    hBody.position.set(0, 1.02, 0);
+    const hSaddle = new THREE.Mesh(new THREE.BoxGeometry(0.88, 0.14, 0.65), primaryMat);
+    hSaddle.position.set(0, 1.4, 0.05);
+    const hNeck = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.88, 0.52), horseMat);
+    hNeck.position.set(0, 1.56, -0.58);
+    hNeck.rotation.x = 0.28;
+    const hHead = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.44, 0.78), horseMat);
+    hHead.position.set(0, 1.92, -0.95);
+    hHead.rotation.x = 0.25;
+    const hMane = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.85, 0.22), maneMat);
+    hMane.position.set(0, 1.72, -0.35);
+    const hTail = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.75, 0.26), maneMat);
+    hTail.position.set(0, 0.96, 0.85);
+    hTail.rotation.x = 0.45;
+    // Horse ears & eyes
+    const hEyeMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+    for (const hx of [-0.18, 0.18]) {
+      const ear = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.26, 4), horseMat);
+      ear.position.set(hx, 2.22, -0.78);
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), hEyeMat);
+      eye.position.set(hx * 1.25, 1.98, -1.12);
+      horse.add(ear, eye);
+    }
+    // 4 Horse Legs (front legs slightly raised in gallop!)
+    const legSpecs = [
+      [-0.26, 0.42, -0.48, -0.35],
+      [0.26, 0.42, -0.48, 0.25],
+      [-0.26, 0.42, 0.48, 0.25],
+      [0.26, 0.42, 0.48, -0.25],
+    ];
+    for (const [lx, ly, lz, rotX] of legSpecs) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.84, 0.22), horseMat);
+      leg.position.set(lx, ly, lz);
+      leg.rotation.x = rotX;
+      const hoof = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.16, 0.24), hoofMat);
+      hoof.position.set(lx, 0.08, lz + rotX * 0.2);
+      horse.add(leg, hoof);
+    }
+    // Golden harness shafts connecting horse to carriage!
+    for (const sx of [-0.52, 0.52]) {
+      const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.09, 1.8), secondaryMat);
+      shaft.position.set(sx, 0.88, -1.15);
+      bodyGroup.add(shaft);
+    }
+    horse.add(hBody, hSaddle, hNeck, hHead, hMane, hTail);
+    bodyGroup.add(horse);
   } else if (style === 'f1') {
     // Wide F1 front wing + tapered nosecone + tall rear spoiler
     const frontWing = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.16, 0.55), secondaryMat);
@@ -1926,7 +2007,7 @@ function createLegoKart(presetKey = 'yellow', driverKey = 'racer_red') {
   }
 
   // Number decal plate (skip on UFO, duck & train where custom front noses shine)
-  if (!['ufo', 'duck', 'train', 'shuttle'].includes(style)) {
+  if (!['ufo', 'duck', 'train', 'shuttle', 'carriage'].includes(style)) {
     const decalPlate = new THREE.Mesh(
       new THREE.PlaneGeometry(0.88, 0.88),
       new THREE.MeshStandardMaterial({ map: createNumberTexture(preset), roughness: 0.2 })
