@@ -1498,7 +1498,7 @@ class SoundEngine {
 }
 
 // === kart.js ===
-const KART_ORDER = ['yellow', 'cyan', 'red', 'purple', 'green', 'desert', 'ice', 'cyber'];
+const KART_ORDER = ['yellow', 'cyan', 'red', 'purple', 'green', 'desert', 'ice', 'cyber', 'hsr', 'shuttle', 'ufo', 'duck'];
 
 const DRIVER_ORDER = ['racer_red', 'racer_black', 'astronaut', 'police', 'knight', 'ninja'];
 
@@ -1567,6 +1567,34 @@ const KART_PRESETS = {
     decalBg: '#0f172a', decalText: '#ff2a9d', decalStroke: '#00f5ff',
     swatchCss: 'linear-gradient(135deg, #f8fafc 45%, #ff2a9d 45%, #ff2a9d 75%, #00f5ff 75%)',
     statSpeed: 96, statDrift: 91, maxSpeed: 57.2, accel: 37, driftGrip: 0.93, mapColor: '#ff66cc',
+  },
+  hsr: {
+    id: 'hsr', bodyStyle: 'train', styleLabel: '🚄 高鐵車頭', name: '台灣高鐵 700T', desc: '橘白流線・極速子彈列車', number: '700',
+    primary: 0xffffff, secondary: 0xff6d00, accent: 0x1e293b, bumper: 0xff6d00, exhaust: 0x94a3b8,
+    decalBg: '#ff6d00', decalText: '#ffffff', decalStroke: '#1e293b',
+    swatchCss: 'linear-gradient(135deg, #ffffff 55%, #ff6d00 55%, #ff6d00 80%, #1e293b 80%)',
+    statSpeed: 99, statDrift: 88, maxSpeed: 58.2, accel: 36, driftGrip: 0.92, mapColor: '#ff8a00',
+  },
+  shuttle: {
+    id: 'shuttle', bodyStyle: 'shuttle', styleLabel: '🚀 太空梭', name: '發現號太空梭', desc: '三角翼三引擎・火箭升空', number: '09',
+    primary: 0xf8fafc, secondary: 0x111827, accent: 0xff3b30, bumper: 0x111827, exhaust: 0x475569,
+    decalBg: '#111827', decalText: '#ffffff', decalStroke: '#ff3b30',
+    swatchCss: 'linear-gradient(135deg, #f8fafc 55%, #111827 55%, #111827 82%, #ff3b30 82%)',
+    statSpeed: 98, statDrift: 90, maxSpeed: 58.0, accel: 39, driftGrip: 0.93, mapColor: '#ffffff',
+  },
+  ufo: {
+    id: 'ufo', bodyStyle: 'ufo', styleLabel: '🛸 外星飛碟', name: '星際幽浮 UFO', desc: '磁浮懸空・零阻力飄移', number: '51',
+    primary: 0xcbd5e1, secondary: 0x00f5ff, accent: 0x38ef7d, bumper: 0x00f5ff, exhaust: 0x38ef7d,
+    decalBg: '#0f172a', decalText: '#38ef7d', decalStroke: '#00f5ff',
+    swatchCss: 'linear-gradient(135deg, #94a3b8 45%, #38ef7d 45%, #38ef7d 75%, #00f5ff 75%)',
+    statSpeed: 94, statDrift: 99, maxSpeed: 56.8, accel: 38, driftGrip: 0.97, mapColor: '#38ef7d',
+  },
+  duck: {
+    id: 'duck', bodyStyle: 'duck', styleLabel: '🦆 黃金鴨鴨', name: '巨無霸鴨鴨車', desc: '呆萌神車・全場焦點', number: '99',
+    primary: 0xffd600, secondary: 0xff6d00, accent: 0xffffff, bumper: 0xff6d00, exhaust: 0xff9100,
+    decalBg: '#ffd600', decalText: '#ff6d00', decalStroke: '#ffffff',
+    swatchCss: 'linear-gradient(135deg, #ffd600 60%, #ff6d00 60%)',
+    statSpeed: 90, statDrift: 96, maxSpeed: 55.6, accel: 37, driftGrip: 0.96, mapColor: '#ffee00',
   },
 };
 
@@ -1664,28 +1692,157 @@ function createLegoKart(presetKey = 'yellow', driverKey = 'racer_red') {
   const driver = DRIVER_PRESETS[driverKey] || DRIVER_PRESETS.racer_red;
   const style = preset.bodyStyle || 'kart';
   const isMonster = style === 'monster';
-  const yLift = isMonster ? 0.34 : 0;
+  const isUfo = style === 'ufo';
+  const yLift = isMonster ? 0.34 : isUfo ? 0.28 : 0;
 
   const root = new THREE.Group();
   const bodyGroup = new THREE.Group();
   bodyGroup.position.y = yLift;
   root.add(bodyGroup);
 
-  const primaryMat = new THREE.MeshStandardMaterial({ color: preset.primary, roughness: 0.22, metalness: 0.08 });
+  const primaryMat = new THREE.MeshStandardMaterial({ color: preset.primary, roughness: 0.22, metalness: isUfo ? 0.55 : 0.08 });
   const secondaryMat = new THREE.MeshStandardMaterial({ color: preset.secondary, roughness: 0.25, metalness: 0.1 });
   const accentMat = new THREE.MeshStandardMaterial({ color: preset.accent, roughness: 0.25, metalness: 0.05 });
   const bumperMat = new THREE.MeshStandardMaterial({ color: preset.bumper, roughness: 0.22, metalness: 0.08 });
   const darkMat = new THREE.MeshStandardMaterial({ color: 0x20242c, roughness: 0.55, metalness: 0.15 });
   const exhaustMat = new THREE.MeshStandardMaterial({ color: preset.exhaust, roughness: 0.35, metalness: 0.4 });
 
-  // Base Chassis
-  const chassis = new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.28, style === 'f1' ? 3.2 : 2.75), darkMat);
-  chassis.position.set(0, 0.42, 0);
-  chassis.castShadow = true;
-  bodyGroup.add(chassis);
+  // Base Chassis (skip boxy chassis on UFO saucer)
+  if (!isUfo) {
+    const chassis = new THREE.Mesh(
+      new THREE.BoxGeometry(1.75, 0.28, style === 'f1' || style === 'train' || style === 'shuttle' ? 3.3 : 2.75),
+      darkMat
+    );
+    chassis.position.set(0, 0.42, 0);
+    chassis.castShadow = true;
+    bodyGroup.add(chassis);
+  }
 
   // Style-specific Front / Body / Wing
-  if (style === 'f1') {
+  if (style === 'train') {
+    // 🚄 Taiwan HSR 700T Bullet Train Nose!
+    const bodyMain = new THREE.Mesh(new THREE.BoxGeometry(1.92, 0.85, 2.4), primaryMat);
+    bodyMain.position.set(0, 0.85, 0.25);
+    bodyMain.castShadow = true;
+    // Sleek aerodynamic bullet nosecone
+    const noseCone = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.96, 1.55, 16), primaryMat);
+    noseCone.rotation.x = -Math.PI / 2;
+    noseCone.scale.set(1.0, 1.0, 0.65);
+    noseCone.position.set(0, 0.72, -1.65);
+    noseCone.castShadow = true;
+    // Orange HSR racing stripes along both sides + front skirt
+    for (const sx of [-0.98, 0.98]) {
+      const orangeBand = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.22, 3.0), secondaryMat);
+      orangeBand.position.set(sx, 0.75, -0.05);
+      const blackBand = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.12, 2.9), accentMat);
+      blackBand.position.set(sx, 0.98, 0.05);
+      bodyGroup.add(orangeBand, blackBand);
+    }
+    // Panoramic dark windshield + glowing twin LED headlights
+    const windGlass = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.34, 0.55), accentMat);
+    windGlass.position.set(0, 1.18, -1.05);
+    windGlass.rotation.x = 0.45;
+    const ledMat = new THREE.MeshBasicMaterial({ color: 0xfff8b0 });
+    for (const lx of [-0.55, 0.55]) {
+      const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.14, 0.12), ledMat);
+      lamp.position.set(lx, 0.78, -2.25);
+      bodyGroup.add(lamp);
+    }
+    // Roof pantograph (集電弓) at rear
+    const pantoBase = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.12, 0.5), accentMat);
+    pantoBase.position.set(0, 1.4, 1.05);
+    const pantoArm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.65, 0.12), exhaustMat);
+    pantoArm.position.set(0, 1.72, 1.12);
+    pantoArm.rotation.x = -0.35;
+    const pantoBar = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.09, 0.12), secondaryMat);
+    pantoBar.position.set(0, 2.02, 1.24);
+    bodyGroup.add(bodyMain, noseCone, windGlass, pantoBase, pantoArm, pantoBar);
+  } else if (style === 'shuttle') {
+    // 🚀 Space Shuttle with Delta Wings & Vertical Tail Fin!
+    const fuselage = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.85, 2.5, 14), primaryMat);
+    fuselage.rotation.x = Math.PI / 2;
+    fuselage.scale.set(1.1, 1.0, 0.72);
+    fuselage.position.set(0, 0.75, 0.1);
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.74, 1.35, 14), secondaryMat);
+    nose.rotation.x = -Math.PI / 2;
+    nose.scale.set(1.1, 1.0, 0.72);
+    nose.position.set(0, 0.72, -1.78);
+    // Wide triangular delta wings
+    const wingGeo = new THREE.ConeGeometry(2.35, 2.4, 3);
+    wingGeo.rotateX(-Math.PI / 2);
+    const wing = new THREE.Mesh(wingGeo, primaryMat);
+    wing.scale.set(1.05, 0.14, 1.0);
+    wing.position.set(0, 0.5, 0.35);
+    const heatTrim = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.18, 0.38), secondaryMat);
+    heatTrim.position.set(0, 0.48, 1.28);
+    // Tall vertical tail fin
+    const tailFin = new THREE.Mesh(new THREE.BoxGeometry(0.18, 1.55, 1.15), primaryMat);
+    tailFin.position.set(0, 1.55, 1.15);
+    tailFin.rotation.x = -0.25;
+    const finStripe = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.3, 1.05), accentMat);
+    finStripe.position.set(0, 1.9, 1.18);
+    finStripe.rotation.x = -0.25;
+    bodyGroup.add(fuselage, nose, wing, heatTrim, tailFin, finStripe);
+  } else if (style === 'ufo') {
+    // 🛸 Hovering Alien Flying Saucer!
+    const saucer = new THREE.Mesh(new THREE.CylinderGeometry(1.55, 2.15, 0.48, 24), primaryMat);
+    saucer.position.set(0, 0.65, 0);
+    const lowerDisk = new THREE.Mesh(new THREE.CylinderGeometry(2.15, 1.25, 0.32, 24), darkMat);
+    lowerDisk.position.set(0, 0.28, 0);
+    const glowRing = new THREE.Mesh(
+      new THREE.TorusGeometry(2.12, 0.11, 8, 28),
+      new THREE.MeshBasicMaterial({ color: 0x00f5ff })
+    );
+    glowRing.rotation.x = Math.PI / 2;
+    glowRing.position.set(0, 0.46, 0);
+    // Glowing green hover beam ring underneath
+    const hoverBeam = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.1, 1.45, 0.3, 18, 1, true),
+      new THREE.MeshBasicMaterial({ color: 0x38ef7d, transparent: true, opacity: 0.45, side: THREE.DoubleSide })
+    );
+    hoverBeam.position.set(0, 0.0, 0);
+    // Blinking alien perimeter orbs
+    const orbMat = new THREE.MeshBasicMaterial({ color: 0x38ef7d });
+    for (let k = 0; k < 8; k++) {
+      const a = (k / 8) * Math.PI * 2;
+      const orb = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 8), orbMat);
+      orb.position.set(Math.cos(a) * 1.82, 0.72, Math.sin(a) * 1.82);
+      bodyGroup.add(orb);
+    }
+    bodyGroup.add(saucer, lowerDisk, glowRing, hoverBeam);
+  } else if (style === 'duck') {
+    // 🦆 Giant Yellow LEGO Rubber Duck Mobile!
+    const duckBody = new THREE.Mesh(new THREE.BoxGeometry(1.95, 0.85, 2.45), primaryMat);
+    duckBody.position.set(0, 0.72, 0.15);
+    const duckNeck = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.72, 0.95), primaryMat);
+    duckNeck.position.set(0, 1.15, -1.18);
+    // Cute wide orange duck bill!
+    const billTop = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.26, 0.82), secondaryMat);
+    billTop.position.set(0, 1.02, -1.92);
+    const billBot = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.16, 0.65), secondaryMat);
+    billBot.position.set(0, 0.84, -1.82);
+    // Big glossy cute duck eyes on the front hood!
+    const dEyeMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+    const dWhiteMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    for (const dx of [-0.36, 0.36]) {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 10), dEyeMat);
+      eye.position.set(dx, 1.32, -1.62);
+      const gl = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), dWhiteMat);
+      gl.position.set(dx - 0.04, 1.37, -1.75);
+      bodyGroup.add(eye, gl);
+    }
+    // Side cute wings + rear duck tail!
+    for (const sx of [-1.12, 1.12]) {
+      const wing = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.52, 1.35), primaryMat);
+      wing.position.set(sx, 0.84, 0.15);
+      wing.rotation.z = sx > 0 ? -0.25 : 0.25;
+      bodyGroup.add(wing);
+    }
+    const duckTail = new THREE.Mesh(new THREE.ConeGeometry(0.55, 0.95, 4), primaryMat);
+    duckTail.position.set(0, 1.25, 1.45);
+    duckTail.rotation.x = 0.65;
+    bodyGroup.add(duckBody, duckNeck, billTop, billBot, duckTail);
+  } else if (style === 'f1') {
     // Wide F1 front wing + tapered nosecone + tall rear spoiler
     const frontWing = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.16, 0.55), secondaryMat);
     frontWing.position.set(0, 0.34, -1.78);
@@ -1768,43 +1925,45 @@ function createLegoKart(presetKey = 'yellow', driverKey = 'racer_red') {
     bodyGroup.add(frontBumper, hoodBase);
   }
 
-  // Number decal plate
-  const decalPlate = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.88, 0.88),
-    new THREE.MeshStandardMaterial({ map: createNumberTexture(preset), roughness: 0.2 })
-  );
-  decalPlate.position.set(0, isMonster ? 1.13 : 0.92, -0.96);
-  decalPlate.rotation.x = -Math.PI / 2 + (isMonster ? 0 : 0.2);
-  bodyGroup.add(decalPlate);
+  // Number decal plate (skip on UFO, duck & train where custom front noses shine)
+  if (!['ufo', 'duck', 'train', 'shuttle'].includes(style)) {
+    const decalPlate = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.88, 0.88),
+      new THREE.MeshStandardMaterial({ map: createNumberTexture(preset), roughness: 0.2 })
+    );
+    decalPlate.position.set(0, isMonster ? 1.13 : 0.92, -0.96);
+    decalPlate.rotation.x = -Math.PI / 2 + (isMonster ? 0 : 0.2);
+    bodyGroup.add(decalPlate);
 
-  // Side Pods
-  for (const side of [-1, 1]) {
-    const podLower = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.22, 1.35), accentMat);
-    podLower.position.set(side * 0.96, 0.46, 0.05);
-    const podMid = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.22, 1.25), secondaryMat);
-    podMid.position.set(side * 0.96, 0.65, 0.08);
-    const podTop = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.24, 1.1), primaryMat);
-    podTop.position.set(side * 0.94, 0.84, 0.14);
-    bodyGroup.add(podLower, podMid, podTop);
+    // Side Pods
+    for (const side of [-1, 1]) {
+      const podLower = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.22, 1.35), accentMat);
+      podLower.position.set(side * 0.96, 0.46, 0.05);
+      const podMid = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.22, 1.25), secondaryMat);
+      podMid.position.set(side * 0.96, 0.65, 0.08);
+      const podTop = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.24, 1.1), primaryMat);
+      podTop.position.set(side * 0.94, 0.84, 0.14);
+      bodyGroup.add(podLower, podMid, podTop);
+    }
+
+    const rearDeck = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.52, 0.85), primaryMat);
+    rearDeck.position.set(0, 0.72, 1.02);
+    const seatBack = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.65, 0.22), secondaryMat);
+    seatBack.position.set(0, 0.95, 0.62);
+    seatBack.rotation.x = -0.18;
+    bodyGroup.add(rearDeck, seatBack);
   }
 
-  const rearDeck = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.52, 0.85), primaryMat);
-  rearDeck.position.set(0, 0.72, 1.02);
-  const seatBack = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.65, 0.22), secondaryMat);
-  seatBack.position.set(0, 0.95, 0.62);
-  seatBack.rotation.x = -0.18;
-  bodyGroup.add(rearDeck, seatBack);
-
-  // Exhausts & Boost Flames (cyber has triple thrusters!)
+  // Exhausts & Boost Flames (cyber & shuttle have triple rocket thrusters!)
   const flames = [];
-  const flameOuterGeo = new THREE.ConeGeometry(0.24, 1.2, 10);
+  const flameOuterGeo = new THREE.ConeGeometry(style === 'shuttle' ? 0.34 : 0.24, style === 'shuttle' ? 1.7 : 1.2, 10);
   flameOuterGeo.rotateX(Math.PI / 2);
-  const flameOuterMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.88 });
-  const flameInnerGeo = new THREE.ConeGeometry(0.13, 0.75, 8);
+  const flameOuterMat = new THREE.MeshBasicMaterial({ color: style === 'shuttle' ? 0xff9500 : 0x00e5ff, transparent: true, opacity: 0.88 });
+  const flameInnerGeo = new THREE.ConeGeometry(0.15, 0.9, 8);
   flameInnerGeo.rotateX(Math.PI / 2);
   const flameInnerMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95 });
 
-  const pipeXs = style === 'cyber' ? [-0.52, 0, 0.52] : [-0.42, 0.42];
+  const pipeXs = (style === 'cyber' || style === 'shuttle') ? [-0.55, 0, 0.55] : [-0.42, 0.42];
   for (const sx of pipeXs) {
     const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, 0.58, 12), exhaustMat);
     pipe.position.set(sx, 0.96, 1.46);
@@ -1945,7 +2104,7 @@ function createLegoKart(presetKey = 'yellow', driverKey = 'racer_red') {
     { x: 1.22 * (isMonster ? 1.12 : 1), y: 0.48 * wScale, z: 0.94, radius: 0.48 * wScale, width: 0.5 * (isMonster ? 1.35 : 1), front: false },
   ];
 
-  for (const cfg of wheelConfigs) {
+  for (const cfg of (isUfo ? [] : wheelConfigs)) {
     const pivot = new THREE.Group();
     pivot.position.set(cfg.x, cfg.y, cfg.z);
     const wheelSpin = new THREE.Group();
