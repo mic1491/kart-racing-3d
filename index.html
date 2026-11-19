@@ -277,6 +277,57 @@ html, body {
 .net-status.connected { color: #38ef7d; }
 .net-status.error { color: #ff6b6b; }
 
+/* Garage Upgrades & Coins */
+.garage-bar {
+  padding: 6px 12px;
+  gap: 8px 14px;
+  border-color: rgba(255, 215, 0, 0.35);
+}
+
+.coin-wallet {
+  font-size: 14px;
+  font-weight: 900;
+  color: #ffdd00;
+  background: rgba(255, 204, 0, 0.16);
+  border: 1px solid rgba(255, 204, 0, 0.5);
+  padding: 3px 12px;
+  border-radius: 999px;
+}
+
+.upgrade-pills {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.upgrade-btn {
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border-radius: 999px;
+  padding: 4px 11px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.upgrade-btn:hover:not(:disabled) {
+  background: rgba(255, 204, 0, 0.25);
+  border-color: #ffdd00;
+}
+
+.upgrade-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.hud-coins {
+  color: #ffdd00;
+  font-weight: 900;
+}
+
 /* 6-Kart Grid */
 .kart-section {
   width: 100%;
@@ -945,6 +996,16 @@ kbd {
           <div class="pill-row" id="track-selector"></div>
         </div>
 
+        <!-- Row 2.5: Coin Wallet & Garage Upgrades -->
+        <div class="selector-bar garage-bar">
+          <div class="coin-wallet">🪙 <strong id="lobby-coins">0</strong></div>
+          <div class="upgrade-pills">
+            <button class="upgrade-btn" data-upg="engine">🔥 引擎 <span id="upg-engine-lv">Lv.0</span> (<span id="upg-engine-cost">40</span>🪙)</button>
+            <button class="upgrade-btn" data-upg="nitro">⚡ 氮氣 <span id="upg-nitro-lv">Lv.0</span> (<span id="upg-nitro-cost">40</span>🪙)</button>
+            <button class="upgrade-btn" data-upg="drift">🌀 甩尾 <span id="upg-drift-lv">Lv.0</span> (<span id="upg-drift-cost">40</span>🪙)</button>
+          </div>
+        </div>
+
         <!-- Row 3: 6 Drivers + 8 Karts (4 Body Styles) -->
         <div class="kart-section">
           <div id="p2-kart-tabs" class="p2-tabs hidden">
@@ -981,6 +1042,8 @@ kbd {
           <span id="hud-mode-tag" class="mode-tag">道具</span>
           <span class="sep">|</span>
           <span id="hud-time">00:00.00</span>
+          <span class="sep">|</span>
+          <span class="hud-coins">🪙 <span id="hud-coins-val">0</span></span>
         </div>
         <div class="hud-actions">
           <button id="touch-toggle-btn" title="切換觸控按鍵">📱</button>
@@ -1087,6 +1150,10 @@ kbd {
           <span>最快單圈</span>
           <strong id="finish-best-lap">00:00.00</strong>
         </div>
+        <div class="result-row">
+          <span>本場獎勵 / 幽靈紀錄</span>
+          <strong id="finish-reward">+50 🪙</strong>
+        </div>
         <div class="standings-list" id="standings-list"></div>
       </div>
       <div class="finish-buttons">
@@ -1110,13 +1177,17 @@ class SoundEngine {
     this.driftNoise = null;
     this.driftGain = null;
     this.initialized = false;
+
+    // Arcade Racing BGM sequencer
+    this.bgmTimer = null;
+    this.bgmStep = 0;
+    this.bgmPlaying = false;
+    this.finalLap = false;
   }
 
   init() {
     if (this.initialized) {
-      if (this.ctx && this.ctx.state === 'suspended') {
-        this.ctx.resume();
-      }
+      if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
       return;
     }
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -1172,6 +1243,75 @@ class SoundEngine {
     }
   }
 
+  startBgm() {
+    if (!this.initialized) return;
+    this.stopBgm();
+    this.bgmPlaying = true;
+    this.bgmStep = 0;
+    this._scheduleBgmTick();
+  }
+
+  setFinalLap(isFinal) {
+    this.finalLap = isFinal;
+  }
+
+  stopBgm() {
+    this.bgmPlaying = false;
+    if (this.bgmTimer) {
+      clearTimeout(this.bgmTimer);
+      this.bgmTimer = null;
+    }
+  }
+
+  _scheduleBgmTick() {
+    if (!this.bgmPlaying) return;
+    const stepMs = this.finalLap ? 105 : 126; // Final lap speeds up ~20%!
+
+    if (this.initialized && !this.muted && this.ctx.state === 'running') {
+      // Catchy KartRider-inspired upbeat synth melody + pumping octave bass
+      const melody = [
+        523, 0, 659, 784, 659, 0, 784, 1046,
+        880, 0, 784, 659, 587, 659, 784, 0,
+        523, 0, 659, 784, 1046, 0, 987, 880,
+        784, 659, 587, 523, 587, 0, 659, 0,
+      ];
+      const bass = [
+        130, 130, 261, 130, 146, 146, 293, 146,
+        174, 174, 349, 174, 196, 196, 392, 196,
+      ];
+      const mFreq = melody[this.bgmStep % melody.length];
+      const bFreq = bass[this.bgmStep % bass.length];
+      const now = this.ctx.currentTime;
+
+      if (mFreq > 0) {
+        const osc = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(this.finalLap ? mFreq * 1.06 : mFreq, now);
+        g.gain.setValueAtTime(0.024, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
+        osc.connect(g);
+        g.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.12);
+      }
+
+      const bOsc = this.ctx.createOscillator();
+      const bGain = this.ctx.createGain();
+      bOsc.type = 'triangle';
+      bOsc.frequency.setValueAtTime(bFreq, now);
+      bGain.gain.setValueAtTime(0.042, now);
+      bGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+      bOsc.connect(bGain);
+      bGain.connect(this.ctx.destination);
+      bOsc.start(now);
+      bOsc.stop(now + 0.11);
+    }
+
+    this.bgmStep++;
+    this.bgmTimer = setTimeout(() => this._scheduleBgmTick(), stepMs);
+  }
+
   updateDrive(speedRatio, isDrifting, isBoosting, active) {
     if (!this.initialized || this.muted) return;
     const now = this.ctx.currentTime;
@@ -1182,9 +1322,9 @@ class SoundEngine {
     }
     const baseFreq = 60 + Math.abs(speedRatio) * 145 + (isBoosting ? 55 : 0);
     this.engineOsc.frequency.setTargetAtTime(baseFreq, now, 0.05);
-    this.engineGain.gain.setTargetAtTime(0.045 + Math.abs(speedRatio) * 0.035, now, 0.06);
+    this.engineGain.gain.setTargetAtTime(0.036 + Math.abs(speedRatio) * 0.028, now, 0.06);
 
-    const targetDrift = isDrifting && Math.abs(speedRatio) > 0.25 ? 0.055 : 0.0;
+    const targetDrift = isDrifting && Math.abs(speedRatio) > 0.25 ? 0.05 : 0.0;
     this.driftGain.gain.setTargetAtTime(targetDrift, now, 0.04);
   }
 
@@ -1203,6 +1343,12 @@ class SoundEngine {
     osc.stop(now + duration);
   }
 
+  playCoin() {
+    if (!this.initialized || this.muted) return;
+    this.playBeep(988, 0.07, 0.09);
+    setTimeout(() => this.playBeep(1318, 0.12, 0.09), 55);
+  }
+
   playBoost() {
     if (!this.initialized || this.muted) return;
     const now = this.ctx.currentTime;
@@ -1210,7 +1356,7 @@ class SoundEngine {
     const gain = this.ctx.createGain();
     osc.type = 'sawtooth';
     osc.frequency.setValueAtTime(160, now);
-    osc.frequency.exponentialRampToValueAtTime(520, now + 0.35);
+    osc.frequency.exponentialRampToValueAtTime(560, now + 0.35);
     osc.frequency.exponentialRampToValueAtTime(220, now + 0.7);
     gain.gain.setValueAtTime(0.11, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.72);
@@ -1227,7 +1373,7 @@ class SoundEngine {
     const gain = this.ctx.createGain();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(320, now);
-    osc.frequency.exponentialRampToValueAtTime(680, now + 0.22);
+    osc.frequency.exponentialRampToValueAtTime(720, now + 0.22);
     gain.gain.setValueAtTime(0.09, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
     osc.connect(gain);
@@ -1257,6 +1403,38 @@ class SoundEngine {
     gain.connect(this.ctx.destination);
     osc.start(now);
     osc.stop(now + 0.36);
+  }
+
+  playMagnet() {
+    if (!this.initialized || this.muted) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(240, now);
+    osc.frequency.exponentialRampToValueAtTime(880, now + 0.45);
+    gain.gain.setValueAtTime(0.12, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.48);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.5);
+  }
+
+  playLightning() {
+    if (!this.initialized || this.muted) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(1100, now);
+    osc.frequency.exponentialRampToValueAtTime(80, now + 0.42);
+    gain.gain.setValueAtTime(0.16, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.46);
   }
 
   playHit() {
@@ -1314,6 +1492,7 @@ class SoundEngine {
   }
 
   playVictory() {
+    this.stopBgm();
     const notes = [523, 659, 784, 1046];
     notes.forEach((n, idx) => setTimeout(() => this.playBeep(n, 0.24, 0.13), idx * 120));
   }
@@ -2091,6 +2270,7 @@ class RaceTrack {
     this.boostPads = [];
     this.jumpRamps = [];
     this.obstacles = [];
+    this.coins = [];
     this.itemBoxAnchors = [];
     this.elapsed = 0;
 
@@ -2102,6 +2282,7 @@ class RaceTrack {
     this._buildBoostPads();
     this._buildJumpRamps();
     this._buildMovingObstacles();
+    this._buildCoins();
     this._buildItemBoxAnchors();
     this._buildRichTrackDetails();
     this._buildScenery();
@@ -2126,6 +2307,14 @@ class RaceTrack {
       obs.pos.copy(pos);
       obs.mesh.position.set(pos.x, pos.y + 1.1, pos.z);
       obs.mesh.rotation.y += dt * 1.8;
+    }
+    for (const c of this.coins) {
+      if (c.respawn > 0) {
+        c.respawn -= dt;
+        if (c.respawn <= 0) c.mesh.visible = true;
+      } else {
+        c.mesh.rotation.y += dt * 3.2;
+      }
     }
   }
 
@@ -2572,6 +2761,34 @@ class RaceTrack {
         speed: 1.65 + (i % 2) * 0.55,
         phase: i * 1.9,
       });
+    });
+  }
+
+  _buildCoins() {
+    const coinGeo = new THREE.CylinderGeometry(0.68, 0.68, 0.22, 12);
+    coinGeo.rotateX(Math.PI / 2);
+    const coinMat = new THREE.MeshStandardMaterial({
+      color: 0xffd700,
+      emissive: 0xaa6600,
+      emissiveIntensity: 0.45,
+      metalness: 0.65,
+      roughness: 0.2,
+    });
+
+    // Place 6 clusters of 4 coins along optimal racing curves!
+    const clusterTs = [0.06, 0.2, 0.36, 0.53, 0.71, 0.87];
+    clusterTs.forEach((baseT, cIdx) => {
+      const lane = (cIdx % 3 - 1) * 4.2;
+      for (let k = 0; k < 4; k++) {
+        const idx = Math.floor(((baseT + k * 0.012) % 1) * this.samples);
+        const p = this.points[idx];
+        const r = this.rights[idx];
+        const pos = p.clone().addScaledVector(r, lane);
+        const mesh = new THREE.Mesh(coinGeo, coinMat);
+        mesh.position.set(pos.x, p.y + 1.15, pos.z);
+        this.group.add(mesh);
+        this.coins.push({ mesh, pos: new THREE.Vector3(pos.x, p.y + 1.15, pos.z), respawn: 0 });
+      }
     });
   }
 
@@ -3107,9 +3324,11 @@ const ITEM_TYPES = {
   banana: { id: 'banana', name: '香蕉皮', icon: '🍌', color: '#ffdd00' },
   waterbomb: { id: 'waterbomb', name: '水炸彈', icon: '💧', color: '#00b4ff' },
   shield: { id: 'shield', name: '天使護盾', icon: '🛡️', color: '#38ef7d' },
+  magnet: { id: 'magnet', name: '超級磁鐵', icon: '🧲', color: '#ff2a9d' },
+  lightning: { id: 'lightning', name: '天雷閃電', icon: '🌩️', color: '#ffea00' },
 };
 
-const ITEM_POOL = ['nitro', 'missile', 'banana', 'waterbomb', 'shield'];
+const ITEM_POOL = ['nitro', 'missile', 'banana', 'waterbomb', 'shield', 'magnet'];
 
 function createQuestionBoxTexture() {
   const canvas = document.createElement('canvas');
@@ -3220,10 +3439,15 @@ class ItemManager {
     }
   }
 
-  rollRandomItem(isLeading) {
-    if (isLeading) {
+  rollRandomItem(rankIndex) {
+    // KartRider rubber-band item balance: 1st gets defense/traps, 3rd-4th get comeback items!
+    if (rankIndex === 0) {
       const leadingPool = ['banana', 'shield', 'banana', 'waterbomb', 'nitro'];
       return leadingPool[Math.floor(Math.random() * leadingPool.length)];
+    }
+    if (rankIndex >= 2) {
+      const comebackPool = ['magnet', 'lightning', 'nitro', 'missile', 'magnet', 'shield'];
+      return comebackPool[Math.floor(Math.random() * comebackPool.length)];
     }
     return ITEM_POOL[Math.floor(Math.random() * ITEM_POOL.length)];
   }
@@ -3261,6 +3485,37 @@ class ItemManager {
       if (racer.isHuman) {
         this.audio.playSplash();
         this.showBannerFor(racer, '💧 水炸彈投擲！', '#00c8ff', 1.2);
+      }
+    } else if (itemId === 'magnet') {
+      // Lock onto closest racer ahead and pull strongly!
+      let target = null;
+      let bestAhead = Infinity;
+      for (const other of racers) {
+        if (other === racer || other.finished) continue;
+        const diff = other.totalProgress - racer.totalProgress;
+        if (diff > 0 && diff < bestAhead) {
+          bestAhead = diff;
+          target = other;
+        }
+      }
+      racer.magnetTimer = 2.6;
+      racer.magnetTarget = target;
+      racer.boostTimer = Math.max(racer.boostTimer, 2.2);
+      if (racer.isHuman) {
+        this.audio.playMagnet();
+        this.showBannerFor(racer, target ? `🧲 磁鐵鎖定 ${target.name}！` : '🧲 超級磁力衝刺！', '#ff2a9d', 1.4);
+      }
+    } else if (itemId === 'lightning') {
+      // Strike every racer ahead!
+      if (racer.isHuman) {
+        this.audio.playLightning();
+        this.showBannerFor(racer, '🌩️ 天雷閃電！全體劈擊！', '#ffea00', 1.4);
+      }
+      for (const other of racers) {
+        if (other === racer || other.finished) continue;
+        if (other.totalProgress >= racer.totalProgress - 0.05) {
+          this._hitRacer(other, 'lightning');
+        }
       }
     }
     return true;
@@ -3425,8 +3680,8 @@ class ItemManager {
           box.mesh.visible = false;
           box.respawnTimer = 5.0;
           if (r.items.length < 2) {
-            const isLeading = sortedRacers[0] === r;
-            const picked = this.rollRandomItem(isLeading);
+            const rankIdx = Math.max(0, sortedRacers.indexOf(r));
+            const picked = this.rollRandomItem(rankIdx);
             r.items.push(picked);
             if (r.isHuman) {
               this.audio.playItemPickup();
@@ -3763,22 +4018,41 @@ class RoomNetwork {
 
 // === main.js ===
 const TOTAL_LAPS = 3;
-const SAVE_KEY = 'kart_lego_3d_save_v2';
+const SAVE_KEY = 'kart_lego_3d_save_v3';
+const UPGRADE_COSTS = [40, 70, 110, 160, 220];
 
-// --- Persistent Save (Unlock Progress & Names) ---
+// --- Persistent Save (Unlock Progress, Names, Coins, Upgrades, Medals, Ghosts) ---
 function loadSave() {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
+    const raw = localStorage.getItem(SAVE_KEY) || localStorage.getItem('kart_lego_3d_save_v2');
     if (raw) {
-      const parsed = JSON.parse(raw);
+      const p = JSON.parse(raw);
       return {
-        unlockedCount: Math.max(1, Math.min(TRACK_ORDER.length, parsed.unlockedCount || 1)),
-        p1Name: parsed.p1Name || '玩家 1',
-        p2Name: parsed.p2Name || '玩家 2',
+        unlockedCount: Math.max(1, Math.min(TRACK_ORDER.length, p.unlockedCount || 1)),
+        p1Name: p.p1Name || '玩家 1',
+        p2Name: p.p2Name || '玩家 2',
+        coins: Number.isFinite(p.coins) ? p.coins : 50,
+        upgrades: {
+          engine: p.upgrades?.engine || 0,
+          nitro: p.upgrades?.nitro || 0,
+          drift: p.upgrades?.drift || 0,
+        },
+        medals: p.medals || {},
+        bestTimes: p.bestTimes || {},
+        ghosts: p.ghosts || {},
       };
     }
   } catch (_) {}
-  return { unlockedCount: 1, p1Name: '玩家 1', p2Name: '玩家 2' };
+  return {
+    unlockedCount: 1,
+    p1Name: '玩家 1',
+    p2Name: '玩家 2',
+    coins: 50,
+    upgrades: { engine: 0, nitro: 0, drift: 0 },
+    medals: {},
+    bestTimes: {},
+    ghosts: {},
+  };
 }
 
 function writeSave() {
@@ -3819,6 +4093,10 @@ const netStatusEl = document.getElementById('net-status');
 const hudTrackName = document.getElementById('hud-track-name');
 const hudModeTag = document.getElementById('hud-mode-tag');
 const hudTime = document.getElementById('hud-time');
+const hudCoinsVal = document.getElementById('hud-coins-val');
+const lobbyCoinsEl = document.getElementById('lobby-coins');
+const upgradeButtons = document.querySelectorAll('.upgrade-btn');
+const finishRewardEl = document.getElementById('finish-reward');
 const minimapCanvas = document.getElementById('minimap');
 const minimapCtx = minimapCanvas.getContext('2d');
 
@@ -3856,12 +4134,13 @@ const changeKartBtn = document.getElementById('change-kart-btn');
 p1NameInput.value = saveData.p1Name;
 p2NameInput.value = saveData.p2Name;
 
-// --- Scene, Renderer & Dual Cameras ---
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+// --- Scene, Renderer & Mobile GPU Auto-Optimization ---
+const isMobileDevice = window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 820;
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: !isMobileDevice, powerPreference: 'high-performance' });
+renderer.setPixelRatio(isMobileDevice ? 1.25 : Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = isMobileDevice ? THREE.BasicShadowMap : THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.12;
 
@@ -3875,8 +4154,9 @@ scene.add(hemiLight);
 const sunLight = new THREE.DirectionalLight(0xfff8e7, 1.65);
 sunLight.position.set(120, 180, 90);
 sunLight.castShadow = true;
-sunLight.shadow.mapSize.width = 2048;
-sunLight.shadow.mapSize.height = 2048;
+const shadowRes = isMobileDevice ? 512 : 2048;
+sunLight.shadow.mapSize.width = shadowRes;
+sunLight.shadow.mapSize.height = shadowRes;
 sunLight.shadow.camera.near = 20;
 sunLight.shadow.camera.far = 520;
 const sd = 240;
@@ -3931,6 +4211,34 @@ function updateParticles(dt) {
   }
 }
 
+// --- Drift Tire Skid Marks Pool ---
+const SKID_COUNT = isMobileDevice ? 60 : 140;
+const skidMarks = [];
+const skidGeo = new THREE.PlaneGeometry(0.42, 1.5);
+skidGeo.rotateX(-Math.PI / 2);
+const skidMat = new THREE.MeshBasicMaterial({ color: 0x0d0f14, transparent: true, opacity: 0.48, depthWrite: false });
+for (let i = 0; i < SKID_COUNT; i++) {
+  const m = new THREE.Mesh(skidGeo, skidMat);
+  m.visible = false;
+  scene.add(m);
+  skidMarks.push(m);
+}
+let skidCursor = 0;
+let skidThrottle = 0;
+let camShake = 0;
+
+function addSkidMark(x, y, z, yaw) {
+  const m = skidMarks[skidCursor];
+  skidCursor = (skidCursor + 1) % SKID_COUNT;
+  m.position.set(x, y + 0.12, z);
+  m.rotation.y = yaw;
+  m.visible = true;
+}
+
+function clearSkidMarks() {
+  for (const m of skidMarks) m.visible = false;
+}
+
 function showBannerFor(racer, text, color = '#00f0ff', duration = 1.15) {
   const idx = racer && racer.humanIndex === 1 ? 1 : 0;
   const h = pHudEls[idx];
@@ -3956,9 +4264,16 @@ let racers = [];
 let humanRacers = []; // [p1] or [p1, p2]
 let remoteRacers = new Map(); // slotIndex -> racer (for 4-player LAN/Online room)
 let raceTime = 0;
+let raceCoinsEarned = 0;
 let countdownTimer = 0;
 let lastCountdownNum = 4;
 let showcaseAngle = 0;
+
+// Ghost Replay Car
+let ghostKart = null;
+let ghostPlaybackData = null;
+let currentGhostLog = [];
+let ghostRecordAccum = 0;
 
 // --- 4-Player LAN / Online Room Network ---
 const net = new RoomNetwork({
@@ -4074,6 +4389,42 @@ window.addEventListener('resize', () => {
 });
 
 // --- Build Lobby UI Dynamically ---
+function renderGarageUI() {
+  lobbyCoinsEl.textContent = saveData.coins;
+  for (const key of ['engine', 'nitro', 'drift']) {
+    const lv = saveData.upgrades[key] || 0;
+    const lvEl = document.getElementById(`upg-${key}-lv`);
+    const costEl = document.getElementById(`upg-${key}-cost`);
+    const btn = document.querySelector(`.upgrade-btn[data-upg="${key}"]`);
+    if (!lvEl || !costEl || !btn) continue;
+    lvEl.textContent = lv >= 5 ? 'MAX' : `Lv.${lv}`;
+    if (lv >= 5) {
+      costEl.textContent = '滿級';
+      btn.disabled = true;
+    } else {
+      const cost = UPGRADE_COSTS[lv];
+      costEl.textContent = cost;
+      btn.disabled = saveData.coins < cost;
+    }
+  }
+}
+
+upgradeButtons.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const key = btn.dataset.upg;
+    const lv = saveData.upgrades[key] || 0;
+    if (lv >= 5) return;
+    const cost = UPGRADE_COSTS[lv];
+    if (saveData.coins < cost) return;
+    saveData.coins -= cost;
+    saveData.upgrades[key] = lv + 1;
+    writeSave();
+    audio.init();
+    audio.playCoin();
+    renderGarageUI();
+  });
+});
+
 function renderTrackButtons() {
   trackSelectorEl.innerHTML = '';
   unlockProgressEl.textContent = `${saveData.unlockedCount} / ${TRACK_ORDER.length}`;
@@ -4081,10 +4432,13 @@ function renderTrackButtons() {
   TRACK_ORDER.forEach((id, idx) => {
     const cfg = TRACK_CONFIGS[id];
     const unlocked = idx < saveData.unlockedCount;
+    const medal = saveData.medals[id] || '';
     const btn = document.createElement('button');
     btn.className = 'pill-btn' + (id === selectedTrackId ? ' selected' : '') + (!unlocked ? ' locked' : '');
-    btn.textContent = unlocked ? `${cfg.icon} ${idx + 1}. ${cfg.name}` : `🔒 ${idx + 1}. ${cfg.name}`;
-    btn.title = unlocked ? cfg.name : '在前一張賽道取得前 2 名即可解鎖！';
+    btn.textContent = unlocked ? `${cfg.icon} ${idx + 1}. ${cfg.name} ${medal}`.trim() : `🔒 ${idx + 1}. ${cfg.name}`;
+    btn.title = unlocked
+      ? (saveData.bestTimes[id] ? `最快紀錄：${formatTime(saveData.bestTimes[id])}` : cfg.name)
+      : '在前一張賽道取得前 2 名即可解鎖！';
     btn.addEventListener('click', () => {
       if (!unlocked) return;
       selectedTrackId = id;
@@ -4279,6 +4633,8 @@ function createRacer(presetKey, slotIndex, displayName, controlType, humanIndex 
     shieldTimer: 0,
     spinTimer: 0,
     waterTrapTimer: 0,
+    magnetTimer: 0,
+    magnetTarget: null,
     aiItemDelay: 1.5 + Math.random() * 2.0,
     remoteTarget: null,
     trackIndex: start.trackIndex,
@@ -4301,6 +4657,37 @@ function clearRacers() {
   racers = [];
   humanRacers = [];
   remoteRacers.clear();
+  if (ghostKart) {
+    scene.remove(ghostKart.root);
+    ghostKart = null;
+  }
+}
+
+function spawnGhostKartIfAvailable() {
+  if (playType !== '1') return;
+  const savedGhost = saveData.ghosts[selectedTrackId];
+  if (!savedGhost || savedGhost.length < 4) {
+    ghostPlaybackData = null;
+    return;
+  }
+  ghostPlaybackData = savedGhost;
+  ghostKart = createLegoKart(selectedKarts[0], selectedDrivers[0]);
+  ghostKart.root.traverse((obj) => {
+    if (obj.isMesh && obj.material) {
+      const ghostMat = new THREE.MeshBasicMaterial({
+        color: 0x00f5ff,
+        transparent: true,
+        opacity: 0.36,
+        wireframe: false,
+      });
+      obj.material = ghostMat;
+    }
+  });
+  ghostKart.root.add(createNameplateSprite('👻 你的最快紀錄', '#00f5ff', true));
+  const [_, gx, gy, gz, gyaw] = savedGhost[0];
+  ghostKart.root.position.set(gx, gy, gz);
+  ghostKart.root.rotation.y = gyaw;
+  scene.add(ghostKart.root);
 }
 
 function pickRemainingKarts(used, count) {
@@ -4364,7 +4751,10 @@ function setupShowcase(netStartMsg = null) {
 
 function returnToMenu() {
   gameState = 'menu';
+  audio.stopBgm();
+  audio.setFinalLap(false);
   audio.updateDrive(0, false, false, false);
+  clearSkidMarks();
   finishScreen.classList.add('hidden');
   hud.classList.add('hidden');
   hud.classList.remove('split-mode');
@@ -4373,6 +4763,7 @@ function returnToMenu() {
   speedLinesEl.classList.remove('active');
   startScreen.classList.remove('hidden');
   renderTrackButtons();
+  renderGarageUI();
   loadTrack(selectedTrackId);
   setupShowcase();
 }
@@ -4388,8 +4779,12 @@ function startRace(broadcastIfHost = true, netStartMsg = null) {
   }
 
   audio.init();
+  audio.stopBgm();
+  audio.setFinalLap(false);
+  clearSkidMarks();
   loadTrack(selectedTrackId);
   setupShowcase(netStartMsg);
+  spawnGhostKartIfAvailable();
 
   startScreen.classList.add('hidden');
   finishScreen.classList.add('hidden');
@@ -4417,6 +4812,10 @@ function startRace(broadcastIfHost = true, netStartMsg = null) {
   countdownTimer = 3.2;
   lastCountdownNum = 4;
   raceTime = 0;
+  raceCoinsEarned = 0;
+  currentGhostLog = [];
+  ghostRecordAccum = 0;
+  hudCoinsVal.textContent = '0';
   actionQueued[0] = false;
   actionQueued[1] = false;
   updateHUD();
@@ -4463,8 +4862,9 @@ function getPlayerInputState(humanIdx) {
       drift: !!(keys['ShiftRight'] || keys['Slash']),
     };
   }
+  const autoGas = touchVisible && playType !== '2' && !keys['KeyS'] && !keys['ArrowDown'];
   return {
-    accel: !!(keys['KeyW'] || keys['ArrowUp']),
+    accel: !!(keys['KeyW'] || keys['ArrowUp'] || autoGas),
     brake: !!(keys['KeyS'] || keys['ArrowDown']),
     left: !!(keys['KeyA'] || keys['ArrowLeft']),
     right: !!(keys['KeyD'] || keys['ArrowRight']),
@@ -4475,6 +4875,9 @@ function getPlayerInputState(humanIdx) {
 function updateHumanControls(r, dt) {
   const inp = getPlayerInputState(r.humanIndex);
   const preset = r.kart.preset;
+  const upgEngine = saveData.upgrades.engine || 0;
+  const upgNitro = saveData.upgrades.nitro || 0;
+  const upgDrift = saveData.upgrades.drift || 0;
   const isBoosting = r.boostTimer > 0;
   const isMiniBoosting = r.miniBoostTimer > 0;
 
@@ -4484,19 +4887,20 @@ function updateHumanControls(r, dt) {
       itemManager.useItem(r, racers);
     } else if (r.nitroSlots > 0 && r.boostTimer <= 0.1) {
       r.nitroSlots--;
-      r.boostTimer = 2.4;
+      r.boostTimer = 2.4 + upgNitro * 0.25;
+      camShake = Math.max(camShake, 0.35);
       audio.playBoost();
       showBannerFor(r, '⚡ N2O 氮氣加速！', '#00f5ff', 1.4);
     }
   }
 
-  let targetMax = preset.maxSpeed;
-  if (isBoosting) targetMax += 24;
-  else if (isMiniBoosting) targetMax += 12;
+  let targetMax = preset.maxSpeed + upgEngine * 1.6;
+  if (isBoosting) targetMax += 24 + upgNitro * 2.0;
+  else if (isMiniBoosting) targetMax += 13;
 
   if (inp.accel || isBoosting) {
     const accelBoost = isBoosting ? 2.2 : isMiniBoosting ? 1.6 : 1.0;
-    r.speed += preset.accel * accelBoost * dt;
+    r.speed += (preset.accel + upgEngine * 1.2) * accelBoost * dt;
   } else if (inp.brake) {
     if (r.speed > 2) r.speed -= 48 * dt;
     else r.speed -= 20 * dt;
@@ -4511,6 +4915,7 @@ function updateHumanControls(r, dt) {
   const rawSteer = (inp.left ? 1 : 0) - (inp.right ? 1 : 0);
   r.steerInput = THREE.MathUtils.lerp(r.steerInput, rawSteer, Math.min(1, dt * 12));
 
+  // KartRider Drift + Mini-Boost + Double Boost (雙噴)!
   const canDrift = inp.drift && r.speed > 18;
   if (canDrift) {
     if (!r.isDrifting && Math.abs(rawSteer) > 0) {
@@ -4519,10 +4924,15 @@ function updateHumanControls(r, dt) {
       r.driftTime = 0;
     }
   } else if (r.isDrifting) {
-    if (r.driftTime >= 0.45 && r.speed > 18) {
+    if (r.driftTime >= 1.05 && r.speed > 18) {
+      r.miniBoostTimer = 1.35;
+      camShake = Math.max(camShake, 0.28);
+      audio.playBoost();
+      showBannerFor(r, '🔥 DOUBLE BOOST 雙噴連擊！', '#ff9500', 1.1);
+    } else if (r.driftTime >= 0.45 && r.speed > 18) {
       r.miniBoostTimer = 0.78;
       audio.playMiniBoost();
-      showBannerFor(r, '小噴加速！', '#ffdd00', 0.85);
+      showBannerFor(r, '⚡ 小噴加速！', '#ffdd00', 0.85);
     }
     r.isDrifting = false;
     r.driftDir = 0;
@@ -4532,10 +4942,12 @@ function updateHumanControls(r, dt) {
   const speedFactor = Math.min(1, Math.abs(r.speed) / 14) * (r.speed >= 0 ? 1 : -1);
   if (r.isDrifting) {
     r.driftTime += dt;
-    r.speed *= Math.pow(preset.driftGrip, dt);
+    const grip = Math.min(0.98, preset.driftGrip + upgDrift * 0.008);
+    r.speed *= Math.pow(grip, dt);
     r.yaw += (r.driftDir * 1.65 + r.steerInput * 0.95) * dt * speedFactor;
 
-    r.nitroGauge += (34 + Math.min(16, r.driftTime * 10)) * dt;
+    const driftMult = 1 + upgDrift * 0.15;
+    r.nitroGauge += (34 + Math.min(16, r.driftTime * 10)) * driftMult * dt;
     if (r.nitroGauge >= 100) {
       if (selectedMode === 'speed') {
         if (r.nitroSlots < 2) {
@@ -4633,6 +5045,22 @@ function updateRacerPhysics(r, dt) {
   if (r.shieldTimer > 0) r.shieldTimer = Math.max(0, r.shieldTimer - dt);
   if (r.spinTimer > 0) r.spinTimer = Math.max(0, r.spinTimer - dt);
   if (r.waterTrapTimer > 0) r.waterTrapTimer = Math.max(0, r.waterTrapTimer - dt);
+  if (r.magnetTimer > 0) {
+    r.magnetTimer = Math.max(0, r.magnetTimer - dt);
+    if (r.magnetTarget && !r.magnetTarget.finished) {
+      const dx = r.magnetTarget.pos.x - r.pos.x;
+      const dz = r.magnetTarget.pos.z - r.pos.z;
+      const dist = Math.hypot(dx, dz);
+      if (dist > 3.5 && dist < 130) {
+        const pullYaw = Math.atan2(-dx, -dz);
+        let diff = pullYaw - r.yaw;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        r.yaw += THREE.MathUtils.clamp(diff, -2.5 * dt, 2.5 * dt);
+        r.speed = Math.max(r.speed, r.kart.preset.maxSpeed + 22);
+      }
+    }
+  }
 
   const incapacitated = r.spinTimer > 0 || r.waterTrapTimer > 0;
 
@@ -4757,6 +5185,24 @@ function updateRacerPhysics(r, dt) {
     }
   }
 
+  // Coins pickup (human racers collect coins for garage upgrades!)
+  if (r.isHuman && gameState === 'racing') {
+    for (const c of track.coins) {
+      if (c.respawn > 0) continue;
+      const dx = r.pos.x - c.pos.x;
+      const dz = r.pos.z - c.pos.z;
+      const dy = Math.abs(r.pos.y + 1.0 - c.pos.y);
+      if (dy < 2.8 && dx * dx + dz * dz < 6.2) {
+        c.respawn = 12.0;
+        c.mesh.visible = false;
+        raceCoinsEarned++;
+        hudCoinsVal.textContent = raceCoinsEarned;
+        r.speed += 1.8;
+        audio.playCoin();
+      }
+    }
+  }
+
   if (gameState === 'racing' && !r.finished) {
     if (r.trackT > 0.42 && r.trackT < 0.65) r.passedHalfway = true;
     if (prevT > 0.85 && r.trackT < 0.15 && r.passedHalfway) {
@@ -4779,7 +5225,8 @@ function updateRacerPhysics(r, dt) {
         }
       } else if (r.isHuman) {
         audio.playLapChime();
-        showBannerFor(r, r.lap === TOTAL_LAPS ? '最後一圈 FINAL LAP!' : `LAP ${r.lap} / ${TOTAL_LAPS}`, '#4ce0ff', 1.5);
+        if (r.lap === TOTAL_LAPS) audio.setFinalLap(true);
+        showBannerFor(r, r.lap === TOTAL_LAPS ? '🔥 最後一圈 FINAL LAP!' : `LAP ${r.lap} / ${TOTAL_LAPS}`, '#4ce0ff', 1.5);
       }
     }
 
@@ -4833,13 +5280,16 @@ function applyKartVisuals(r, dt) {
     const backX = Math.sin(visualYaw);
     const backZ = Math.cos(visualYaw);
     for (const side of [-1.0, 1.0]) {
+      const tx = r.pos.x + rightX * side + backX * 1.15;
+      const tz = r.pos.z + rightZ * side + backZ * 1.15;
       spawnParticle(
-        new THREE.Vector3(r.pos.x + rightX * side + backX * 1.15, r.pos.y + 0.24, r.pos.z + rightZ * side + backZ * 1.15),
+        new THREE.Vector3(tx, r.pos.y + 0.24, tz),
         new THREE.Vector3(backX * 7 + (Math.random() - 0.5) * 4, 2.5 + Math.random() * 3, backZ * 7 + (Math.random() - 0.5) * 4),
         r.driftTime > 1.0 ? 0x00f0ff : 0xffaa00,
         0.28,
         0.75
       );
+      if (skidThrottle <= 0) addSkidMark(tx, r.pos.y, tz, visualYaw);
     }
   }
 }
@@ -4885,6 +5335,10 @@ function updateFollowCamera(cam, state, r, dt) {
   state.look.lerp(desiredLook, 1 - Math.exp(-12 * dt));
 
   cam.position.copy(state.pos);
+  if (camShake > 0.01) {
+    cam.position.x += (Math.random() - 0.5) * camShake;
+    cam.position.y += (Math.random() - 0.5) * camShake * 0.7;
+  }
   cam.lookAt(state.look);
 
   const targetFov = r.boostTimer > 0 ? 78 : r.miniBoostTimer > 0 ? 69 : 62 + Math.max(0, r.speed / 12);
@@ -5036,14 +5490,38 @@ function onRaceFinish() {
     finishRankTitle.textContent = titles[p1Rank - 1] || `第 ${p1Rank} 名`;
   }
 
-  // Progression Unlock Check: Top 2 unlocks next track!
+  // Progression Unlock, Medals, Coins & Ghost Replay Save!
+  const rankBonus = [50, 30, 20, 10][Math.min(3, bestHumanRank - 1)] || 10;
+  const totalReward = rankBonus + raceCoinsEarned;
+  saveData.coins += totalReward;
+
+  const medalOrder = { '': 0, '🥉': 1, '🥈': 2, '🥇': 3 };
+  const newMedal = bestHumanRank === 1 ? '🥇' : bestHumanRank === 2 ? '🥈' : bestHumanRank === 3 ? '🥉' : '';
+  if ((medalOrder[newMedal] || 0) > (medalOrder[saveData.medals[selectedTrackId] || ''] || 0)) {
+    saveData.medals[selectedTrackId] = newMedal;
+  }
+
+  let savedNewGhost = false;
+  if (playType === '1' && p1.finishTime < (saveData.bestTimes[selectedTrackId] || Infinity)) {
+    saveData.bestTimes[selectedTrackId] = p1.finishTime;
+    if (currentGhostLog.length >= 6) {
+      saveData.ghosts[selectedTrackId] = currentGhostLog;
+      savedNewGhost = true;
+    }
+  }
+
   const curIdx = TRACK_ORDER.indexOf(selectedTrackId);
   let unlockedNext = false;
   if (bestHumanRank <= 2 && curIdx + 1 >= saveData.unlockedCount && curIdx + 1 < TRACK_ORDER.length) {
     saveData.unlockedCount = curIdx + 2;
-    writeSave();
     unlockedNext = true;
-    renderTrackButtons();
+  }
+  writeSave();
+  renderTrackButtons();
+  renderGarageUI();
+
+  if (finishRewardEl) {
+    finishRewardEl.textContent = `+${totalReward} 🪙` + (savedNewGhost ? ' ・ 👻 新幽靈紀錄！' : '');
   }
 
   const hasNextTrack = curIdx + 1 < TRACK_ORDER.length && curIdx + 1 < saveData.unlockedCount;
@@ -5073,17 +5551,52 @@ function onRaceFinish() {
 
 // --- Boot & Main Loop ---
 renderTrackButtons();
+renderGarageUI();
 renderDriverButtons();
 renderKartCards();
 updateLobbyControlsGuide();
 loadTrack(selectedTrackId);
 setupShowcase();
 
+function updateGhostReplay(dt) {
+  if (playType !== '1' || gameState !== 'racing') return;
+  const p1 = humanRacers[0];
+  if (p1 && !p1.finished) {
+    ghostRecordAccum += dt;
+    if (ghostRecordAccum >= 0.14 && currentGhostLog.length < 1800) {
+      ghostRecordAccum = 0;
+      currentGhostLog.push([
+        Math.round(raceTime * 100) / 100,
+        Math.round(p1.pos.x * 10) / 10,
+        Math.round(p1.pos.y * 10) / 10,
+        Math.round(p1.pos.z * 10) / 10,
+        Math.round(p1.yaw * 100) / 100,
+      ]);
+    }
+  }
+  if (ghostKart && ghostPlaybackData && ghostPlaybackData.length >= 2) {
+    let i = 0;
+    while (i < ghostPlaybackData.length - 2 && ghostPlaybackData[i + 1][0] < raceTime) i++;
+    const a = ghostPlaybackData[i];
+    const b = ghostPlaybackData[i + 1];
+    const span = Math.max(0.001, b[0] - a[0]);
+    const f = THREE.MathUtils.clamp((raceTime - a[0]) / span, 0, 1);
+    ghostKart.root.position.set(
+      THREE.MathUtils.lerp(a[1], b[1], f),
+      THREE.MathUtils.lerp(a[2], b[2], f),
+      THREE.MathUtils.lerp(a[3], b[3], f)
+    );
+    ghostKart.root.rotation.y = THREE.MathUtils.lerp(a[4], b[4], f);
+  }
+}
+
 let lastTime = performance.now();
 function animate(now) {
   requestAnimationFrame(animate);
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
+  if (camShake > 0) camShake = Math.max(0, camShake - dt * 1.4);
+  skidThrottle = skidThrottle <= 0 ? 0.05 : skidThrottle - dt;
 
   if (gameState === 'countdown') {
     countdownTimer -= dt;
@@ -5101,6 +5614,17 @@ function animate(now) {
       gameState = 'racing';
       countdownEl.textContent = 'GO!';
       audio.playBeep(880, 0.28, 0.16);
+      audio.startBgm();
+      // PERFECT START boost if holding gas right on GO!
+      for (const h of humanRacers) {
+        if (getPlayerInputState(h.humanIndex).accel) {
+          h.boostTimer = 1.5;
+          h.speed = h.kart.preset.maxSpeed * 0.72;
+          camShake = 0.35;
+          audio.playBoost();
+          showBannerFor(h, '🔥 PERFECT START 完美起跑！', '#ffdd00', 1.35);
+        }
+      }
       setTimeout(() => countdownEl.classList.add('hidden'), 650);
     }
   }
@@ -5108,6 +5632,7 @@ function animate(now) {
   if (gameState === 'racing') {
     raceTime += dt;
     track.update(dt);
+    updateGhostReplay(dt);
   }
 
   for (const h of pHudEls) {
