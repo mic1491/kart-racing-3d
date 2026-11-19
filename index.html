@@ -1706,6 +1706,7 @@ function createLegoKart(presetKey = 'yellow', driverKey = 'racer_red') {
   const bodyGroup = new THREE.Group();
   bodyGroup.position.y = yLift;
   root.add(bodyGroup);
+  const horseLegs = [];
 
   const primaryMat = new THREE.MeshStandardMaterial({ color: preset.primary, roughness: 0.22, metalness: isUfo ? 0.55 : 0.08 });
   const secondaryMat = new THREE.MeshStandardMaterial({ color: preset.secondary, roughness: 0.25, metalness: 0.1 });
@@ -1900,20 +1901,23 @@ function createLegoKart(presetKey = 'yellow', driverKey = 'racer_red') {
       eye.position.set(hx * 1.25, 1.98, -1.12);
       horse.add(ear, eye);
     }
-    // 4 Horse Legs (front legs slightly raised in gallop!)
+    // 4 Horse Legs mounted on hip pivots so they gallop dynamically with speed!
     const legSpecs = [
-      [-0.26, 0.42, -0.48, -0.35],
-      [0.26, 0.42, -0.48, 0.25],
-      [-0.26, 0.42, 0.48, 0.25],
-      [0.26, 0.42, 0.48, -0.25],
+      [-0.26, 0.82, -0.48, 0],
+      [0.26, 0.82, -0.48, Math.PI],
+      [-0.26, 0.82, 0.48, Math.PI],
+      [0.26, 0.82, 0.48, 0],
     ];
-    for (const [lx, ly, lz, rotX] of legSpecs) {
-      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.84, 0.22), horseMat);
-      leg.position.set(lx, ly, lz);
-      leg.rotation.x = rotX;
+    for (const [lx, ly, lz, phase] of legSpecs) {
+      const legPivot = new THREE.Group();
+      legPivot.position.set(lx, ly, lz);
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.82, 0.22), horseMat);
+      leg.position.y = -0.41;
       const hoof = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.16, 0.24), hoofMat);
-      hoof.position.set(lx, 0.08, lz + rotX * 0.2);
-      horse.add(leg, hoof);
+      hoof.position.y = -0.78;
+      legPivot.add(leg, hoof);
+      horse.add(legPivot);
+      horseLegs.push({ pivot: legPivot, phase });
     }
     // Golden harness shafts connecting horse to carriage!
     for (const sx of [-0.52, 0.52]) {
@@ -2205,7 +2209,7 @@ function createLegoKart(presetKey = 'yellow', driverKey = 'racer_red') {
     allWheels.push(wheelSpin);
   }
 
-  return { root, bodyGroup, driverGroup, steeringPivot, frontWheelPivots, allWheels, flames, preset };
+  return { root, bodyGroup, driverGroup, steeringPivot, frontWheelPivots, allWheels, flames, horseLegs, yLift, preset };
 }
 
 // === track.js ===
@@ -2514,6 +2518,7 @@ class RaceTrack {
     this.elapsed = 0;
 
     this._buildCurve();
+    this._buildSkyDome();
     this._buildGround();
     this._buildRoadAndCurbs();
     this._buildBridgePillars();
@@ -2588,6 +2593,50 @@ class RaceTrack {
       if (p.z < this.minZ) this.minZ = p.z;
       if (p.z > this.maxZ) this.maxZ = p.z;
     }
+  }
+
+  _buildSkyDome() {
+    const palettes = {
+      village: ['#1d78d8', '#6ec6ff', '#d8f3ff'],
+      desert: ['#b83b5e', '#f08a5d', '#ffe082'],
+      neon: ['#050714', '#131842', '#3a145c'],
+      ice: ['#4a90c2', '#a8d8f8', '#eef9ff'],
+      beach: ['#0083b0', '#00d2ff', '#d7f9ff'],
+      sakura: ['#d16ba5', '#f8bbd0', '#fff0f5'],
+      volcano: ['#1c0606', '#5e1410', '#d84315'],
+      rainbow: ['#030414', '#160b38', '#3d1566'],
+    };
+    const [topCol, midCol, botCol] = palettes[this.trackId] || palettes.village;
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 0, 256);
+    grad.addColorStop(0.0, topCol);
+    grad.addColorStop(0.45, midCol);
+    grad.addColorStop(0.62, botCol);
+    grad.addColorStop(1.0, botCol);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 64, 256);
+
+    const skyTex = new THREE.CanvasTexture(canvas);
+    skyTex.colorSpace = THREE.SRGBColorSpace;
+    const dome = new THREE.Mesh(
+      new THREE.SphereGeometry(620, 20, 14),
+      new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide, fog: false })
+    );
+    dome.position.set(110, 0, 20);
+    this.group.add(dome);
+
+    // Glowing Sun / Moon orb in the sky
+    const isNight = this.trackId === 'neon' || this.trackId === 'rainbow';
+    const orbColor = this.trackId === 'volcano' ? 0xff5722 : isNight ? 0xe0f2fe : 0xfff59d;
+    const orb = new THREE.Mesh(
+      new THREE.SphereGeometry(28, 16, 12),
+      new THREE.MeshBasicMaterial({ color: orbColor, fog: false })
+    );
+    orb.position.set(280, 220, -340);
+    this.group.add(orb);
   }
 
   _buildGround() {
@@ -3150,25 +3199,38 @@ class RaceTrack {
     stand.rotation.y = Math.atan2(stan.x, stan.z);
     this.group.add(stand);
 
-    // 4. Trackside Lamp Posts
+    // 4. Trackside Lamp Posts & Vibrant Racing Flags for high-speed parallax!
     const lampMat = new THREE.MeshBasicMaterial({ color: 0xfff3b0 });
-    for (let i = 20; i < this.samples - 15; i += 28) {
+    const flagColors = [0xff3b30, 0xffdd00, 0x00e5ff, 0x38ef7d, 0xe91e8c];
+    for (let i = 16; i < this.samples - 12; i += 18) {
       const p = this.points[i];
       const r = this.rights[i];
       const tan = this.tangents[i];
-      const side = (i / 28) % 2 === 0 ? 1 : -1;
+      const side = (i / 18) % 2 === 0 ? 1 : -1;
       const pos = p.clone().addScaledVector(r, side * (this.wallOffset + 2.2));
-      const lamp = new THREE.Group();
-      const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.28, 8.5, 8), poleMat);
-      mast.position.y = 4.25;
-      const arm = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.25, 0.25), poleMat);
-      arm.position.set(-side * 1.2, 8.4, 0);
-      const bulb = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.35, 0.6), lampMat);
-      bulb.position.set(-side * 2.1, 8.15, 0);
-      lamp.add(mast, arm, bulb);
-      lamp.position.set(pos.x, p.y, pos.z);
-      lamp.rotation.y = Math.atan2(tan.x, tan.z);
-      this.group.add(lamp);
+      const group = new THREE.Group();
+      if (i % 36 === 0) {
+        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.28, 8.5, 8), poleMat);
+        mast.position.y = 4.25;
+        const arm = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.25, 0.25), poleMat);
+        arm.position.set(-side * 1.2, 8.4, 0);
+        const bulb = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.35, 0.6), lampMat);
+        bulb.position.set(-side * 2.1, 8.15, 0);
+        group.add(mast, arm, bulb);
+      } else {
+        // Tall colorful racing banner flag
+        const fPole = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 6.2, 6), poleMat);
+        fPole.position.y = 3.1;
+        const fCloth = new THREE.Mesh(
+          new THREE.BoxGeometry(0.12, 2.2, 1.5),
+          new THREE.MeshStandardMaterial({ color: flagColors[(i / 18) % flagColors.length | 0], roughness: 0.4 })
+        );
+        fCloth.position.set(-side * 0.2, 4.9, 0.75);
+        group.add(fPole, fCloth);
+      }
+      group.position.set(pos.x, p.y, pos.z);
+      group.rotation.y = Math.atan2(tan.x, tan.z);
+      this.group.add(group);
     }
   }
 
@@ -4852,10 +4914,17 @@ function createRacer(presetKey, slotIndex, displayName, controlType, humanIndex 
     statusMeshes,
     pos: start.position.clone(),
     velY: 0,
+    hopY: 0,
+    hopVel: 0,
+    squashTimer: 0,
     roadPitch: 0,
     rampCooldown: 0,
     obstacleCooldown: 0,
     yaw: start.yaw,
+    moveYaw: start.yaw,
+    lastRank: slotIndex + 1,
+    overtakeCooldown: 0,
+    gallopPhase: 0,
     speed: 0,
     steerInput: 0,
     isDrifting: false,
@@ -5153,22 +5222,32 @@ function updateHumanControls(r, dt) {
   const rawSteer = (inp.left ? 1 : 0) - (inp.right ? 1 : 0);
   r.steerInput = THREE.MathUtils.lerp(r.steerInput, rawSteer, Math.min(1, dt * 12));
 
-  // KartRider Drift + Mini-Boost + Double Boost (雙噴)!
-  const canDrift = inp.drift && r.speed > 18;
+  // KartRider × Mario Kart Drift Hop + 3-Tier Sparks (Orange -> Blue -> Purple Ultra Boost!)
+  const canDrift = inp.drift && r.speed > 16;
   if (canDrift) {
     if (!r.isDrifting && Math.abs(rawSteer) > 0) {
       r.isDrifting = true;
       r.driftDir = rawSteer > 0 ? 1 : -1;
       r.driftTime = 0;
+      // Crisp physical Hop right as you initiate a drift!
+      if (r.hopY <= 0.02) {
+        r.hopVel = 7.6;
+        audio.playBeep(420, 0.06, 0.07);
+      }
     }
   } else if (r.isDrifting) {
-    if (r.driftTime >= 1.05 && r.speed > 18) {
-      r.miniBoostTimer = 1.35;
+    if (r.driftTime >= 1.55 && r.speed > 16) {
+      r.boostTimer = Math.max(r.boostTimer, 1.85);
+      camShake = Math.max(camShake, 0.42);
+      audio.playBoost();
+      showBannerFor(r, '💜 ULTRA BOOST 終極紫噴！', '#d946ef', 1.3);
+    } else if (r.driftTime >= 0.9 && r.speed > 16) {
+      r.miniBoostTimer = Math.max(r.miniBoostTimer, 1.25);
       camShake = Math.max(camShake, 0.28);
       audio.playBoost();
-      showBannerFor(r, '🔥 DOUBLE BOOST 雙噴連擊！', '#ff9500', 1.1);
-    } else if (r.driftTime >= 0.45 && r.speed > 18) {
-      r.miniBoostTimer = 0.78;
+      showBannerFor(r, '🔥 DOUBLE BOOST 雙噴連擊！', '#00e5ff', 1.1);
+    } else if (r.driftTime >= 0.35 && r.speed > 16) {
+      r.miniBoostTimer = Math.max(r.miniBoostTimer, 0.78);
       audio.playMiniBoost();
       showBannerFor(r, '⚡ 小噴加速！', '#ffdd00', 0.85);
     }
@@ -5180,12 +5259,12 @@ function updateHumanControls(r, dt) {
   const speedFactor = Math.min(1, Math.abs(r.speed) / 14) * (r.speed >= 0 ? 1 : -1);
   if (r.isDrifting) {
     r.driftTime += dt;
-    const grip = Math.min(0.98, preset.driftGrip + upgDrift * 0.008);
+    const grip = Math.min(0.985, preset.driftGrip + upgDrift * 0.008);
     r.speed *= Math.pow(grip, dt);
-    r.yaw += (r.driftDir * 1.65 + r.steerInput * 0.95) * dt * speedFactor;
+    r.yaw += (r.driftDir * 1.72 + r.steerInput * 1.05) * dt * speedFactor;
 
     const driftMult = 1 + upgDrift * 0.15;
-    r.nitroGauge += (34 + Math.min(16, r.driftTime * 10)) * driftMult * dt;
+    r.nitroGauge += (36 + Math.min(18, r.driftTime * 11)) * driftMult * dt;
     if (r.nitroGauge >= 100) {
       if (selectedMode === 'speed') {
         if (r.nitroSlots < 2) {
@@ -5204,10 +5283,10 @@ function updateHumanControls(r, dt) {
       }
     }
   } else {
-    r.yaw += r.steerInput * 2.05 * dt * speedFactor;
+    r.yaw += r.steerInput * 2.15 * dt * speedFactor;
   }
 
-  r.driftVisualYaw = THREE.MathUtils.lerp(r.driftVisualYaw, r.isDrifting ? r.driftDir * 0.36 : 0, Math.min(1, dt * 10));
+  r.driftVisualYaw = THREE.MathUtils.lerp(r.driftVisualYaw, r.isDrifting ? r.driftDir * 0.4 : 0, Math.min(1, dt * 11));
 }
 
 function updateAI(r, dt) {
@@ -5315,8 +5394,28 @@ function updateRacerPhysics(r, dt) {
     r.speed *= Math.pow(0.1, dt);
   }
 
-  const fwdX = -Math.sin(r.yaw);
-  const fwdZ = -Math.cos(r.yaw);
+  // Drift Hop spring & Squash timer
+  if (r.hopY > 0 || r.hopVel > 0) {
+    r.hopVel -= 44 * dt;
+    r.hopY += r.hopVel * dt;
+    if (r.hopY <= 0) {
+      r.hopY = 0;
+      r.hopVel = 0;
+      r.squashTimer = 0.16;
+    }
+  }
+  if (r.squashTimer > 0) r.squashTimer = Math.max(0, r.squashTimer - dt);
+  if (r.overtakeCooldown > 0) r.overtakeCooldown = Math.max(0, r.overtakeCooldown - dt);
+
+  // Real Lateral Drift Inertia: moveYaw lags behind yaw during drift for true sideways slide!
+  let yawDelta = r.yaw - r.moveYaw;
+  while (yawDelta > Math.PI) yawDelta -= Math.PI * 2;
+  while (yawDelta < -Math.PI) yawDelta += Math.PI * 2;
+  const followRate = r.isDrifting ? 4.8 : 13.5;
+  r.moveYaw += yawDelta * Math.min(1, dt * followRate);
+
+  const fwdX = -Math.sin(r.moveYaw);
+  const fwdZ = -Math.cos(r.moveYaw);
   r.pos.x += fwdX * r.speed * dt;
   r.pos.z += fwdZ * r.speed * dt;
 
@@ -5325,14 +5424,23 @@ function updateRacerPhysics(r, dt) {
   r.trackIndex = closest.index;
   r.trackT = closest.t;
 
-  // 3D Elevation + Gravity / Jump Ramp Physics!
+  // 3D Elevation + Gravity / Jump Ramp Physics + Perfect Landing!
   const groundY = closest.point.y;
   if (r.pos.y > groundY + 0.05 || r.velY > 0) {
+    const prevVelY = r.velY;
     r.velY -= 38 * dt;
     r.pos.y += r.velY * dt;
     if (r.pos.y <= groundY) {
       r.pos.y = groundY;
       r.velY = 0;
+      if (prevVelY < -8) {
+        r.squashTimer = 0.24;
+        r.speed += 4.5;
+        if (r.isHuman) {
+          camShake = Math.max(camShake, 0.22);
+          showBannerFor(r, '✨ PERFECT LANDING!', '#38ef7d', 0.85);
+        }
+      }
     }
   } else {
     r.pos.y = THREE.MathUtils.lerp(r.pos.y, groundY, Math.min(1, dt * 18));
@@ -5347,16 +5455,24 @@ function updateRacerPhysics(r, dt) {
 
   const halfRoad = track.roadWidth / 2;
   if (Math.abs(closest.lateralOffset) > halfRoad + 1.0 && r.boostTimer <= 0 && r.pos.y <= groundY + 0.3) {
-    r.speed *= Math.pow(0.42, dt);
+    r.speed *= Math.pow(0.55, dt);
   }
 
+  // Wall-Slide Assist: smoothly guide nose along track tangent & keep 90% speed (never get stuck!)
   const maxLat = track.wallOffset - 1.3;
   if (Math.abs(closest.lateralOffset) > maxLat) {
     const sign = Math.sign(closest.lateralOffset);
     const clampedPos = closest.point.clone().addScaledVector(closest.right, sign * maxLat);
     r.pos.x = clampedPos.x;
     r.pos.z = clampedPos.z;
-    r.speed *= 0.78;
+    const trackYaw = Math.atan2(-closest.tangent.x, -closest.tangent.z);
+    let alignDiff = trackYaw - r.yaw;
+    while (alignDiff > Math.PI) alignDiff -= Math.PI * 2;
+    while (alignDiff < -Math.PI) alignDiff += Math.PI * 2;
+    r.yaw += alignDiff * 0.28;
+    r.moveYaw = r.yaw;
+    r.speed *= 0.91;
+    if (r.isHuman) camShake = Math.max(camShake, 0.14);
   }
 
   // Boost pads
@@ -5483,9 +5599,27 @@ function updateRacerPhysics(r, dt) {
 
 function applyKartVisuals(r, dt) {
   const floatY = r.waterTrapTimer > 0 ? 1.1 + Math.sin(raceTime * 8) * 0.25 : 0;
+  const ufoBob = r.kart.preset.bodyStyle === 'ufo' ? Math.sin(raceTime * 5 + r.pos.x * 0.1) * 0.16 : 0;
   const spinExtra = r.spinTimer > 0 ? r.spinTimer * Math.PI * 4.5 : 0;
-  r.kart.root.position.set(r.pos.x, r.pos.y + floatY, r.pos.z);
+  r.kart.root.position.set(r.pos.x, r.pos.y + (r.hopY || 0) + floatY + ufoBob, r.pos.z);
   r.kart.root.rotation.y = r.yaw + r.driftVisualYaw + spinExtra;
+
+  // Springy Squash & Stretch on hop/jump landing!
+  if (r.squashTimer > 0) {
+    const s = Math.sin((r.squashTimer / 0.24) * Math.PI) * 0.14;
+    r.kart.bodyGroup.scale.set(1 + s, 1 - s, 1 + s * 0.5);
+  } else {
+    r.kart.bodyGroup.scale.set(1, 1, 1);
+  }
+
+  // Animated galloping horse legs on the Royal Carriage!
+  if (r.kart.horseLegs && r.kart.horseLegs.length > 0) {
+    r.gallopPhase += dt * (2.5 + Math.abs(r.speed) * 0.36);
+    const amp = Math.min(0.65, 0.1 + Math.abs(r.speed) * 0.015);
+    for (const leg of r.kart.horseLegs) {
+      leg.pivot.rotation.x = Math.sin(r.gallopPhase + leg.phase) * amp;
+    }
+  }
 
   r.statusMeshes.shieldMesh.visible = r.shieldTimer > 0;
   if (r.shieldTimer > 0) r.statusMeshes.shieldMesh.scale.setScalar(1 + Math.sin(raceTime * 10) * 0.05);
@@ -5520,12 +5654,15 @@ function applyKartVisuals(r, dt) {
     for (const side of [-1.0, 1.0]) {
       const tx = r.pos.x + rightX * side + backX * 1.15;
       const tz = r.pos.z + rightZ * side + backZ * 1.15;
+      // 3-Tier Drift Sparks: Orange (Mini) -> Cyan (Double) -> Purple (Ultra)!
+      const sparkColor = r.driftTime >= 1.55 ? 0xd946ef : r.driftTime >= 0.9 ? 0x00f0ff : 0xffaa00;
+      const sparkScale = r.driftTime >= 1.55 ? 1.15 : r.driftTime >= 0.9 ? 0.95 : 0.75;
       spawnParticle(
         new THREE.Vector3(tx, r.pos.y + 0.24, tz),
         new THREE.Vector3(backX * 7 + (Math.random() - 0.5) * 4, 2.5 + Math.random() * 3, backZ * 7 + (Math.random() - 0.5) * 4),
-        r.driftTime > 1.0 ? 0x00f0ff : 0xffaa00,
+        sparkColor,
         0.28,
-        0.75
+        sparkScale
       );
       if (skidThrottle <= 0) addSkidMark(tx, r.pos.y, tz, visualYaw);
     }
@@ -5560,17 +5697,18 @@ const camStates = [
 ];
 
 function updateFollowCamera(cam, state, r, dt) {
-  const backX = Math.sin(r.yaw);
-  const backZ = Math.cos(r.yaw);
+  const backX = Math.sin(r.moveYaw || r.yaw);
+  const backZ = Math.cos(r.moveYaw || r.yaw);
   const isBoost = r.boostTimer > 0;
-  const camDist = isBoost ? 10.6 : 9.2;
-  const camHeight = isBoost ? 4.4 : 4.8;
+  // Low, tight, high-speed arcade chase camera!
+  const camDist = isBoost ? 8.4 : 7.3;
+  const camHeight = isBoost ? 3.15 : 3.45;
 
   const desiredPos = new THREE.Vector3(r.pos.x + backX * camDist, r.pos.y + camHeight, r.pos.z + backZ * camDist);
-  const desiredLook = new THREE.Vector3(r.pos.x - backX * 8, r.pos.y + 1.6, r.pos.z - backZ * 8);
+  const desiredLook = new THREE.Vector3(r.pos.x - backX * 11, r.pos.y + 1.4, r.pos.z - backZ * 11);
 
-  state.pos.lerp(desiredPos, 1 - Math.exp(-8.5 * dt));
-  state.look.lerp(desiredLook, 1 - Math.exp(-12 * dt));
+  state.pos.lerp(desiredPos, 1 - Math.exp(-10 * dt));
+  state.look.lerp(desiredLook, 1 - Math.exp(-14 * dt));
 
   cam.position.copy(state.pos);
   if (camShake > 0.01) {
@@ -5579,7 +5717,12 @@ function updateFollowCamera(cam, state, r, dt) {
   }
   cam.lookAt(state.look);
 
-  const targetFov = r.boostTimer > 0 ? 78 : r.miniBoostTimer > 0 ? 69 : 62 + Math.max(0, r.speed / 12);
+  // Subtle camera banking into drifts & turns!
+  const targetBank = -(r.steerInput * 0.032 + (r.driftVisualYaw || 0) * 0.065);
+  state.bank = THREE.MathUtils.lerp(state.bank || 0, targetBank, Math.min(1, dt * 7));
+  cam.rotation.z += state.bank;
+
+  const targetFov = r.boostTimer > 0 ? 82 : r.miniBoostTimer > 0 ? 73 : 65 + Math.max(0, r.speed / 10);
   cam.fov = THREE.MathUtils.lerp(cam.fov, targetFov, Math.min(1, dt * 6));
   cam.updateProjectionMatrix();
 }
@@ -5633,6 +5776,15 @@ function updateHUD() {
   humanRacers.forEach((r, idx) => {
     const h = pHudEls[idx];
     const rank = sorted.indexOf(r) + 1;
+    // Overtake bonus!
+    if (gameState === 'racing' && raceTime > 2.5 && rank < r.lastRank && r.overtakeCooldown <= 0) {
+      r.overtakeCooldown = 2.0;
+      raceCoinsEarned += 5;
+      hudCoinsVal.textContent = raceCoinsEarned;
+      audio.playCoin();
+      showBannerFor(r, '⚡ OVERTAKE! 超車 +5🪙', '#38ef7d', 1.0);
+    }
+    r.lastRank = rank;
     h.rank.textContent = rank;
     h.suffix.textContent = suffixes[rank - 1] || 'th';
     h.lap.textContent = Math.min(r.lap, TOTAL_LAPS);
