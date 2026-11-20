@@ -3845,7 +3845,7 @@ class ItemManager {
           if (other.shieldTimer > 0) other.shieldTimer = 0;
           if (other.isHuman) this.showBannerFor(other, '🛡️ 免疫時間凍結！', '#38ef7d', 1.1);
         } else {
-          other.freezeTimer = 3.5;
+          other.freezeTimer = racer.isHuman ? 3.5 : 1.6;
           other.speed = 0;
           if (other.isHuman) this.showBannerFor(other, '❄️ 時間被凍結了！', '#7dd3fc', 1.5);
         }
@@ -5667,15 +5667,16 @@ function updateAI(r, dt) {
   const leadHuman = humanRacers[0];
   if (leadHuman && !r.finished) {
     const gap = leadHuman.totalProgress - r.totalProgress;
-    if (gap > 0.14) rubber = 1.07;
-    else if (gap < -0.15) rubber = 0.91;
+    if (gap > 0.08) rubber = 1.14;
+    else if (gap > 0.03) rubber = 1.06;
+    else if (gap < -0.15) rubber = 0.94;
   }
 
   let targetSpeed = preset.maxSpeed * r.aiSkill * rubber;
-  if (r.devilTimer > 0 || r.squidTimer > 0) targetSpeed *= 0.72;
-  if (sharpTurn) targetSpeed *= 0.86;
-  if (r.boostTimer > 0) targetSpeed += 18;
-  r.speed = THREE.MathUtils.lerp(r.speed, targetSpeed, Math.min(1, dt * 2.2));
+  if (r.devilTimer > 0 || r.squidTimer > 0) targetSpeed *= 0.8;
+  if (sharpTurn) targetSpeed *= 0.88;
+  if (r.boostTimer > 0) targetSpeed += 20;
+  r.speed = THREE.MathUtils.lerp(r.speed, targetSpeed, Math.min(1, dt * 4.2));
 }
 
 function updateRacerPhysics(r, dt) {
@@ -6472,6 +6473,10 @@ function animate(now) {
       countdownEl.textContent = 'GO!';
       audio.playBeep(880, 0.28, 0.16);
       audio.startBgm();
+      // Give AI racers a brisk launch on GO! so the pack stays competitive right away
+      for (const r of racers) {
+        if (r.controlType === 'ai') r.speed = r.kart.preset.maxSpeed * 0.55;
+      }
       // PERFECT START boost if holding gas right on GO!
       for (const h of humanRacers) {
         if (getPlayerInputState(h.humanIndex).accel) {
