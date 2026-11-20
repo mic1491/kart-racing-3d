@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>跑跑積木卡丁車 3D 豪華版 | KartRider LEGO 3D</title>
   <style>
 * {
@@ -17,6 +17,7 @@
 html, body {
   width: 100%;
   height: 100%;
+  height: 100dvh;
   overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
   background: #0e1628;
@@ -27,6 +28,7 @@ html, body {
   position: relative;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -71,9 +73,11 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 16px 18px;
+  padding: 12px 12px max(22px, env(safe-area-inset-bottom, 22px));
   background: linear-gradient(180deg, rgba(10, 18, 38, 0.55) 0%, rgba(10, 18, 38, 0.02) 34%, rgba(10, 18, 38, 0.78) 100%);
   z-index: 20;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 #finish-screen {
@@ -669,9 +673,16 @@ kbd {
 .finish-buttons { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
 
 @media (max-width: 640px) {
-  .tab-btn { font-size: 11px; padding: 10px 4px; }
-  .upgrade-grid { grid-template-columns: 1fr; }
-  .lobby-footer { justify-content: center; }
+  .game-title { font-size: 22px; }
+  .setup-summary { font-size: 11px; padding: 4px 10px; gap: 5px; }
+  .tab-btn { font-size: 11px; padding: 9px 3px; }
+  .tab-body { padding: 10px 12px; min-height: 108px; max-height: 27dvh; }
+  .play-grid { gap: 10px 14px; }
+  .pill-btn { padding: 6px 11px; font-size: 12px; }
+  .upgrade-grid { grid-template-columns: 1fr; gap: 8px; }
+  .upgrade-card { padding: 10px 8px; }
+  .lobby-footer { padding: 10px 12px; justify-content: center; }
+  #start-btn { width: 100%; padding: 12px 20px; font-size: 17px; }
   .controls-guide { display: none; }
 }
 
