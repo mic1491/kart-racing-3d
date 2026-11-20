@@ -736,6 +736,39 @@ kbd {
   .controls-guide { display: none; }
 }
 
+
+.mod-loadout-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+.mod-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.mod-row .group-label {
+  min-width: 44px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fde047;
+}
+.gamepad-badge {
+  background: rgba(56, 239, 125, 0.22);
+  border: 1px solid #38ef7d;
+  color: #86efac;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
 </style>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js" defer></script>
 </head>
@@ -788,6 +821,8 @@ kbd {
                 <div class="pill-row" id="mode-selector">
                   <button class="pill-btn selected" data-mode="item">🎁 道具賽</button>
                   <button class="pill-btn" data-mode="speed">⚡ 競速賽</button>
+                  <button class="pill-btn" data-mode="battle">🎈 氣球大亂鬥</button>
+                  <button class="pill-btn" data-mode="cup">🏆 冠軍錦標賽</button>
                 </div>
               </div>
 
@@ -830,9 +865,23 @@ kbd {
             <div class="kart-grid" id="kart-grid"></div>
           </div>
 
-          <!-- Tab 4: Garage Upgrades -->
+          <!-- Tab 4: Per-Car 3D LEGO Mod Loadout + Garage Upgrades -->
           <div class="tab-pane" id="tab-upgrade">
-            <div class="pane-hint">在賽道吃金幣或完賽賺獎金，永久強化你的愛車性能！</div>
+            <div class="pane-hint">🧱 每台車自由配裝 3D 樂高零件（目前配裝：<strong id="mod-kart-name">閃電金星 #27</strong>），改裝立即顯示在車上！</div>
+            <div id="mod-loadout-panel" class="mod-loadout-panel">
+              <div class="mod-row">
+                <span class="group-label">輪胎：</span>
+                <div class="pill-row" id="mod-wheel-row"></div>
+              </div>
+              <div class="mod-row">
+                <span class="group-label">尾翼：</span>
+                <div class="pill-row" id="mod-wing-row"></div>
+              </div>
+              <div class="mod-row">
+                <span class="group-label">車頭：</span>
+                <div class="pill-row" id="mod-bumper-row"></div>
+              </div>
+            </div>
             <div class="upgrade-grid">
               <button class="upgrade-card upgrade-btn" data-upg="engine">
                 <div class="upg-title">🔥 引擎極速</div>
@@ -854,8 +903,10 @@ kbd {
         <div class="lobby-footer">
           <div class="controls-guide" id="controls-guide">
             <span><kbd>WASD</kbd>/<kbd>方向鍵</kbd> 駕駛</span>
-            <span><kbd>Shift</kbd> 跳躍甩尾</span>
+            <span><kbd>Shift</kbd> 甩尾/空中360°特技</span>
             <span><kbd>Space</kbd> 道具/N2O</span>
+            <span><kbd>H</kbd> 喇叭表情</span>
+            <span id="gamepad-status" class="gamepad-badge hidden">🎮 已連接手把</span>
           </div>
           <button id="start-btn" class="primary-btn">開始比賽 🏁</button>
         </div>
@@ -878,6 +929,7 @@ kbd {
           <span class="hud-coins">🪙 <span id="hud-coins-val">0</span></span>
         </div>
         <div class="hud-actions">
+          <button id="horn-btn" title="喇叭與表情氣泡 (H)">📢</button>
           <button id="pause-btn" title="暫停 (P / Esc)">⏸️</button>
           <button id="touch-toggle-btn" title="切換觸控按鍵">📱</button>
           <button id="mute-btn" title="音效開關">🔊</button>
@@ -1318,6 +1370,59 @@ class SoundEngine {
     osc.stop(now + 0.34);
   }
 
+  playHorn() {
+    if (!this.initialized || this.muted) return;
+    const now = this.ctx.currentTime;
+    // Playful dual-tone kart horn (beep-beep!)
+    [0, 0.16].forEach((offset) => {
+      [440, 554.37].forEach((freq) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, now + offset);
+        gain.gain.setValueAtTime(0.06, now + offset);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.12);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now + offset);
+        osc.stop(now + offset + 0.13);
+      });
+    });
+  }
+
+  playBalloonPop() {
+    if (!this.initialized || this.muted) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(620, now);
+    osc.frequency.exponentialRampToValueAtTime(95, now + 0.11);
+    gain.gain.setValueAtTime(0.22, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.13);
+  }
+
+  playTrick() {
+    if (!this.initialized || this.muted) return;
+    const now = this.ctx.currentTime;
+    [523.25, 659.25, 783.99, 1046.5].forEach((f, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(f, now + idx * 0.05);
+      gain.gain.setValueAtTime(0.11, now + idx * 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.18);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now + idx * 0.05);
+      osc.stop(now + idx * 0.05 + 0.2);
+    });
+  }
+
   playSplash() {
     if (!this.initialized || this.muted) return;
     const now = this.ctx.currentTime;
@@ -1576,9 +1681,91 @@ function createNameplateSprite(displayName, badgeColor = '#ffdd00', isHuman = fa
   return sprite;
 }
 
-function createLegoKart(presetKey = 'yellow', driverKey = 'racer_red') {
+const MOD_CATALOG = {
+  wheel: [
+    { id: 'std', name: '標準胎', icon: '⚫', desc: '均衡操控' },
+    { id: 'slick', name: '極速光頭胎', icon: '🏁', desc: '極速+4・金輪框' },
+    { id: 'offroad', name: '越野巨輪', icon: '🛞', desc: '超大胎・草地不減速' },
+  ],
+  wing: [
+    { id: 'none', name: '無尾翼', icon: '➖', desc: '輕巧車身' },
+    { id: 'gt', name: '巨型 GT 尾翼', icon: '🏎️', desc: '甩尾集氣 +22%' },
+    { id: 'glider', name: '天空滑翔翼', icon: '🪂', desc: '空中滑翔飛超遠！' },
+  ],
+  bumper: [
+    { id: 'none', name: '標準車頭', icon: '➖', desc: '原廠造型' },
+    { id: 'spike', name: '尖刺裝甲桿', icon: '🛡️', desc: '撞飛對手！' },
+    { id: 'magnet', name: '吸金磁鐵', icon: '🧲', desc: '自動吸取附近金幣' },
+  ],
+};
+
+function createEmoteBubbleSprite(text) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 96;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
+  ctx.beginPath();
+  ctx.roundRect(10, 8, 236, 66, 22);
+  ctx.fill();
+  ctx.strokeStyle = '#ff6b00';
+  ctx.lineWidth = 5;
+  ctx.stroke();
+  // Little speech tail
+  ctx.beginPath();
+  ctx.moveTo(114, 74);
+  ctx.lineTo(128, 92);
+  ctx.lineTo(142, 74);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.font = '900 32px "Noto Sans TC", Arial, sans-serif';
+  ctx.fillStyle = '#0f172a';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, 128, 42);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(4.6, 1.75, 1);
+  sprite.position.set(0, 4.45, 0);
+  return sprite;
+}
+
+function attachBattleBalloons(kartRoot) {
+  const colors = [0xff2a55, 0x38bdf8, 0xfacc15];
+  const offsets = [
+    { x: -0.68, y: 2.35, z: 1.55 },
+    { x: 0.0, y: 2.65, z: 1.72 },
+    { x: 0.68, y: 2.35, z: 1.55 },
+  ];
+  const stringMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const balloons = [];
+  for (let i = 0; i < 3; i++) {
+    const g = new THREE.Group();
+    const bulb = new THREE.Mesh(
+      new THREE.SphereGeometry(0.42, 12, 10),
+      new THREE.MeshStandardMaterial({ color: colors[i], roughness: 0.2, metalness: 0.1 })
+    );
+    bulb.scale.set(0.95, 1.15, 0.95);
+    const knot = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.14, 6), new THREE.MeshBasicMaterial({ color: colors[i] }));
+    knot.position.y = -0.5;
+    const str = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.1, 5), stringMat);
+    str.position.y = -1.05;
+    g.add(bulb, knot, str);
+    g.position.set(offsets[i].x, offsets[i].y, offsets[i].z);
+    kartRoot.add(g);
+    balloons.push({ mesh: g, baseY: offsets[i].y, color: colors[i], phase: i * 1.9 });
+  }
+  return balloons;
+}
+
+function createLegoKart(presetKey = 'yellow', driverKey = 'racer_red', mods = null) {
   const preset = KART_PRESETS[presetKey] || KART_PRESETS.yellow;
   const driver = DRIVER_PRESETS[driverKey] || DRIVER_PRESETS.racer_red;
+  const activeMods = { wheel: 'std', wing: 'none', bumper: 'none', ...(mods || {}) };
   const style = preset.bodyStyle || 'kart';
   const isMonster = style === 'monster';
   const isUfo = style === 'ufo';
@@ -2056,20 +2243,93 @@ function createLegoKart(presetKey = 'yellow', driverKey = 'racer_red') {
     }
   }
 
-  // Wheels (oversized for monster truck, wider for F1!)
-  const tireMat = new THREE.MeshStandardMaterial({ color: 0x1e2024, roughness: 0.85 });
-  const rimMat = new THREE.MeshStandardMaterial({ color: 0x4b5563, roughness: 0.4, metalness: 0.4 });
+  // Wheels (oversized for monster truck or offroad mod, gold rims for slick mod!)
+  const tireMat = new THREE.MeshStandardMaterial({ color: 0x1e2024, roughness: activeMods.wheel === 'slick' ? 0.35 : 0.85 });
+  const rimMat = new THREE.MeshStandardMaterial({
+    color: activeMods.wheel === 'slick' ? 0xfbbf24 : activeMods.wheel === 'offroad' ? 0xf97316 : 0x4b5563,
+    roughness: 0.3,
+    metalness: 0.55,
+  });
   const hubMat = new THREE.MeshStandardMaterial({ color: 0xd1d5db, roughness: 0.3, metalness: 0.6 });
 
   const frontWheelPivots = [];
   const allWheels = [];
-  const wScale = isMonster ? 1.55 : 1.0;
+  const modWheelMul = activeMods.wheel === 'offroad' ? 1.28 : 1.0;
+  const wScale = (isMonster ? 1.55 : 1.0) * modWheelMul;
   const wheelConfigs = [
-    { x: -1.18 * (isMonster ? 1.12 : 1), y: 0.44 * wScale, z: -0.98, radius: 0.44 * wScale, width: 0.42 * (isMonster ? 1.35 : 1), front: true },
-    { x: 1.18 * (isMonster ? 1.12 : 1), y: 0.44 * wScale, z: -0.98, radius: 0.44 * wScale, width: 0.42 * (isMonster ? 1.35 : 1), front: true },
-    { x: -1.22 * (isMonster ? 1.12 : 1), y: 0.48 * wScale, z: 0.94, radius: 0.48 * wScale, width: 0.5 * (isMonster ? 1.35 : 1), front: false },
-    { x: 1.22 * (isMonster ? 1.12 : 1), y: 0.48 * wScale, z: 0.94, radius: 0.48 * wScale, width: 0.5 * (isMonster ? 1.35 : 1), front: false },
+    { x: -1.18 * (isMonster ? 1.12 : 1), y: 0.44 * wScale, z: -0.98, radius: 0.44 * wScale, width: 0.42 * (isMonster ? 1.35 : 1) * (activeMods.wheel === 'slick' ? 1.18 : 1), front: true },
+    { x: 1.18 * (isMonster ? 1.12 : 1), y: 0.44 * wScale, z: -0.98, radius: 0.44 * wScale, width: 0.42 * (isMonster ? 1.35 : 1) * (activeMods.wheel === 'slick' ? 1.18 : 1), front: true },
+    { x: -1.22 * (isMonster ? 1.12 : 1), y: 0.48 * wScale, z: 0.94, radius: 0.48 * wScale, width: 0.5 * (isMonster ? 1.35 : 1) * (activeMods.wheel === 'slick' ? 1.24 : 1), front: false },
+    { x: 1.22 * (isMonster ? 1.12 : 1), y: 0.48 * wScale, z: 0.94, radius: 0.48 * wScale, width: 0.5 * (isMonster ? 1.35 : 1) * (activeMods.wheel === 'slick' ? 1.24 : 1), front: false },
   ];
+
+  // Visible 3D LEGO Mod Attachments (Wing / Glider & Front Bumper!)
+  let gliderMesh = null;
+  if (activeMods.wing === 'gt') {
+    const gtGroup = new THREE.Group();
+    const strutMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.4 });
+    const bladeMat = new THREE.MeshStandardMaterial({ color: 0x00e5ff, emissive: 0x0284c7, emissiveIntensity: 0.35, roughness: 0.2 });
+    for (const sx of [-0.62, 0.62]) {
+      const strut = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.85, 0.24), strutMat);
+      strut.position.set(sx, 1.38, 1.48);
+      gtGroup.add(strut);
+      const endPlate = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.48, 0.68), bladeMat);
+      endPlate.position.set(sx * 1.9, 1.78, 1.56);
+      gtGroup.add(endPlate);
+    }
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.12, 0.52), strutMat);
+    blade.position.set(0, 1.78, 1.56);
+    blade.rotation.x = 0.16;
+    gtGroup.add(blade);
+    bodyGroup.add(gtGroup);
+  } else if (activeMods.wing === 'glider') {
+    gliderMesh = new THREE.Group();
+    const poleMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.5, roughness: 0.3 });
+    const sailMat = new THREE.MeshStandardMaterial({ color: 0xffdd00, emissive: 0xf59e0b, emissiveIntensity: 0.25, roughness: 0.3, side: THREE.DoubleSide });
+    const trimMat = new THREE.MeshStandardMaterial({ color: 0xff2a9d, roughness: 0.3 });
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.15, 8), poleMat);
+    mast.position.set(0, 1.72, 0.55);
+    const leftWing = new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.08, 1.1), sailMat);
+    leftWing.position.set(-0.92, 2.25, 0.55);
+    leftWing.rotation.z = 0.14;
+    const rightWing = new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.08, 1.1), sailMat);
+    rightWing.position.set(0.92, 2.25, 0.55);
+    rightWing.rotation.z = -0.14;
+    const centerBar = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.12, 0.18), trimMat);
+    centerBar.position.set(0, 2.24, 0.05);
+    gliderMesh.add(mast, leftWing, rightWing, centerBar);
+    bodyGroup.add(gliderMesh);
+  }
+
+  if (activeMods.bumper === 'spike') {
+    const spikeGroup = new THREE.Group();
+    const barMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.65, roughness: 0.3 });
+    const spikeMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.75, roughness: 0.2 });
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(2.15, 0.34, 0.32), barMat);
+    bar.position.set(0, 0.58, -1.78);
+    spikeGroup.add(bar);
+    for (const sx of [-0.78, -0.26, 0.26, 0.78]) {
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.62, 6), spikeMat);
+      cone.rotation.x = -Math.PI / 2;
+      cone.position.set(sx, 0.58, -2.18);
+      spikeGroup.add(cone);
+    }
+    bodyGroup.add(spikeGroup);
+  } else if (activeMods.bumper === 'magnet') {
+    const magGroup = new THREE.Group();
+    const redMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.25 });
+    const tipMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.7, roughness: 0.2 });
+    const arc = new THREE.Mesh(new THREE.TorusGeometry(0.45, 0.14, 8, 16, Math.PI), redMat);
+    arc.rotation.x = Math.PI / 2;
+    arc.position.set(0, 0.95, -1.45);
+    for (const mx of [-0.45, 0.45]) {
+      const tip = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.26, 0.32), tipMat);
+      tip.position.set(mx, 0.95, -1.85);
+      magGroup.add(tip);
+    }
+    magGroup.add(arc);
+    bodyGroup.add(magGroup);
+  }
 
   for (const cfg of (isUfo ? [] : wheelConfigs)) {
     const pivot = new THREE.Group();
@@ -2091,7 +2351,7 @@ function createLegoKart(presetKey = 'yellow', driverKey = 'racer_red') {
     allWheels.push(wheelSpin);
   }
 
-  return { root, bodyGroup, driverGroup, steeringPivot, frontWheelPivots, allWheels, flames, horseLegs, yLift, preset };
+  return { root, bodyGroup, driverGroup, steeringPivot, frontWheelPivots, allWheels, flames, horseLegs, yLift, preset, mods: activeMods, gliderMesh };
 }
 
 
@@ -2134,6 +2394,7 @@ const TRACK_CONFIGS = {
     itemRowTs: [0.16, 0.43, 0.65, 0.86],
     obstacleTs: [0.5],
     dinoTs: [0.27],
+    trainTs: [0.62],
     tunnelRange: [0.72, 0.82],
     shortcut: [0.36, 0.48],
   },
@@ -2171,6 +2432,7 @@ const TRACK_CONFIGS = {
     itemRowTs: [0.14, 0.36, 0.62, 0.84],
     obstacleTs: [0.31, 0.74],
     dinoTs: [0.54],
+    boulderTs: [0.39],
     tunnelRange: [0.76, 0.85],
     shortcut: [0.32, 0.45],
   },
@@ -2423,6 +2685,7 @@ const TRACK_CONFIGS = {
     rampTs: [0.2, 0.44, 0.68, 0.85],
     itemRowTs: [0.15, 0.38, 0.61, 0.82],
     obstacleTs: [0.34, 0.72],
+    fanTs: [0.28, 0.66],
     tunnelRange: [0.46, 0.54],
     shortcut: [0.23, 0.37],
   },
@@ -2459,15 +2722,18 @@ const TRACK_CONFIGS = {
     itemRowTs: [0.13, 0.37, 0.62, 0.86],
     obstacleTs: [0.4],
     dinoTs: [0.18, 0.48, 0.78],
+    boulderTs: [0.63],
     tunnelRange: [0.68, 0.75],
     shortcut: [0.26, 0.39],
   },
 };
 
 class RaceTrack {
-  constructor(scene, trackId = 'village') {
+  constructor(scene, trackId = 'village', isBattleArena = false) {
     this.scene = scene;
     this.trackId = trackId;
+    this.isBattleArena = isBattleArena;
+    this.arenaRadius = 78;
     this.config = TRACK_CONFIGS[trackId] || TRACK_CONFIGS.village;
     this.group = new THREE.Group();
     this.scene.add(this.group);
@@ -2481,10 +2747,19 @@ class RaceTrack {
     this.shortcuts = [];
     this.obstacles = [];
     this.dinos = [];
+    this.trains = [];
+    this.boulders = [];
+    this.fans = [];
     this.coins = [];
     this.buffOrbs = [];
     this.itemBoxAnchors = [];
     this.elapsed = 0;
+
+    if (this.isBattleArena) {
+      this._buildSkyDome();
+      this._buildBattleArena();
+      return;
+    }
 
     this._buildCurve();
     this._buildSkyDome();
@@ -2497,6 +2772,7 @@ class RaceTrack {
     this._buildSkyShortcut();
     this._buildMovingObstacles();
     this._buildStompingDinos();
+    this._buildDynamicHazards();
     this._buildCoins();
     this._buildItemBoxAnchors();
     this._buildRichTrackDetails();
@@ -2555,6 +2831,33 @@ class RaceTrack {
       d.warningRing.scale.set(ringScale, ringScale, 1);
       d.warningRing.material.color.setHex(d.stompActive ? 0xff1744 : 0xfacc15);
       d.warningRing.material.opacity = d.stompActive ? 0.92 : 0.55;
+    }
+    for (const tr of this.trains) {
+      // Express train zooms across the road every ~7.5s!
+      const cyc = (this.elapsed * 0.14 + tr.phase) % 1;
+      let offset = 75;
+      if (cyc < 0.36) {
+        const p = cyc / 0.36;
+        offset = -52 + p * 104;
+        tr.active = true;
+      } else {
+        tr.active = false;
+      }
+      const pos = tr.center.clone().addScaledVector(tr.right, offset);
+      tr.pos.copy(pos);
+      tr.mesh.visible = tr.active;
+      tr.mesh.position.set(pos.x, pos.y + 1.8, pos.z);
+    }
+    for (const b of this.boulders) {
+      const offset = Math.sin(this.elapsed * b.speed + b.phase) * b.range;
+      const pos = b.center.clone().addScaledVector(b.right, offset);
+      b.pos.copy(pos);
+      b.mesh.position.set(pos.x, pos.y + 2.1, pos.z);
+      b.mesh.rotation.x += dt * 3.5;
+      b.mesh.rotation.z -= Math.cos(this.elapsed * b.speed + b.phase) * dt * 4.5;
+    }
+    for (const f of this.fans) {
+      f.blades.rotation.z += dt * 14;
     }
     for (const c of this.coins) {
       if (c.respawn > 0) {
@@ -3427,6 +3730,210 @@ class RaceTrack {
     else this._buildNeonScenery();
   }
 
+  _buildDynamicHazards() {
+    // 1. 🚂 Express Train Crossing (default on village/neon/sakura if configured)
+    const trainTs = this.config.trainTs || (this.trackId === 'neon' || this.trackId === 'sakura' ? [0.58] : []);
+    trainTs.forEach((t, idx) => {
+      const i = Math.floor(t * this.samples) % this.samples;
+      const p = this.points[i];
+      const r = this.rights[i];
+      const trainGroup = new THREE.Group();
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.3 });
+      const stripeMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.3 });
+      const winMat = new THREE.MeshBasicMaterial({ color: 0xbae6fd });
+      const headMat = new THREE.MeshBasicMaterial({ color: 0xfff8b0 });
+
+      for (let c = -1; c <= 1; c++) {
+        const car = new THREE.Mesh(new THREE.BoxGeometry(7.6, 3.4, 3.6), c === 1 ? bodyMat : new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.35 }));
+        car.position.set(c * 8.4, 0.2, 0);
+        car.castShadow = true;
+        const stripe = new THREE.Mesh(new THREE.BoxGeometry(7.7, 0.45, 3.68), stripeMat);
+        stripe.position.set(c * 8.4, -0.3, 0);
+        const win = new THREE.Mesh(new THREE.BoxGeometry(5.6, 1.0, 3.72), winMat);
+        win.position.set(c * 8.4, 0.8, 0);
+        trainGroup.add(car, stripe, win);
+      }
+      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.65, 8, 8), headMat);
+      lamp.position.set(12.4, 0.4, 0);
+      trainGroup.add(lamp);
+
+      trainGroup.rotation.y = Math.atan2(-r.z, r.x);
+      this.group.add(trainGroup);
+
+      // Red/white railroad crossing posts on both sides of the track
+      const postMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+      const redMat = new THREE.MeshBasicMaterial({ color: 0xff1744 });
+      for (const side of [-1, 1]) {
+        const postPos = p.clone().addScaledVector(r, side * (this.roadWidth / 2 + 2.5));
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 6.2, 8), postMat);
+        pole.position.set(postPos.x, p.y + 3.1, postPos.z);
+        const warn = new THREE.Mesh(new THREE.SphereGeometry(0.55, 8, 8), redMat);
+        warn.position.set(postPos.x, p.y + 6.3, postPos.z);
+        this.group.add(pole, warn);
+      }
+
+      this.trains.push({
+        mesh: trainGroup,
+        center: p.clone(),
+        right: r.clone(),
+        pos: p.clone(),
+        phase: idx * 0.45,
+        active: false,
+      });
+    });
+
+    // 2. 🪨 Giant Rolling Boulders (desert / volcano / dino)
+    const boulderTs = this.config.boulderTs || (this.trackId === 'volcano' ? [0.34, 0.72] : []);
+    const rockMat = new THREE.MeshStandardMaterial({ color: 0x78716c, roughness: 0.92 });
+    boulderTs.forEach((t, idx) => {
+      const i = Math.floor(t * this.samples) % this.samples;
+      const p = this.points[i];
+      const r = this.rights[i];
+      const mesh = new THREE.Mesh(new THREE.DodecahedronGeometry(2.35, 0), rockMat);
+      mesh.castShadow = true;
+      mesh.position.set(p.x, p.y + 2.1, p.z);
+      this.group.add(mesh);
+      this.boulders.push({
+        mesh,
+        center: p.clone(),
+        right: r.clone(),
+        pos: p.clone(),
+        range: this.roadWidth / 2 - 2.2,
+        speed: 1.55 + idx * 0.25,
+        phase: idx * 2.1,
+      });
+    });
+
+    // 3. 🌀 Giant Crosswind Turbo Fans (sky / ice / beach / rainbow)
+    const fanTs = this.config.fanTs || ((this.trackId === 'ice' || this.trackId === 'beach' || this.trackId === 'rainbow') ? [0.44] : []);
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.5, roughness: 0.4 });
+    const bladeMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.4 });
+    fanTs.forEach((t, idx) => {
+      const i = Math.floor(t * this.samples) % this.samples;
+      const p = this.points[i];
+      const r = this.rights[i];
+      const side = idx % 2 === 0 ? -1 : 1;
+      const fanPos = p.clone().addScaledVector(r, side * (this.roadWidth / 2 + 4.2));
+      const fanGroup = new THREE.Group();
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(4.2, 0.55, 8, 22), frameMat);
+      ring.position.y = 4.6;
+      const blades = new THREE.Group();
+      blades.position.y = 4.6;
+      for (let b = 0; b < 4; b++) {
+        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.9, 3.6, 0.22), bladeMat);
+        blade.rotation.z = (b * Math.PI) / 2;
+        blades.add(blade);
+      }
+      fanGroup.add(ring, blades);
+      fanGroup.position.set(fanPos.x, p.y, fanPos.z);
+      // Face across the road!
+      const blowDir = r.clone().multiplyScalar(-side);
+      fanGroup.rotation.y = Math.atan2(blowDir.x, blowDir.z);
+      this.group.add(fanGroup);
+
+      this.fans.push({
+        center: p.clone(),
+        blowDir,
+        blades,
+        radius: 17,
+        force: 22,
+      });
+    });
+  }
+
+  _buildBattleArena() {
+    // 🎈 3D Circular LEGO Battle Arena Stadium!
+    this.points = [new THREE.Vector3(0, 0, 0)];
+    this.tangents = [new THREE.Vector3(0, 0, -1)];
+    this.rights = [new THREE.Vector3(1, 0, 0)];
+    this.minX = -this.arenaRadius;
+    this.maxX = this.arenaRadius;
+    this.minZ = -this.arenaRadius;
+    this.maxZ = this.arenaRadius;
+
+    // Checkered colorful Battle Arena Floor
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(0, 0, 512, 512);
+    for (let y = 0; y < 8; y++) {
+      for (let x = 0; x < 8; x++) {
+        if ((x + y) % 2 === 0) {
+          ctx.fillStyle = '#283548';
+          ctx.fillRect(x * 64, y * 64, 64, 64);
+        }
+      }
+    }
+    ctx.strokeStyle = '#ffdd00';
+    ctx.lineWidth = 10;
+    ctx.beginPath();
+    ctx.arc(256, 256, 120, 0, Math.PI * 2);
+    ctx.stroke();
+
+    const floorTex = new THREE.CanvasTexture(canvas);
+    floorTex.wrapS = THREE.RepeatWrapping;
+    floorTex.wrapT = THREE.RepeatWrapping;
+    floorTex.repeat.set(6, 6);
+    floorTex.colorSpace = THREE.SRGBColorSpace;
+
+    const floor = new THREE.Mesh(
+      new THREE.CylinderGeometry(this.arenaRadius + 1, this.arenaRadius + 1, 1.0, 48),
+      new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.75 })
+    );
+    floor.position.y = -0.5;
+    floor.receiveShadow = true;
+    this.group.add(floor);
+
+    // Colorful LEGO Circular Stadium Wall
+    const wallColors = [0xff3b30, 0xffdd00, 0x00e5ff, 0x38ef7d];
+    const segs = 32;
+    for (let i = 0; i < segs; i++) {
+      const a = (i / segs) * Math.PI * 2;
+      const wall = new THREE.Mesh(
+        new THREE.BoxGeometry(16, 4.5, 2.2),
+        new THREE.MeshStandardMaterial({ color: wallColors[i % wallColors.length], roughness: 0.35 })
+      );
+      wall.position.set(Math.cos(a) * (this.arenaRadius + 1.1), 2.25, Math.sin(a) * (this.arenaRadius + 1.1));
+      wall.rotation.y = -a + Math.PI / 2;
+      this.group.add(wall);
+    }
+
+    // 4 Boost Pads + 4 Jump Ramps + 12 Item Box Anchors around the arena!
+    const padMat = new THREE.MeshBasicMaterial({ color: 0xffdd00, side: THREE.DoubleSide });
+    const rampMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.35 });
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2;
+      const px = Math.cos(a) * 32;
+      const pz = Math.sin(a) * 32;
+      const pad = new THREE.Mesh(new THREE.CircleGeometry(4.2, 16), padMat);
+      pad.rotation.x = -Math.PI / 2;
+      pad.position.set(px, 0.08, pz);
+      this.group.add(pad);
+      this.boostPads.push({ position: new THREE.Vector3(px, 0, pz), radius: 4.5 });
+
+      const ra = a + Math.PI / 4;
+      const rx = Math.cos(ra) * 44;
+      const rz = Math.sin(ra) * 44;
+      const ramp = new THREE.Mesh(new THREE.BoxGeometry(6.5, 1.8, 7.5), rampMat);
+      ramp.position.set(rx, 0.7, rz);
+      ramp.rotation.y = -ra;
+      this.group.add(ramp);
+      this.jumpRamps.push({ position: new THREE.Vector3(rx, 0, rz), radius: 5.0 });
+    }
+
+    // 12 Regenerating Item Boxes (4 inner ring + 8 outer ring)
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      this.itemBoxAnchors.push(new THREE.Vector3(Math.cos(a) * 18, 1.4, Math.sin(a) * 18));
+    }
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      this.itemBoxAnchors.push(new THREE.Vector3(Math.cos(a) * 54, 1.4, Math.sin(a) * 54));
+    }
+  }
+
   _buildStompingDinos() {
     const dinoTs = this.config.dinoTs || [];
     if (!dinoTs.length) return;
@@ -3958,6 +4465,17 @@ class RaceTrack {
   }
 
   getClosestTrackPoint(pos, hintIndex = -1) {
+    if (this.isBattleArena) {
+      return {
+        index: 0,
+        t: 0,
+        point: new THREE.Vector3(0, 0, 0),
+        tangent: new THREE.Vector3(0, 0, -1),
+        right: new THREE.Vector3(1, 0, 0),
+        lateralOffset: 0,
+        distanceSq: pos.x * pos.x + pos.z * pos.z,
+      };
+    }
     let bestIdx = 0;
     let bestDistSq = Infinity;
 
@@ -4002,6 +4520,14 @@ class RaceTrack {
   }
 
   getStartTransform(slotIndex) {
+    if (this.isBattleArena) {
+      const a = (slotIndex / 4) * Math.PI * 2 + Math.PI / 4;
+      const dist = 42;
+      const pos = new THREE.Vector3(Math.cos(a) * dist, 0, Math.sin(a) * dist);
+      // Face toward the center (0, 0, 0)!
+      const yaw = Math.atan2(pos.x, pos.z);
+      return { position: pos, yaw, trackIndex: 0 };
+    }
     const backSamples = 7 + Math.floor(slotIndex / 2) * 5;
     const idx = (this.samples - backSamples) % this.samples;
     const p = this.points[idx];
@@ -4168,6 +4694,7 @@ class ItemManager {
     this.waterBombs = [];
     this.enabled = false;
     this.elapsed = 0;
+    this.onRacerHit = null;
   }
 
   clear() {
@@ -4400,6 +4927,7 @@ class ItemManager {
         }
         other.blizzardTimer = Math.max(other.blizzardTimer, racer.isHuman ? 4.5 : 2.8);
         other.speed *= 0.68;
+        if (this.onRacerHit) this.onRacerHit(other, 'blizzard');
         for (let k = 0; k < 16; k++) {
           this.spawnParticle(
             other.pos.clone().add(new THREE.Vector3((Math.random() - 0.5) * 4, 2 + Math.random() * 4, (Math.random() - 0.5) * 4)),
@@ -4577,7 +5105,8 @@ class ItemManager {
         r.spinTimer = 1.4;
         r.velY = 17.5;
         r.speed = -16;
-        if (track) {
+        if (this.onRacerHit) this.onRacerHit(r, 'laser');
+        if (track && !track.isBattleArena) {
           const knockIdx = (r.trackIndex - 20 + track.samples) % track.samples;
           const kp = track.points[knockIdx];
           r.pos.set(kp.x, kp.y + 1.0, kp.z);
@@ -4615,6 +5144,15 @@ class ItemManager {
 
   _triggerSkyCannon(racer, track) {
     if (!track) return;
+    if (track.isBattleArena) {
+      racer.boostTimer = Math.max(racer.boostTimer, 2.5);
+      racer.velY = 18;
+      if (racer.isHuman) {
+        this.audio.playBoost();
+        this.showBannerFor(racer, '💥 大炮衝刺跳躍！', '#f97316', 1.2);
+      }
+      return;
+    }
     // Build Giant 3D LEGO Golden-Black Cannon right at racer's position!
     const cannon = new THREE.Group();
     const barrelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.3, metalness: 0.6 });
@@ -4691,6 +5229,15 @@ class ItemManager {
 
   _triggerTeleport(racer, track) {
     if (!track) return;
+    if (track.isBattleArena) {
+      racer.pos.set((Math.random() - 0.5) * 60, 1.5, (Math.random() - 0.5) * 60);
+      racer.shieldTimer = Math.max(racer.shieldTimer, 2.0);
+      if (racer.isHuman) {
+        this.audio.playShield();
+        this.showBannerFor(racer, '🌀 空間閃現逃脫！', '#22d3ee', 1.2);
+      }
+      return;
+    }
     // Entry Warp Portal at current position
     this._spawnPortalRing(racer.pos, racer.yaw, 0x00f5ff);
 
@@ -4803,6 +5350,7 @@ class ItemManager {
       }
       return;
     }
+    if (this.onRacerHit) this.onRacerHit(victim, type);
 
     if (type === 'waterbomb') {
       victim.waterTrapTimer = 1.85;
@@ -5114,6 +5662,7 @@ class ItemManager {
           } else {
             m.target.meteorSlowTimer = Math.max(m.target.meteorSlowTimer, m.owner.isHuman ? 4.2 : 2.6);
             m.target.speed *= 0.62;
+            if (this.onRacerHit) this.onRacerHit(m.target, 'meteor');
             if (m.target.isHuman) {
               this.audio.playHit();
               this.showBannerFor(m.target, '☄️ 被流星雨擊中！車速大幅減慢！', '#ff6b00', 1.8);
@@ -5349,10 +5898,12 @@ class RoomNetwork {
 
 
 const TOTAL_LAPS = 3;
+const CUP_TRACKS = ['village', 'desert', 'sky', 'dino'];
+const EMOTE_PHRASES = ['😂 哈哈！', '🔥 借過啦！', '😎 太慢囉！', '🚀 追不上我！', '🦖 救命啊！', '⚡ 吃我尾氣！'];
 const SAVE_KEY = 'kart_lego_3d_save_v3';
 const UPGRADE_COSTS = [40, 70, 110, 160, 220];
 
-// --- Persistent Save (Unlock Progress, Names, Coins, Upgrades, Medals, Ghosts) ---
+// --- Persistent Save (Unlock Progress, Names, Coins, Upgrades, Per-Car 3D Mods, Medals, Ghosts) ---
 function loadSave() {
   try {
     const raw = localStorage.getItem(SAVE_KEY) || localStorage.getItem('kart_lego_3d_save_v2');
@@ -5368,6 +5919,7 @@ function loadSave() {
           nitro: p.upgrades?.nitro || 0,
           drift: p.upgrades?.drift || 0,
         },
+        kartMods: p.kartMods || {},
         medals: p.medals || {},
         bestTimes: p.bestTimes || {},
         ghosts: p.ghosts || {},
@@ -5380,10 +5932,16 @@ function loadSave() {
     p2Name: '玩家 2',
     coins: 50,
     upgrades: { engine: 0, nitro: 0, drift: 0 },
+    kartMods: {},
     medals: {},
     bestTimes: {},
     ghosts: {},
   };
+}
+
+function getKartMods(kartId) {
+  const m = (saveData.kartMods && saveData.kartMods[kartId]) || {};
+  return { wheel: m.wheel || 'std', wing: m.wing || 'none', bumper: m.bumper || 'none' };
 }
 
 function writeSave() {
@@ -5465,7 +6023,24 @@ const nextTrackBtn = document.getElementById('next-track-btn');
 
 const pauseScreen = document.getElementById('pause-screen');
 const pauseBtn = document.getElementById('pause-btn');
+const hornBtn = document.getElementById('horn-btn');
 const resumeBtn = document.getElementById('resume-btn');
+const gamepadStatusEl = document.getElementById('gamepad-status');
+const modKartNameEl = document.getElementById('mod-kart-name');
+const modWheelRowEl = document.getElementById('mod-wheel-row');
+const modWingRowEl = document.getElementById('mod-wing-row');
+const modBumperRowEl = document.getElementById('mod-bumper-row');
+
+// Grand Prix Cup & Battle Arena state
+let cupRound = 0;
+let cupScores = {};
+let battleTimer = 90;
+const gpPrevAction = [false, false];
+const gpPrevHorn = [false, false];
+const gpState = [
+  { accel: false, brake: false, left: false, right: false, drift: false },
+  { accel: false, brake: false, left: false, right: false, drift: false },
+];
 const pauseRestartBtn = document.getElementById('pause-restart-btn');
 const pauseMenuBtn = document.getElementById('pause-menu-btn');
 const muteBtn = document.getElementById('mute-btn');
@@ -5889,6 +6464,12 @@ window.addEventListener('keydown', (e) => {
   if ((e.code === 'KeyP' || e.code === 'Escape') && (gameState === 'racing' || gameState === 'paused')) {
     togglePause();
   }
+  if (e.code === 'KeyH' && (gameState === 'racing' || gameState === 'countdown') && humanRacers[0]) {
+    triggerHornEmote(humanRacers[0]);
+  }
+  if (e.code === 'KeyM' && playType === '2' && (gameState === 'racing' || gameState === 'countdown') && humanRacers[1]) {
+    triggerHornEmote(humanRacers[1]);
+  }
 });
 
 window.addEventListener('keyup', (e) => {
@@ -5968,6 +6549,120 @@ function renderGarageUI() {
       costEl.textContent = cost;
       btn.disabled = saveData.coins < cost;
     }
+  }
+  renderModLoadoutUI();
+}
+
+function renderModLoadoutUI() {
+  if (!modWheelRowEl || !modWingRowEl || !modBumperRowEl) return;
+  const slot = playType === '2' ? activePickSlot : 0;
+  const kartId = selectedKarts[slot];
+  const preset = KART_PRESETS[kartId] || KART_PRESETS.yellow;
+  if (modKartNameEl) modKartNameEl.textContent = `${preset.name} #${preset.number}`;
+  const curMods = getKartMods(kartId);
+
+  const rows = [
+    ['wheel', modWheelRowEl],
+    ['wing', modWingRowEl],
+    ['bumper', modBumperRowEl],
+  ];
+  for (const [cat, el] of rows) {
+    el.innerHTML = '';
+    for (const opt of MOD_CATALOG[cat]) {
+      const b = document.createElement('button');
+      b.className = 'pill-btn' + (curMods[cat] === opt.id ? ' selected' : '');
+      b.textContent = `${opt.icon} ${opt.name}`;
+      b.title = opt.desc;
+      b.addEventListener('click', () => {
+        if (!saveData.kartMods) saveData.kartMods = {};
+        if (!saveData.kartMods[kartId]) saveData.kartMods[kartId] = { wheel: 'std', wing: 'none', bumper: 'none' };
+        saveData.kartMods[kartId][cat] = opt.id;
+        writeSave();
+        audio.init();
+        audio.playBeep(660, 0.08, 0.08);
+        renderModLoadoutUI();
+        if (gameState === 'menu') setupShowcase();
+      });
+      el.appendChild(b);
+    }
+  }
+}
+
+function triggerHornEmote(r) {
+  if (!r || !r.kart || !r.kart.root) return;
+  if (r.emoteSprite) {
+    r.kart.root.remove(r.emoteSprite);
+    r.emoteSprite = null;
+  }
+  const phrase = EMOTE_PHRASES[Math.floor(Math.random() * EMOTE_PHRASES.length)];
+  const sp = createEmoteBubbleSprite(phrase);
+  r.kart.root.add(sp);
+  r.emoteSprite = sp;
+  r.emoteTimer = 2.2;
+  audio.init();
+  audio.playHorn();
+}
+
+function popBattleBalloon(victim) {
+  if (selectedMode !== 'battle' || !victim || victim.eliminated || victim.balloonGrace > 0) return;
+  victim.balloonGrace = 2.0;
+  victim.balloons = Math.max(0, (victim.balloons || 0) - 1);
+  if (victim.balloonMeshes && victim.balloonMeshes[victim.balloons]) {
+    const b = victim.balloonMeshes[victim.balloons];
+    b.mesh.visible = false;
+    for (let k = 0; k < 14; k++) {
+      spawnParticle(
+        victim.pos.clone().add(new THREE.Vector3(0, 2.4, 0)),
+        new THREE.Vector3((Math.random() - 0.5) * 14, 4 + Math.random() * 6, (Math.random() - 0.5) * 14),
+        b.color,
+        0.55,
+        1.1
+      );
+    }
+  }
+  audio.playBalloonPop();
+  if (victim.balloons <= 0) {
+    victim.eliminated = true;
+    victim.finishTime = raceTime;
+    victim.speed *= 0.2;
+    if (victim.isHuman) showBannerFor(victim, '💥 氣球全破！淘汰出局！', '#ff3b30', 2.2);
+  } else if (victim.isHuman) {
+    showBannerFor(victim, `🎈 氣球破了一顆！剩餘 ${victim.balloons} 顆！`, '#ff9500', 1.4);
+  }
+}
+
+function pollGamepads() {
+  if (!navigator.getGamepads) return;
+  const pads = navigator.getGamepads();
+  let connectedCount = 0;
+  for (let i = 0; i < 2; i++) {
+    const gp = pads[i];
+    if (gp && gp.connected) {
+      connectedCount++;
+      const ax0 = gp.axes[0] || 0;
+      const btns = gp.buttons || [];
+      const b = (idx) => !!(btns[idx] && (btns[idx].pressed || btns[idx].value > 0.35));
+      gpState[i] = {
+        accel: b(0) || b(7),
+        brake: b(1) || b(6),
+        left: ax0 < -0.28 || b(14),
+        right: ax0 > 0.28 || b(15),
+        drift: b(2) || b(5),
+      };
+      const actNow = b(3) || b(4);
+      if (actNow && !gpPrevAction[i]) actionQueued[i] = true;
+      gpPrevAction[i] = actNow;
+
+      const hornNow = b(8) || b(12);
+      if (hornNow && !gpPrevHorn[i] && humanRacers[i]) triggerHornEmote(humanRacers[i]);
+      gpPrevHorn[i] = hornNow;
+    } else {
+      gpState[i] = { accel: false, brake: false, left: false, right: false, drift: false };
+    }
+  }
+  if (gamepadStatusEl) {
+    gamepadStatusEl.classList.toggle('hidden', connectedCount === 0);
+    if (connectedCount > 0) gamepadStatusEl.textContent = `🎮 已連接 ${connectedCount} 支手把`;
   }
 }
 
@@ -6057,6 +6752,7 @@ function renderKartCards() {
       const slot = playType === '2' ? activePickSlot : 0;
       selectedKarts[slot] = id;
       renderKartCards();
+      renderModLoadoutUI();
       updateSetupSummary();
       if (gameState === 'menu') setupShowcase();
       if (playType === 'net' && net.connected) net.sendHello(getLocalNetInfo());
@@ -6124,7 +6820,15 @@ modeButtons.forEach((btn) => {
     modeButtons.forEach((b) => b.classList.remove('selected'));
     btn.classList.add('selected');
     selectedMode = btn.dataset.mode;
-    if (gameState === 'menu') itemManager.setupForTrack(track, selectedMode === 'item');
+    if (selectedMode === 'cup') {
+      cupRound = 0;
+      cupScores = {};
+      selectedTrackId = CUP_TRACKS[0];
+    }
+    if (gameState === 'menu') {
+      loadTrack(selectedTrackId);
+      setupShowcase();
+    }
   });
 });
 
@@ -6136,11 +6840,15 @@ if (unlockAllBtn) {
   });
 }
 
+function isItemModeActive() {
+  return selectedMode === 'item' || selectedMode === 'battle' || selectedMode === 'cup';
+}
+
 // --- Track & Racers ---
 function loadTrack(trackId) {
   if (track) track.dispose();
   selectedTrackId = trackId;
-  track = new RaceTrack(scene, trackId);
+  track = new RaceTrack(scene, trackId, selectedMode === 'battle');
 
   const cfg = track.config;
   scene.background = new THREE.Color(cfg.skyColor);
@@ -6151,13 +6859,22 @@ function loadTrack(trackId) {
   sunLight.color.setHex(cfg.sunColor);
   sunLight.intensity = cfg.sunIntensity;
 
-  itemManager.setupForTrack(track, selectedMode === 'item');
+  itemManager.onRacerHit = (victim) => popBattleBalloon(victim);
+  itemManager.setupForTrack(track, isItemModeActive());
 }
 
 function createRacer(presetKey, slotIndex, displayName, controlType, humanIndex = -1, driverKey = 'racer_red') {
   // controlType: 'human' | 'ai' | 'remote'
-  const kartObj = createLegoKart(presetKey, driverKey);
+  const mods = controlType === 'human'
+    ? getKartMods(presetKey)
+    : {
+        wheel: ['std', 'slick', 'offroad'][slotIndex % 3],
+        wing: ['none', 'gt', 'glider'][(slotIndex + 1) % 3],
+        bumper: ['none', 'spike', 'magnet'][(slotIndex + 2) % 3],
+      };
+  const kartObj = createLegoKart(presetKey, driverKey, mods);
   const statusMeshes = attachKartStatusMeshes(kartObj.root);
+  const balloonMeshes = selectedMode === 'battle' ? attachBattleBalloons(kartObj.root) : null;
   const badgeCol = humanIndex === 0 ? '#ffdd00' : humanIndex === 1 ? '#00f5ff' : '#94a3b8';
   const nameplate = createNameplateSprite(displayName, badgeCol, controlType !== 'ai');
   kartObj.root.add(nameplate);
@@ -6175,7 +6892,19 @@ function createRacer(presetKey, slotIndex, displayName, controlType, humanIndex 
     isHuman: controlType === 'human',
     humanIndex,
     kart: kartObj,
+    mods,
     statusMeshes,
+    balloonMeshes,
+    balloons: 3,
+    balloonGrace: 0,
+    eliminated: false,
+    emoteSprite: null,
+    emoteTimer: 0,
+    airTrickTimer: 0,
+    airTrickDone: false,
+    pendingTrickBoost: false,
+    hazardCooldown: 0,
+    groundY: start.position.y,
     pos: start.position.clone(),
     velY: 0,
     hopY: 0,
@@ -6385,8 +7114,13 @@ function startRace(broadcastIfHost = true, netStartMsg = null) {
   hudP2Pane.classList.toggle('hidden', !isSplit);
   touchControlsEl.classList.toggle('hidden', !touchVisible || isSplit);
 
-  hudTrackName.textContent = `${track.config.icon} ${track.config.name}`;
-  hudModeTag.textContent = selectedMode === 'item' ? '道具' : '競速';
+  hudTrackName.textContent = selectedMode === 'battle'
+    ? '🎈 氣球競技場'
+    : selectedMode === 'cup'
+      ? `🏆 第${cupRound + 1}/4關 ${track.config.icon}${track.config.name}`
+      : `${track.config.icon} ${track.config.name}`;
+  hudModeTag.textContent = selectedMode === 'battle' ? '氣球亂鬥' : selectedMode === 'cup' ? '錦標賽' : selectedMode === 'item' ? '道具' : '競速';
+  battleTimer = 90;
   pHudEls[0].name.textContent = humanRacers[0].name;
   pHudEls[0].banner.classList.add('hidden');
   pHudEls[0].wrongWay.classList.add('hidden');
@@ -6424,12 +7158,27 @@ function togglePause(forceState = null) {
 }
 
 pauseBtn.addEventListener('click', (e) => { e.currentTarget.blur(); togglePause(); });
+if (hornBtn) hornBtn.addEventListener('click', (e) => { e.currentTarget.blur(); if (humanRacers[0]) triggerHornEmote(humanRacers[0]); });
 resumeBtn.addEventListener('click', () => togglePause(false));
 pauseRestartBtn.addEventListener('click', () => { isPaused = false; pauseScreen.classList.add('hidden'); startRace(true); });
 pauseMenuBtn.addEventListener('click', () => { isPaused = false; pauseScreen.classList.add('hidden'); returnToMenu(); });
 
-startBtn.addEventListener('click', () => startRace(true));
-playAgainBtn.addEventListener('click', () => startRace(true));
+startBtn.addEventListener('click', () => {
+  if (selectedMode === 'cup') {
+    cupRound = 0;
+    cupScores = {};
+    selectedTrackId = CUP_TRACKS[0];
+  }
+  startRace(true);
+});
+playAgainBtn.addEventListener('click', () => {
+  if (selectedMode === 'cup' && cupRound >= CUP_TRACKS.length - 1) {
+    cupRound = 0;
+    cupScores = {};
+    selectedTrackId = CUP_TRACKS[0];
+  }
+  startRace(true);
+});
 changeKartBtn.addEventListener('click', returnToMenu);
 menuBtn.addEventListener('click', (e) => { e.currentTarget.blur(); returnToMenu(); });
 restartBtn.addEventListener('click', (e) => { e.currentTarget.blur(); startRace(true); });
@@ -6441,6 +7190,13 @@ muteBtn.addEventListener('click', (e) => {
 });
 
 nextTrackBtn.addEventListener('click', () => {
+  if (selectedMode === 'cup' && cupRound + 1 < CUP_TRACKS.length) {
+    cupRound++;
+    selectedTrackId = CUP_TRACKS[cupRound];
+    renderTrackButtons();
+    startRace(true);
+    return;
+  }
   const curIdx = TRACK_ORDER.indexOf(selectedTrackId);
   if (curIdx >= 0 && curIdx + 1 < TRACK_ORDER.length) {
     selectedTrackId = TRACK_ORDER[curIdx + 1];
@@ -6451,46 +7207,64 @@ nextTrackBtn.addEventListener('click', () => {
 
 // --- Controls & Physics ---
 function getPlayerInputState(humanIdx) {
+  const gp = gpState[humanIdx] || { accel: false, brake: false, left: false, right: false, drift: false };
   if (playType === '2') {
     if (humanIdx === 0) {
       return {
-        accel: !!keys['KeyW'],
-        brake: !!keys['KeyS'],
-        left: !!keys['KeyA'],
-        right: !!keys['KeyD'],
-        drift: !!keys['ShiftLeft'],
+        accel: !!(keys['KeyW'] || gp.accel),
+        brake: !!(keys['KeyS'] || gp.brake),
+        left: !!(keys['KeyA'] || gp.left),
+        right: !!(keys['KeyD'] || gp.right),
+        drift: !!(keys['ShiftLeft'] || gp.drift),
       };
     }
     return {
-      accel: !!keys['ArrowUp'],
-      brake: !!keys['ArrowDown'],
-      left: !!keys['ArrowLeft'],
-      right: !!keys['ArrowRight'],
-      drift: !!(keys['ShiftRight'] || keys['Slash']),
+      accel: !!(keys['ArrowUp'] || gp.accel),
+      brake: !!(keys['ArrowDown'] || gp.brake),
+      left: !!(keys['ArrowLeft'] || gp.left),
+      right: !!(keys['ArrowRight'] || gp.right),
+      drift: !!(keys['ShiftRight'] || keys['Slash'] || gp.drift),
     };
   }
   const autoGas = touchVisible && playType !== '2' && !keys['KeyS'] && !keys['ArrowDown'];
   return {
-    accel: !!(keys['KeyW'] || keys['ArrowUp'] || autoGas),
-    brake: !!(keys['KeyS'] || keys['ArrowDown']),
-    left: !!(keys['KeyA'] || keys['ArrowLeft']),
-    right: !!(keys['KeyD'] || keys['ArrowRight']),
-    drift: !!(keys['ShiftLeft'] || keys['ShiftRight']),
+    accel: !!(keys['KeyW'] || keys['ArrowUp'] || autoGas || gp.accel),
+    brake: !!(keys['KeyS'] || keys['ArrowDown'] || gp.brake),
+    left: !!(keys['KeyA'] || keys['ArrowLeft'] || gp.left),
+    right: !!(keys['KeyD'] || keys['ArrowRight'] || gp.right),
+    drift: !!(keys['ShiftLeft'] || keys['ShiftRight'] || gp.drift),
   };
 }
 
 function updateHumanControls(r, dt) {
+  if (r.eliminated) {
+    r.speed *= Math.pow(0.2, dt);
+    return;
+  }
   const inp = getPlayerInputState(r.humanIndex);
   const preset = r.kart.preset;
+  const mods = r.mods || { wheel: 'std', wing: 'none', bumper: 'none' };
   const upgEngine = saveData.upgrades.engine || 0;
   const upgNitro = saveData.upgrades.nitro || 0;
   const upgDrift = saveData.upgrades.drift || 0;
   const isBoosting = r.boostTimer > 0;
   const isMiniBoosting = r.miniBoostTimer > 0;
+  const isAirborne = r.pos.y > (r.groundY || 0) + 1.4;
+
+  // 🤸 Mid-Air 360° Air Trick! Press Shift or Space while airborne!
+  if (isAirborne && !r.airTrickDone && (inp.drift || actionQueued[r.humanIndex])) {
+    r.airTrickDone = true;
+    r.airTrickTimer = 0.55;
+    r.pendingTrickBoost = true;
+    raceCoinsEarned += 5;
+    hudCoinsVal.textContent = raceCoinsEarned;
+    audio.playTrick();
+    showBannerFor(r, '🤸 空中 360° 特技！落地超級加速 +5🪙', '#ffdd00', 1.3);
+  }
 
   if (actionQueued[r.humanIndex]) {
     actionQueued[r.humanIndex] = false;
-    if (selectedMode === 'item') {
+    if (isItemModeActive()) {
       itemManager.useItem(r, racers, track);
     } else if (r.nitroSlots > 0 && r.boostTimer <= 0.1) {
       r.nitroSlots--;
@@ -6501,7 +7275,7 @@ function updateHumanControls(r, dt) {
     }
   }
 
-  let targetMax = preset.maxSpeed + upgEngine * 1.6;
+  let targetMax = preset.maxSpeed + upgEngine * 1.6 + (mods.wheel === 'slick' ? 4 : 0);
   if (r.tireBuffTimer > 0) targetMax += 10;
   if (r.engineBuffTimer > 0) targetMax += 15;
   if (r.starTimer > 0) targetMax += 16;
@@ -6568,7 +7342,7 @@ function updateHumanControls(r, dt) {
     r.speed *= Math.pow(grip, dt);
     r.yaw += (r.driftDir * 1.72 + r.steerInput * 1.05) * dt * speedFactor;
 
-    const driftMult = 1 + upgDrift * 0.15;
+    const driftMult = 1 + upgDrift * 0.15 + ((r.mods && r.mods.wing === 'gt') ? 0.22 : 0);
     r.nitroGauge += (36 + Math.min(18, r.driftTime * 11)) * driftMult * dt;
     if (r.nitroGauge >= 100) {
       if (selectedMode === 'speed') {
@@ -6595,9 +7369,35 @@ function updateHumanControls(r, dt) {
 }
 
 function updateAI(r, dt) {
+  if (r.eliminated) {
+    r.speed *= Math.pow(0.2, dt);
+    return;
+  }
   const preset = r.kart.preset;
-  const lookIdx = (r.trackIndex + r.aiLookAhead) % track.samples;
-  const targetPt = track.points[lookIdx].clone().addScaledVector(track.rights[lookIdx], r.aiLaneOffset);
+  let targetPt;
+  if (track.isBattleArena) {
+    // Battle Arena AI: hunt item boxes if empty, else chase nearest alive opponent!
+    let bestTarget = null;
+    let bestD = Infinity;
+    if (r.items.length === 0) {
+      for (const box of itemManager.boxes) {
+        if (box.respawnTimer > 0) continue;
+        const d = r.pos.distanceTo(box.pos);
+        if (d < bestD) { bestD = d; bestTarget = box.pos; }
+      }
+    }
+    if (!bestTarget) {
+      for (const other of racers) {
+        if (other === r || other.eliminated) continue;
+        const d = r.pos.distanceTo(other.pos);
+        if (d < bestD) { bestD = d; bestTarget = other.pos; }
+      }
+    }
+    targetPt = bestTarget || new THREE.Vector3(0, 0, 0);
+  } else {
+    const lookIdx = (r.trackIndex + r.aiLookAhead) % track.samples;
+    targetPt = track.points[lookIdx].clone().addScaledVector(track.rights[lookIdx], r.aiLaneOffset);
+  }
   const desiredYaw = Math.atan2(-(targetPt.x - r.pos.x), -(targetPt.z - r.pos.z));
 
   let angleDiff = desiredYaw - r.yaw;
@@ -6614,11 +7414,11 @@ function updateAI(r, dt) {
   r.isDrifting = sharpTurn;
   r.driftVisualYaw = THREE.MathUtils.lerp(r.driftVisualYaw, sharpTurn ? Math.sign(angleDiff) * 0.28 : 0, Math.min(1, dt * 8));
 
-  if (selectedMode === 'item' && r.items.length > 0 && !r.finished) {
+  if (isItemModeActive() && r.items.length > 0 && !r.finished && !r.eliminated) {
     r.aiItemDelay -= dt;
     if (r.aiItemDelay <= 0) {
       itemManager.useItem(r, racers, track);
-      r.aiItemDelay = 2.0 + Math.random() * 2.5;
+      r.aiItemDelay = track.isBattleArena ? (1.2 + Math.random() * 1.4) : (2.0 + Math.random() * 2.5);
     }
   }
 
@@ -6864,6 +7664,16 @@ function updateRacerPhysics(r, dt) {
   if (r.dinoCooldown > 0) r.dinoCooldown = Math.max(0, r.dinoCooldown - dt);
   if (r.blizzardTimer > 0) r.blizzardTimer = Math.max(0, r.blizzardTimer - dt);
   if (r.meteorSlowTimer > 0) r.meteorSlowTimer = Math.max(0, r.meteorSlowTimer - dt);
+  if (r.balloonGrace > 0) r.balloonGrace = Math.max(0, r.balloonGrace - dt);
+  if (r.hazardCooldown > 0) r.hazardCooldown = Math.max(0, r.hazardCooldown - dt);
+  if (r.airTrickTimer > 0) r.airTrickTimer = Math.max(0, r.airTrickTimer - dt);
+  if (r.emoteTimer > 0) {
+    r.emoteTimer -= dt;
+    if (r.emoteTimer <= 0 && r.emoteSprite) {
+      r.kart.root.remove(r.emoteSprite);
+      r.emoteSprite = null;
+    }
+  }
   if (r.tireBuffTimer > 0) r.tireBuffTimer = Math.max(0, r.tireBuffTimer - dt);
   if (r.engineBuffTimer > 0) r.engineBuffTimer = Math.max(0, r.engineBuffTimer - dt);
   if (r.starTimer > 0) r.starTimer = Math.max(0, r.starTimer - dt);
@@ -6949,16 +7759,30 @@ function updateRacerPhysics(r, dt) {
   r.trackIndex = closest.index;
   r.trackT = closest.t;
 
-  // 3D Elevation + Gravity / Jump Ramp Physics + Perfect Landing!
+  // 3D Elevation + Gravity / Jump Ramp / Glider Wing Physics + Perfect Landing & Air Trick!
   const groundY = closest.point.y;
+  r.groundY = groundY;
   if (r.pos.y > groundY + 0.05 || r.velY > 0) {
     const prevVelY = r.velY;
-    r.velY -= 38 * dt;
+    const isGliding = r.mods && r.mods.wing === 'glider' && r.velY < 0;
+    const grav = isGliding ? 16 : 38;
+    r.velY -= grav * dt;
+    if (isGliding && r.velY < -9) r.velY = -9;
     r.pos.y += r.velY * dt;
     if (r.pos.y <= groundY) {
       r.pos.y = groundY;
       r.velY = 0;
-      if (prevVelY < -8) {
+      r.airTrickDone = false;
+      if (r.pendingTrickBoost) {
+        r.pendingTrickBoost = false;
+        r.boostTimer = Math.max(r.boostTimer, 1.55);
+        r.squashTimer = 0.28;
+        if (r.isHuman) {
+          camShake = Math.max(camShake, 0.34);
+          audio.playBoost();
+          showBannerFor(r, '🚀 特技落地超級加速！', '#ffdd00', 1.15);
+        }
+      } else if (prevVelY < -8) {
         r.squashTimer = 0.24;
         r.speed += 4.5;
         if (r.isHuman) {
@@ -6970,6 +7794,7 @@ function updateRacerPhysics(r, dt) {
   } else {
     r.pos.y = THREE.MathUtils.lerp(r.pos.y, groundY, Math.min(1, dt * 18));
     r.velY = 0;
+    r.airTrickDone = false;
   }
 
   // Match road slope pitch (or nose-up while airborne!)
@@ -6978,34 +7803,51 @@ function updateRacerPhysics(r, dt) {
     : Math.asin(THREE.MathUtils.clamp(closest.tangent.y, -0.45, 0.45));
   r.roadPitch = THREE.MathUtils.lerp(r.roadPitch, slopePitch, Math.min(1, dt * 10));
 
-  const halfRoad = track.roadWidth / 2;
-  if (Math.abs(closest.lateralOffset) > halfRoad + 1.0 && r.boostTimer <= 0 && r.tireBuffTimer <= 0 && r.starTimer <= 0 && r.pos.y <= groundY + 0.3) {
-    r.speed *= Math.pow(0.55, dt);
-  }
-
-  // Open-edge Sky Track: falling off edge tumbles into the clouds and respawns!
-  const maxLat = track.wallOffset - 1.3;
-  if (Math.abs(closest.lateralOffset) > maxLat) {
-    if (track.config.openEdge && r.isHuman && gameState === 'racing') {
-      r.fallingTimer = 1.15;
-      r.velY = -6;
-      r.speed *= 0.4;
-      audio.playHit();
-      showBannerFor(r, '☁️ 掉到雲海下面了！準備拉回重來！', '#ff6b6b', 1.3);
-      return;
+  if (track.isBattleArena) {
+    // Circular LEGO Stadium Wall Bounce!
+    const distFromCenter = Math.hypot(r.pos.x, r.pos.z);
+    const maxR = track.arenaRadius - 2.6;
+    if (distFromCenter > maxR) {
+      const nx = r.pos.x / distFromCenter;
+      const nz = r.pos.z / distFromCenter;
+      r.pos.x = nx * maxR;
+      r.pos.z = nz * maxR;
+      r.yaw = Math.atan2(nx, nz);
+      r.moveYaw = r.yaw;
+      r.speed *= 0.78;
+      if (r.isHuman) camShake = Math.max(camShake, 0.16);
     }
-    const sign = Math.sign(closest.lateralOffset);
-    const clampedPos = closest.point.clone().addScaledVector(closest.right, sign * maxLat);
-    r.pos.x = clampedPos.x;
-    r.pos.z = clampedPos.z;
-    const trackYaw = Math.atan2(-closest.tangent.x, -closest.tangent.z);
-    let alignDiff = trackYaw - r.yaw;
-    while (alignDiff > Math.PI) alignDiff -= Math.PI * 2;
-    while (alignDiff < -Math.PI) alignDiff += Math.PI * 2;
-    r.yaw += alignDiff * 0.28;
-    r.moveYaw = r.yaw;
-    r.speed *= 0.91;
-    if (r.isHuman) camShake = Math.max(camShake, 0.14);
+  } else {
+    const halfRoad = track.roadWidth / 2;
+    const isOffroadTire = r.mods && r.mods.wheel === 'offroad';
+    if (!isOffroadTire && Math.abs(closest.lateralOffset) > halfRoad + 1.0 && r.boostTimer <= 0 && r.tireBuffTimer <= 0 && r.starTimer <= 0 && r.pos.y <= groundY + 0.3) {
+      r.speed *= Math.pow(0.55, dt);
+    }
+
+    // Open-edge Sky Track: falling off edge tumbles into the clouds and respawns!
+    const maxLat = track.wallOffset - 1.3;
+    if (Math.abs(closest.lateralOffset) > maxLat) {
+      if (track.config.openEdge && r.isHuman && gameState === 'racing') {
+        r.fallingTimer = 1.15;
+        r.velY = -6;
+        r.speed *= 0.4;
+        audio.playHit();
+        showBannerFor(r, '☁️ 掉到雲海下面了！準備拉回重來！', '#ff6b6b', 1.3);
+        return;
+      }
+      const sign = Math.sign(closest.lateralOffset);
+      const clampedPos = closest.point.clone().addScaledVector(closest.right, sign * maxLat);
+      r.pos.x = clampedPos.x;
+      r.pos.z = clampedPos.z;
+      const trackYaw = Math.atan2(-closest.tangent.x, -closest.tangent.z);
+      let alignDiff = trackYaw - r.yaw;
+      while (alignDiff > Math.PI) alignDiff -= Math.PI * 2;
+      while (alignDiff < -Math.PI) alignDiff += Math.PI * 2;
+      r.yaw += alignDiff * 0.28;
+      r.moveYaw = r.yaw;
+      r.speed *= 0.91;
+      if (r.isHuman) camShake = Math.max(camShake, 0.14);
+    }
   }
 
   // Boost pads
@@ -7148,6 +7990,76 @@ function updateRacerPhysics(r, dt) {
     }
   }
 
+  // 🚂 Express Train Crossing, 🪨 Rolling Boulders & 🌀 Crosswind Fans!
+  if (gameState === 'racing' && !incapacitated) {
+    if (r.hazardCooldown <= 0 && track.trains && track.trains.length > 0) {
+      for (const tr of track.trains) {
+        if (!tr.active) continue;
+        const dx = r.pos.x - tr.pos.x;
+        const dz = r.pos.z - tr.pos.z;
+        const dy = Math.abs(r.pos.y - tr.pos.y);
+        if (dy < 4.0 && dx * dx + dz * dz < 68) {
+          r.hazardCooldown = 2.0;
+          if (r.shieldTimer > 0 || r.starTimer > 0) {
+            if (r.shieldTimer > 0) r.shieldTimer = 0;
+            if (r.isHuman) showBannerFor(r, '🛡️ 護盾彈開急行火車！', '#38ef7d', 1.1);
+          } else {
+            r.spinTimer = 1.25;
+            r.velY = 15;
+            r.speed *= 0.25;
+            if (r.isHuman) {
+              camShake = Math.max(camShake, 0.5);
+              audio.playHit();
+              showBannerFor(r, '🚂 撞到平交道急行火車啦！', '#ff3b30', 1.5);
+            }
+          }
+          break;
+        }
+      }
+    }
+    if (r.hazardCooldown <= 0 && track.boulders && track.boulders.length > 0) {
+      for (const b of track.boulders) {
+        const dx = r.pos.x - b.pos.x;
+        const dz = r.pos.z - b.pos.z;
+        const dy = Math.abs(r.pos.y - b.pos.y);
+        if (dy < 3.6 && dx * dx + dz * dz < 14.5) {
+          r.hazardCooldown = 1.8;
+          if (r.shieldTimer > 0 || r.starTimer > 0) {
+            if (r.shieldTimer > 0) r.shieldTimer = 0;
+          } else {
+            r.flattenedTimer = 2.0;
+            r.speed *= 0.35;
+            if (r.isHuman) {
+              camShake = Math.max(camShake, 0.45);
+              audio.playHit();
+              showBannerFor(r, '🪨 被巨型滾石壓扁了！', '#f97316', 1.5);
+            }
+          }
+          break;
+        }
+      }
+    }
+    if (track.fans && track.fans.length > 0) {
+      for (const f of track.fans) {
+        const dx = r.pos.x - f.center.x;
+        const dz = r.pos.z - f.center.z;
+        if (dx * dx + dz * dz < f.radius * f.radius) {
+          r.pos.x += f.blowDir.x * f.force * dt;
+          r.pos.z += f.blowDir.z * f.force * dt;
+          if (Math.random() < dt * 14) {
+            spawnParticle(
+              r.pos.clone().add(new THREE.Vector3(0, 1.4, 0)),
+              f.blowDir.clone().multiplyScalar(22),
+              0xe0f2fe,
+              0.3,
+              0.8
+            );
+          }
+        }
+      }
+    }
+  }
+
   // Track Buff Orbs pickup (🛞 Turbo Tires / 🔥 Super Engine — active in ALL modes!)
   if (gameState === 'racing' && !r.finished) {
     for (const b of track.buffOrbs) {
@@ -7176,14 +8088,15 @@ function updateRacerPhysics(r, dt) {
     }
   }
 
-  // Coins pickup (human racers collect coins for garage upgrades!)
+  // Coins pickup (human racers collect coins; Magnet bumper vacuums from 10m!)
   if (r.isHuman && gameState === 'racing') {
+    const coinDistSq = (r.mods && r.mods.bumper === 'magnet') ? 100 : 6.2;
     for (const c of track.coins) {
       if (c.respawn > 0) continue;
       const dx = r.pos.x - c.pos.x;
       const dz = r.pos.z - c.pos.z;
       const dy = Math.abs(r.pos.y + 1.0 - c.pos.y);
-      if (dy < 2.8 && dx * dx + dz * dz < 6.2) {
+      if (dy < 3.5 && dx * dx + dz * dz < coinDistSq) {
         c.respawn = 12.0;
         c.mesh.visible = false;
         raceCoinsEarned++;
@@ -7288,10 +8201,26 @@ function applyKartVisuals(r, dt) {
   }
 
   const targetRoll = -r.steerInput * 0.08 - r.driftVisualYaw * 0.16;
-  r.kart.bodyGroup.rotation.z = THREE.MathUtils.lerp(r.kart.bodyGroup.rotation.z, targetRoll, Math.min(1, dt * 10));
-  const boostPitch = (r.boostTimer > 0 || r.miniBoostTimer > 0) ? 0.05 : 0;
-  const targetPitch = (r.roadPitch || 0) + boostPitch;
-  r.kart.bodyGroup.rotation.x = THREE.MathUtils.lerp(r.kart.bodyGroup.rotation.x, targetPitch, Math.min(1, dt * 8));
+  if (r.airTrickTimer > 0) {
+    // 🤸 360° Mid-Air Barrel Roll / Flip!
+    const f = 1 - r.airTrickTimer / 0.55;
+    r.kart.bodyGroup.rotation.z = f * Math.PI * 2;
+    r.kart.bodyGroup.rotation.x = Math.sin(f * Math.PI) * 0.45;
+  } else {
+    r.kart.bodyGroup.rotation.z = THREE.MathUtils.lerp(r.kart.bodyGroup.rotation.z, targetRoll, Math.min(1, dt * 10));
+    const boostPitch = (r.boostTimer > 0 || r.miniBoostTimer > 0) ? 0.05 : 0;
+    const targetPitch = (r.roadPitch || 0) + boostPitch;
+    r.kart.bodyGroup.rotation.x = THREE.MathUtils.lerp(r.kart.bodyGroup.rotation.x, targetPitch, Math.min(1, dt * 8));
+  }
+
+  // Bobbing 3D Battle Balloons!
+  if (r.balloonMeshes) {
+    for (const b of r.balloonMeshes) {
+      if (b.mesh.visible) {
+        b.mesh.position.y = b.baseY + Math.sin(raceTime * 4.2 + b.phase) * 0.16;
+      }
+    }
+  }
 
   r.kart.steeringPivot.rotation.z = r.steerInput * 0.65;
   r.kart.driverGroup.rotation.y = r.steerInput * 0.2;
@@ -7347,15 +8276,25 @@ function resolveKartCollisions() {
         const nz = dz / dist;
         if (a.controlType !== 'remote') { a.pos.x -= nx * push; a.pos.z -= nz * push; }
         if (b.controlType !== 'remote') { b.pos.x += nx * push; b.pos.z += nz * push; }
-        // Invincible Star knocks opponents spinning on contact!
-        if (a.starTimer > 0 && b.starTimer <= 0 && b.spinTimer <= 0) {
-          b.spinTimer = 1.0;
-          b.speed *= 0.3;
-          if (a.isHuman) audio.playHit();
-        } else if (b.starTimer > 0 && a.starTimer <= 0 && a.spinTimer <= 0) {
-          a.spinTimer = 1.0;
-          a.speed *= 0.3;
-          if (b.isHuman) audio.playHit();
+        // Invincible Star OR Spike Bumper knocks opponents spinning on contact!
+        const aSpike = a.mods && a.mods.bumper === 'spike' && a.speed > 26 && a.speed > b.speed + 5;
+        const bSpike = b.mods && b.mods.bumper === 'spike' && b.speed > 26 && b.speed > a.speed + 5;
+        if ((a.starTimer > 0 || aSpike) && b.starTimer <= 0 && b.spinTimer <= 0) {
+          b.spinTimer = a.starTimer > 0 ? 1.0 : 0.65;
+          b.speed *= 0.35;
+          if (selectedMode === 'battle') popBattleBalloon(b);
+          if (a.isHuman) {
+            audio.playHit();
+            if (aSpike) showBannerFor(a, '🛡️ 尖刺裝甲撞飛對手！', '#fbbf24', 0.95);
+          }
+        } else if ((b.starTimer > 0 || bSpike) && a.starTimer <= 0 && a.spinTimer <= 0) {
+          a.spinTimer = b.starTimer > 0 ? 1.0 : 0.65;
+          a.speed *= 0.35;
+          if (selectedMode === 'battle') popBattleBalloon(a);
+          if (b.isHuman) {
+            audio.playHit();
+            if (bSpike) showBannerFor(b, '🛡️ 尖刺裝甲撞飛對手！', '#fbbf24', 0.95);
+          }
         }
       }
     }
@@ -7447,6 +8386,12 @@ function formatTime(sec) {
 }
 
 function getSortedRacers() {
+  if (selectedMode === 'battle') {
+    return [...racers].sort((a, b) => {
+      if (b.balloons !== a.balloons) return b.balloons - a.balloons;
+      return (b.finishTime || 999) - (a.finishTime || 999);
+    });
+  }
   return [...racers].sort((a, b) => {
     if (a.finished && b.finished) return a.finishTime - b.finishTime;
     if (a.finished) return -1;
@@ -7459,13 +8404,13 @@ function updateHUD() {
   if (humanRacers.length === 0) return;
   const sorted = getSortedRacers();
   const suffixes = ['st', 'nd', 'rd', 'th'];
-  hudTime.textContent = formatTime(raceTime);
+  hudTime.textContent = selectedMode === 'battle' ? `剩 ${Math.ceil(Math.max(0, battleTimer))}s` : formatTime(raceTime);
 
   humanRacers.forEach((r, idx) => {
     const h = pHudEls[idx];
     const rank = sorted.indexOf(r) + 1;
     // Overtake bonus!
-    if (gameState === 'racing' && raceTime > 2.5 && rank < r.lastRank && r.overtakeCooldown <= 0) {
+    if (selectedMode !== 'battle' && gameState === 'racing' && raceTime > 2.5 && rank < r.lastRank && r.overtakeCooldown <= 0) {
       r.overtakeCooldown = 2.0;
       raceCoinsEarned += 5;
       hudCoinsVal.textContent = raceCoinsEarned;
@@ -7475,14 +8420,14 @@ function updateHUD() {
     r.lastRank = rank;
     h.rank.textContent = rank;
     h.suffix.textContent = suffixes[rank - 1] || 'th';
-    h.lap.textContent = Math.min(r.lap, TOTAL_LAPS);
+    h.lap.textContent = selectedMode === 'battle' ? '🎈'.repeat(Math.max(0, r.balloons)) || '💥' : Math.min(r.lap, TOTAL_LAPS);
     h.speed.textContent = Math.round(Math.abs(r.speed) * 3.8);
     h.nitroFill.style.width = `${Math.min(100, r.nitroGauge)}%`;
     if (h.ink) h.ink.classList.toggle('hidden', r.squidTimer <= 0);
 
     h.slots.forEach((el, sIdx) => {
       el.classList.remove('ready', 'item-ready');
-      if (selectedMode === 'item') {
+      if (isItemModeActive()) {
         const itemId = r.items[sIdx];
         if (itemId) {
           const info = ITEM_TYPES[itemId];
@@ -7516,16 +8461,20 @@ function drawMinimap() {
   const offZ = (h - spanZ * scale) / 2 - track.minZ * scale;
 
   minimapCtx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
-  minimapCtx.lineWidth = 7;
+  minimapCtx.lineWidth = track.isBattleArena ? 4 : 7;
   minimapCtx.lineJoin = 'round';
   minimapCtx.beginPath();
-  track.points.forEach((p, idx) => {
-    const mx = p.x * scale + offX;
-    const my = p.z * scale + offZ;
-    if (idx === 0) minimapCtx.moveTo(mx, my);
-    else minimapCtx.lineTo(mx, my);
-  });
-  minimapCtx.closePath();
+  if (track.isBattleArena) {
+    minimapCtx.arc(w / 2, h / 2, track.arenaRadius * scale, 0, Math.PI * 2);
+  } else {
+    track.points.forEach((p, idx) => {
+      const mx = p.x * scale + offX;
+      const my = p.z * scale + offZ;
+      if (idx === 0) minimapCtx.moveTo(mx, my);
+      else minimapCtx.lineTo(mx, my);
+    });
+    minimapCtx.closePath();
+  }
   minimapCtx.stroke();
 
   const sp = track.points[0];
@@ -7581,9 +8530,32 @@ function onRaceFinish() {
     finishRankTitle.textContent = titles[p1Rank - 1] || `第 ${p1Rank} 名`;
   }
 
+  // Grand Prix 4-Track Cup points accumulation!
+  let cupBonus = 0;
+  const isCupFinal = selectedMode === 'cup' && cupRound >= CUP_TRACKS.length - 1;
+  if (selectedMode === 'cup') {
+    const ptsTable = [10, 6, 4, 2];
+    sorted.forEach((r, idx) => {
+      cupScores[r.name] = (cupScores[r.name] || 0) + (ptsTable[idx] || 1);
+    });
+    if (isCupFinal) {
+      const topScore = Math.max(...Object.values(cupScores));
+      const p1Score = cupScores[p1.name] || 0;
+      if (p1Score >= topScore) {
+        cupBonus = 120;
+        if (finishBadgeEl) finishBadgeEl.textContent = '🏆 錦標賽總冠軍金盃！！';
+        if (finishSubtitleEl) finishSubtitleEl.textContent = `4 關總積分 ${p1Score} 分稱霸全場！額外獲得 +120🪙 冠軍大獎！`;
+      } else {
+        if (finishBadgeEl) finishBadgeEl.textContent = `🏁 錦標賽 4 關完賽！（總分 ${p1Score} 分）`;
+      }
+    } else {
+      if (finishBadgeEl) finishBadgeEl.textContent = `🏆 錦標賽第 ${cupRound + 1} / 4 關完成！`;
+    }
+  }
+
   // Progression Unlock, Medals, Coins & Ghost Replay Save!
   const rankBonus = [50, 30, 20, 10][Math.min(3, bestHumanRank - 1)] || 10;
-  const totalReward = rankBonus + raceCoinsEarned;
+  const totalReward = rankBonus + raceCoinsEarned + cupBonus;
   saveData.coins += totalReward;
 
   const medalOrder = { '': 0, '🥉': 1, '🥈': 2, '🥇': 3 };
@@ -7610,19 +8582,25 @@ function onRaceFinish() {
     finishRewardEl.textContent = `+${totalReward} 🪙` + (savedNewGhost ? ' ・ 👻 新幽靈紀錄！' : '');
   }
 
-  const hasNextTrack = curIdx + 1 < TRACK_ORDER.length;
-  nextTrackBtn.classList.toggle('hidden', !hasNextTrack);
+  const hasNextTrack = selectedMode === 'cup' ? (cupRound + 1 < CUP_TRACKS.length) : (curIdx + 1 < TRACK_ORDER.length);
+  nextTrackBtn.classList.toggle('hidden', !hasNextTrack || selectedMode === 'battle');
+  nextTrackBtn.textContent = selectedMode === 'cup' ? `錦標賽第 ${cupRound + 2} 關 ➔` : '前往下一關 ➔';
   unlockBannerEl.classList.add('hidden');
 
-  finishMetaEl.textContent = `${track.config.icon} ${track.config.name}・${selectedMode === 'item' ? '道具模式' : '競速模式'}`;
-  finishTimeEl.textContent = formatTime(p1.finishTime);
-  finishBestLapEl.textContent = formatTime(p1.bestLapTime);
+  const modeLabel = selectedMode === 'battle' ? '氣球大亂鬥' : selectedMode === 'cup' ? `錦標賽 ${cupRound + 1}/4` : selectedMode === 'item' ? '道具模式' : '競速模式';
+  finishMetaEl.textContent = `${selectedMode === 'battle' ? '🎈 氣球競技場' : `${track.config.icon} ${track.config.name}`}・${modeLabel}`;
+  finishTimeEl.textContent = selectedMode === 'battle' ? `剩餘 ${p1.balloons} 🎈` : formatTime(p1.finishTime);
+  finishBestLapEl.textContent = selectedMode === 'cup' ? `總分 ${cupScores[p1.name] || 0} pt` : formatTime(p1.bestLapTime);
 
   standingsListEl.innerHTML = '';
   sorted.forEach((r, idx) => {
     const row = document.createElement('div');
     row.className = 'standing-item' + (r.isHuman ? ' player' : '');
-    const timeLabel = r.finished ? formatTime(r.finishTime) : '賽道行駛中';
+    const timeLabel = selectedMode === 'battle'
+      ? (r.balloons > 0 ? '🎈'.repeat(r.balloons) : '💥 淘汰')
+      : selectedMode === 'cup'
+        ? `${cupScores[r.name] || 0} 分`
+        : (r.finished ? formatTime(r.finishTime) : '賽道行駛中');
     row.innerHTML = `<span>#${idx + 1} ${r.name} (${r.kartName})</span><span>${timeLabel}</span>`;
     standingsListEl.appendChild(row);
   });
@@ -7713,10 +8691,19 @@ function animate(now) {
     }
   }
 
+  pollGamepads();
   if (gameState === 'racing') {
     raceTime += dt;
     track.update(dt);
     updateGhostReplay(dt);
+    if (selectedMode === 'battle') {
+      battleTimer -= dt;
+      const alive = racers.filter((r) => !r.eliminated);
+      const humansAlive = humanRacers.filter((h) => !h.eliminated);
+      if (alive.length <= 1 || humansAlive.length === 0 || battleTimer <= 0) {
+        onRaceFinish();
+      }
+    }
   }
 
   for (const h of pHudEls) {
