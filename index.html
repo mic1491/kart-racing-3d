@@ -2045,7 +2045,8 @@ const TRACK_CONFIGS = {
     rampTs: [0.22, 0.68],
     itemRowTs: [0.16, 0.43, 0.65, 0.86],
     obstacleTs: [0.5],
-    tunnelRange: [0.73, 0.81],
+    tunnelRange: [0.72, 0.82],
+    shortcut: [0.36, 0.48],
   },
   desert: {
     id: 'desert',
@@ -2080,7 +2081,8 @@ const TRACK_CONFIGS = {
     rampTs: [0.18, 0.58, 0.82],
     itemRowTs: [0.14, 0.36, 0.62, 0.84],
     obstacleTs: [0.31, 0.74],
-    tunnelRange: null,
+    tunnelRange: [0.76, 0.85],
+    shortcut: [0.32, 0.45],
   },
   neon: {
     id: 'neon',
@@ -2115,7 +2117,8 @@ const TRACK_CONFIGS = {
     rampTs: [0.22, 0.66],
     itemRowTs: [0.15, 0.4, 0.61, 0.84],
     obstacleTs: [0.35, 0.8],
-    tunnelRange: [0.44, 0.52],
+    tunnelRange: [0.44, 0.54],
+    shortcut: [0.22, 0.34],
   },
   ice: {
     id: 'ice',
@@ -2149,7 +2152,8 @@ const TRACK_CONFIGS = {
     rampTs: [0.24, 0.49, 0.74],
     itemRowTs: [0.17, 0.43, 0.66, 0.86],
     obstacleTs: [0.39, 0.69],
-    tunnelRange: [0.27, 0.34],
+    tunnelRange: [0.26, 0.35],
+    shortcut: [0.52, 0.65],
   },
   beach: {
     id: 'beach',
@@ -2184,7 +2188,8 @@ const TRACK_CONFIGS = {
     rampTs: [0.23, 0.42, 0.68, 0.84],
     itemRowTs: [0.16, 0.38, 0.62, 0.82],
     obstacleTs: [0.47, 0.73],
-    tunnelRange: null,
+    tunnelRange: [0.76, 0.85],
+    shortcut: [0.24, 0.37],
   },
   sakura: {
     id: 'sakura',
@@ -2218,7 +2223,8 @@ const TRACK_CONFIGS = {
     rampTs: [0.22, 0.56, 0.81],
     itemRowTs: [0.15, 0.38, 0.61, 0.83],
     obstacleTs: [0.43, 0.67],
-    tunnelRange: [0.16, 0.23],
+    tunnelRange: [0.16, 0.25],
+    shortcut: [0.45, 0.58],
   },
   volcano: {
     id: 'volcano',
@@ -2253,7 +2259,8 @@ const TRACK_CONFIGS = {
     rampTs: [0.19, 0.42, 0.65, 0.84],
     itemRowTs: [0.15, 0.37, 0.6, 0.81],
     obstacleTs: [0.32, 0.55, 0.77],
-    tunnelRange: [0.56, 0.63],
+    tunnelRange: [0.55, 0.65],
+    shortcut: [0.23, 0.36],
   },
   rainbow: {
     id: 'rainbow',
@@ -2290,7 +2297,8 @@ const TRACK_CONFIGS = {
     rampTs: [0.16, 0.38, 0.58, 0.78],
     itemRowTs: [0.13, 0.33, 0.53, 0.74],
     obstacleTs: [0.29, 0.49, 0.69, 0.87],
-    tunnelRange: [0.41, 0.48],
+    tunnelRange: [0.41, 0.5],
+    shortcut: [0.62, 0.75],
   },
 };
 
@@ -2308,6 +2316,7 @@ class RaceTrack {
     this.samples = 460;
     this.boostPads = [];
     this.jumpRamps = [];
+    this.shortcuts = [];
     this.obstacles = [];
     this.coins = [];
     this.buffOrbs = [];
@@ -2322,6 +2331,7 @@ class RaceTrack {
     this._buildStartArch();
     this._buildBoostPads();
     this._buildJumpRamps();
+    this._buildSkyShortcut();
     this._buildMovingObstacles();
     this._buildCoins();
     this._buildItemBoxAnchors();
@@ -2824,6 +2834,91 @@ class RaceTrack {
     }
   }
 
+  _buildSkyShortcut() {
+    if (!this.config.shortcut) return;
+    const [entryT, exitT] = this.config.shortcut;
+    const entryIdx = Math.floor(entryT * this.samples) % this.samples;
+    const exitIdx = Math.floor(exitT * this.samples) % this.samples;
+    const pStart = this.points[entryIdx];
+    const rStart = this.rights[entryIdx];
+    const tanStart = this.tangents[entryIdx];
+    const pEnd = this.points[exitIdx];
+    const tanEnd = this.tangents[exitIdx];
+
+    // Place glowing Shortcut Launch Pad slightly to the inner side of the track
+    const launchPos = pStart.clone().addScaledVector(rStart, 4.6);
+    const angle = Math.atan2(-tanStart.x, -tanStart.z);
+
+    // Glowing Magenta/Gold Mega-Jump Pad + Overhead "⚡ 捷徑 SHORTCUT" Sign!
+    const padCanvas = document.createElement('canvas');
+    padCanvas.width = 256;
+    padCanvas.height = 256;
+    const ctx = padCanvas.getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 0, 256);
+    grad.addColorStop(0, '#ffdd00');
+    grad.addColorStop(0.5, '#ff2a9d');
+    grad.addColorStop(1, '#7c3aed');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 256);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 44px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('⚡ 捷徑', 128, 95);
+    ctx.fillText('SKY JUMP', 128, 165);
+    const padTex = new THREE.CanvasTexture(padCanvas);
+    padTex.colorSpace = THREE.SRGBColorSpace;
+
+    const launchGroup = new THREE.Group();
+    const rampSlab = new THREE.Mesh(
+      new THREE.BoxGeometry(7.2, 0.55, 8.2),
+      new THREE.MeshBasicMaterial({ map: padTex })
+    );
+    rampSlab.rotation.x = 0.34;
+    rampSlab.position.set(0, 1.35, 0);
+    launchGroup.add(rampSlab);
+
+    // Glowing arch sign right above the shortcut pad
+    const archMat = new THREE.MeshBasicMaterial({ color: 0xffdd00 });
+    const pL = new THREE.Mesh(new THREE.BoxGeometry(0.45, 6.2, 0.45), archMat);
+    pL.position.set(-3.8, 3.1, 0);
+    const pR = pL.clone();
+    pR.position.x = 3.8;
+    const topBar = new THREE.Mesh(new THREE.BoxGeometry(8.1, 0.5, 0.5), archMat);
+    topBar.position.set(0, 6.2, 0);
+    launchGroup.add(pL, pR, topBar);
+
+    launchGroup.position.set(launchPos.x, pStart.y, launchPos.z);
+    launchGroup.rotation.y = angle;
+    this.group.add(launchGroup);
+
+    // Floating Golden Sky Rings tracing the high-altitude parabolic shortcut arc!
+    const peakY = Math.max(pStart.y, pEnd.y) + 24;
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0xffdd00, transparent: true, opacity: 0.85 });
+    const ringGeo = new THREE.TorusGeometry(4.2, 0.32, 8, 20);
+    const arcDir = new THREE.Vector3().subVectors(pEnd, launchPos).normalize();
+    const arcYaw = Math.atan2(arcDir.x, arcDir.z);
+
+    for (const frac of [0.22, 0.5, 0.78]) {
+      const rx = THREE.MathUtils.lerp(launchPos.x, pEnd.x, frac);
+      const rz = THREE.MathUtils.lerp(launchPos.z, pEnd.z, frac);
+      const baseY = THREE.MathUtils.lerp(pStart.y, pEnd.y, frac);
+      const ry = baseY + Math.sin(frac * Math.PI) * (peakY - baseY);
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.position.set(rx, ry + 1.5, rz);
+      ring.rotation.y = arcYaw;
+      this.group.add(ring);
+    }
+
+    this.shortcuts.push({
+      entryPos: launchPos,
+      exitPos: pEnd.clone(),
+      exitIdx,
+      exitYaw: Math.atan2(-tanEnd.x, -tanEnd.z),
+      peakY,
+      radius: 5.6,
+    });
+  }
+
   _buildMovingObstacles() {
     // Glowing LEGO spinning/sliding barrier blocks on track!
     const obsMat = new THREE.MeshStandardMaterial({
@@ -2974,26 +3069,80 @@ class RaceTrack {
       }
     }
 
-    // 2. Glowing Tunnel Ribs if configured for this track!
+    // 2. Real 3D Enclosed Mountain Cave Tunnel (vaulted walls + rocky mountain shell + interior lights!)
     if (this.config.tunnelRange) {
       const [tStart, tEnd] = this.config.tunnelRange;
       const iStart = Math.floor(tStart * this.samples);
       const iEnd = Math.floor(tEnd * this.samples);
-      const ribMat = new THREE.MeshStandardMaterial({
-        color: this.config.archPillar,
-        emissive: this.config.archTop,
-        emissiveIntensity: 0.45,
-        roughness: 0.3,
+      const radius = this.roadWidth / 2 + 2.6;
+
+      // Build continuous semi-cylindrical vaulted cave shell!
+      const ringSegs = 10;
+      const tPos = [];
+      const tIdx = [];
+      const steps = iEnd - iStart;
+      for (let s = 0; s <= steps; s++) {
+        const idx = (iStart + s) % this.samples;
+        const p = this.points[idx];
+        const r = this.rights[idx];
+        for (let k = 0; k <= ringSegs; k++) {
+          const theta = (k / ringSegs) * Math.PI; // 0 (right) -> PI (left) over the top
+          const lat = Math.cos(theta) * radius;
+          const elev = Math.sin(theta) * (radius * 0.88);
+          const vx = p.x + r.x * lat;
+          const vy = p.y + elev;
+          const vz = p.z + r.z * lat;
+          tPos.push(vx, vy, vz);
+        }
+        if (s < steps) {
+          const rowA = s * (ringSegs + 1);
+          const rowB = (s + 1) * (ringSegs + 1);
+          for (let k = 0; k < ringSegs; k++) {
+            tIdx.push(rowA + k, rowB + k, rowA + k + 1);
+            tIdx.push(rowA + k + 1, rowB + k, rowB + k + 1);
+          }
+        }
+      }
+      const caveGeo = new THREE.BufferGeometry();
+      caveGeo.setAttribute('position', new THREE.Float32BufferAttribute(tPos, 3));
+      caveGeo.setIndex(tIdx);
+      caveGeo.computeVertexNormals();
+
+      const caveColors = {
+        village: 0x475569, desert: 0x8d5524, neon: 0x1e1b4b, ice: 0x38bdf8,
+        beach: 0x64748b, sakura: 0x4b5563, volcano: 0x2b1515, rainbow: 0x2e1065,
+      };
+      const caveMat = new THREE.MeshStandardMaterial({
+        color: caveColors[this.trackId] || 0x475569,
+        roughness: 0.75,
+        side: THREE.DoubleSide,
       });
-      const radius = this.roadWidth / 2 + 2.4;
-      for (let i = iStart; i <= iEnd; i += 4) {
-        const idx = i % this.samples;
+      const caveMesh = new THREE.Mesh(caveGeo, caveMat);
+      this.group.add(caveMesh);
+
+      // Rocky LEGO mountain blocks piled outside the cave + glowing interior ceiling lights!
+      const mountMat = new THREE.MeshStandardMaterial({ color: caveColors[this.trackId] || 0x334155, roughness: 0.85 });
+      const lightStripMat = new THREE.MeshBasicMaterial({ color: this.trackId === 'volcano' ? 0xff7043 : 0x00f5ff });
+      for (let s = 0; s <= steps; s += 4) {
+        const idx = (iStart + s) % this.samples;
         const p = this.points[idx];
         const tan = this.tangents[idx];
-        const arch = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.65, 8, 20, Math.PI), ribMat);
-        arch.position.set(p.x, p.y, p.z);
-        arch.rotation.y = Math.atan2(tan.x, tan.z);
-        this.group.add(arch);
+        const r = this.rights[idx];
+        const yaw = Math.atan2(tan.x, tan.z);
+
+        // Glowing rib light inside the cave ceiling
+        const lightRib = new THREE.Mesh(new THREE.TorusGeometry(radius - 0.35, 0.22, 6, 16, Math.PI), lightStripMat);
+        lightRib.position.set(p.x, p.y, p.z);
+        lightRib.rotation.y = yaw;
+        this.group.add(lightRib);
+
+        // Mountain peak blocks over the cave exterior
+        if (s > 1 && s < steps - 1 && s % 8 === 0) {
+          const cap = new THREE.Mesh(new THREE.BoxGeometry(radius * 2.2, 9 + (s % 3) * 4, 14), mountMat);
+          cap.position.set(p.x, p.y + radius * 0.95 + 2.5, p.z);
+          cap.rotation.y = yaw;
+          this.group.add(cap);
+        }
       }
     }
 
@@ -3463,9 +3612,10 @@ const ITEM_TYPES = {
   squid: { id: 'squid', name: '墨魚噴墨', icon: '🦑', color: '#312e81' },
   mine: { id: 'mine', name: '三連地雷', icon: '💣', color: '#ef4444' },
   tornado: { id: 'tornado', name: '超級龍捲風', icon: '🌪️', color: '#38bdf8' },
+  laser: { id: 'laser', name: '雷射炮', icon: '🔫', color: '#ff2a55' },
 };
 
-const ITEM_POOL = ['missile', 'waterbomb', 'devil', 'squid', 'mine', 'tornado', 'banana', 'shield', 'nitro', 'turbo_tire', 'super_engine'];
+const ITEM_POOL = ['laser', 'missile', 'waterbomb', 'devil', 'squid', 'mine', 'tornado', 'banana', 'shield', 'nitro', 'turbo_tire', 'super_engine'];
 
 function createQuestionBoxTexture() {
   const canvas = document.createElement('canvas');
@@ -3564,6 +3714,7 @@ class ItemManager {
     this.bananas = [];
     this.mines = [];
     this.tornadoes = [];
+    this.lasers = [];
     this.missiles = [];
     this.waterBombs = [];
     this.enabled = false;
@@ -3578,6 +3729,7 @@ class ItemManager {
     this.bananas = [];
     this.mines = [];
     this.tornadoes = [];
+    this.lasers = [];
     this.missiles = [];
     this.waterBombs = [];
   }
@@ -3611,13 +3763,13 @@ class ItemManager {
       return leadingPool[Math.floor(Math.random() * leadingPool.length)];
     }
     if (rankIndex >= 2) {
-      const comebackPool = ['freeze', 'devil', 'tornado', 'lightning', 'star', 'super_engine', 'magnet', 'squid'];
+      const comebackPool = ['laser', 'freeze', 'devil', 'tornado', 'lightning', 'star', 'super_engine', 'magnet', 'laser'];
       return comebackPool[Math.floor(Math.random() * comebackPool.length)];
     }
     return ITEM_POOL[Math.floor(Math.random() * ITEM_POOL.length)];
   }
 
-  useItem(racer, racers) {
+  useItem(racer, racers, track = null) {
     if (!racer.items || racer.items.length === 0) return false;
     const itemId = racer.items.shift();
 
@@ -3766,12 +3918,14 @@ class ItemManager {
         this.showBannerFor(racer, '💣 佈置三連爆裂地雷！', '#ff4d4d', 1.2);
       }
     } else if (itemId === 'tornado') {
-      // 🌪️ GIANT TORNADO: Launches a spinning 3D cyclone forward!
       this._spawnTornado(racer);
       if (racer.isHuman) {
         this.audio.playMissileLaunch();
         this.showBannerFor(racer, '🌪️ 釋放超級龍捲風！捲飛前方對手！', '#38bdf8', 1.3);
       }
+    } else if (itemId === 'laser') {
+      // 🔫 LASER CANNON: Fires a blazing 3D laser beam that blasts opponent(s) BACKWARDS!
+      this._fireLaserCannon(racer, racers, track);
     }
     return true;
   }
@@ -3840,6 +3994,92 @@ class ItemManager {
     g.position.copy(pos);
     this.group.add(g);
     this.tornadoes.push({ mesh: g, pos, yaw: owner.yaw, owner, speed: 78, life: 3.6 });
+  }
+
+  _fireLaserCannon(owner, racers, track) {
+    const fwdX = -Math.sin(owner.yaw);
+    const fwdZ = -Math.cos(owner.yaw);
+    const beamLen = 90;
+
+    // 3D Glowing Red/White Laser Beam Cylinder!
+    const beamGroup = new THREE.Group();
+    const outerBeam = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.65, 0.65, beamLen, 10),
+      new THREE.MeshBasicMaterial({ color: 0xff1744, transparent: true, opacity: 0.82 })
+    );
+    outerBeam.rotation.x = Math.PI / 2;
+    outerBeam.position.z = -beamLen / 2 - 1.5;
+    const innerBeam = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.28, 0.28, beamLen, 8),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.96 })
+    );
+    innerBeam.rotation.x = Math.PI / 2;
+    innerBeam.position.z = -beamLen / 2 - 1.5;
+    beamGroup.add(outerBeam, innerBeam);
+    beamGroup.position.set(owner.pos.x, owner.pos.y + 1.25, owner.pos.z);
+    beamGroup.rotation.y = owner.yaw;
+    this.group.add(beamGroup);
+    this.lasers.push({ mesh: beamGroup, life: 0.45, maxLife: 0.45 });
+
+    if (owner.isHuman) {
+      this.audio.playLightning();
+    }
+
+    // Find opponents in front cone OR closest opponent ahead within 95m and BLAST them BACKWARDS!
+    let hitCount = 0;
+    for (const r of racers) {
+      if (r === owner || r.finished) continue;
+      const dx = r.pos.x - owner.pos.x;
+      const dz = r.pos.z - owner.pos.z;
+      const dist = Math.hypot(dx, dz);
+      const forwardDot = (dx * fwdX + dz * fwdZ) / Math.max(0.001, dist);
+      const isAheadOnTrack = r.totalProgress > owner.totalProgress && dist < 95;
+      if ((dist < 95 && forwardDot > 0.72) || isAheadOnTrack) {
+        if (r.starTimer > 0) continue;
+        if (r.shieldTimer > 0) {
+          r.shieldTimer = 0;
+          if (r.isHuman) this.showBannerFor(r, '🛡️ 護盾擋下雷射炮！', '#38ef7d', 1.2);
+          continue;
+        }
+        hitCount++;
+        // Blast opponent BACKWARDS along the track behind the shooter!
+        r.spinTimer = 1.4;
+        r.velY = 17.5;
+        r.speed = -16;
+        if (track) {
+          const knockIdx = (r.trackIndex - 20 + track.samples) % track.samples;
+          const kp = track.points[knockIdx];
+          r.pos.set(kp.x, kp.y + 1.0, kp.z);
+          r.trackIndex = knockIdx;
+          r.trackT = knockIdx / track.samples;
+        } else {
+          r.pos.x -= fwdX * 26;
+          r.pos.z -= fwdZ * 26;
+        }
+        for (let k = 0; k < 22; k++) {
+          this.spawnParticle(
+            r.pos.clone().setY(r.pos.y + 1.2),
+            new THREE.Vector3((Math.random() - 0.5) * 20, 5 + Math.random() * 10, (Math.random() - 0.5) * 20),
+            0xff1744,
+            0.55,
+            1.4
+          );
+        }
+        if (r.isHuman) {
+          this.audio.playHit();
+          this.showBannerFor(r, '🔫 被雷射炮炸飛到後面去了！', '#ff1744', 1.6);
+        }
+      }
+    }
+
+    if (owner.isHuman) {
+      this.showBannerFor(
+        owner,
+        hitCount > 0 ? `🔫 雷射炮命中！將 ${hitCount} 位對手炸飛到後面！` : '🔫 雷射炮發射！',
+        '#ff2a55',
+        1.5
+      );
+    }
   }
 
   _spawnMissile(owner, racers) {
@@ -4069,6 +4309,18 @@ class ItemManager {
       if (td.life <= 0) {
         this.group.remove(td.mesh);
         this.tornadoes.splice(i, 1);
+      }
+    }
+
+    // 2.7 Update Laser Beams
+    for (let i = this.lasers.length - 1; i >= 0; i--) {
+      const ls = this.lasers[i];
+      ls.life -= dt;
+      const ratio = Math.max(0, ls.life / ls.maxLife);
+      ls.mesh.scale.set(ratio * 1.4, ratio * 1.4, 1);
+      if (ls.life <= 0) {
+        this.group.remove(ls.mesh);
+        this.lasers.splice(i, 1);
       }
     }
 
@@ -5000,6 +5252,8 @@ function createRacer(presetKey, slotIndex, displayName, controlType, humanIndex 
     squashTimer: 0,
     roadPitch: 0,
     rampCooldown: 0,
+    shortcutJump: null,
+    shortcutCooldown: 0,
     obstacleCooldown: 0,
     yaw: start.yaw,
     moveYaw: start.yaw,
@@ -5278,7 +5532,7 @@ function updateHumanControls(r, dt) {
   if (actionQueued[r.humanIndex]) {
     actionQueued[r.humanIndex] = false;
     if (selectedMode === 'item') {
-      itemManager.useItem(r, racers);
+      itemManager.useItem(r, racers, track);
     } else if (r.nitroSlots > 0 && r.boostTimer <= 0.1) {
       r.nitroSlots--;
       r.boostTimer = 2.4 + upgNitro * 0.25;
@@ -5404,7 +5658,7 @@ function updateAI(r, dt) {
   if (selectedMode === 'item' && r.items.length > 0 && !r.finished) {
     r.aiItemDelay -= dt;
     if (r.aiItemDelay <= 0) {
-      itemManager.useItem(r, racers);
+      itemManager.useItem(r, racers, track);
       r.aiItemDelay = 2.0 + Math.random() * 2.5;
     }
   }
@@ -5454,7 +5708,46 @@ function updateRacerPhysics(r, dt) {
   if (r.miniBoostTimer > 0) r.miniBoostTimer = Math.max(0, r.miniBoostTimer - dt);
   if (r.padCooldown > 0) r.padCooldown = Math.max(0, r.padCooldown - dt);
   if (r.rampCooldown > 0) r.rampCooldown = Math.max(0, r.rampCooldown - dt);
+  if (r.shortcutCooldown > 0) r.shortcutCooldown = Math.max(0, r.shortcutCooldown - dt);
   if (r.obstacleCooldown > 0) r.obstacleCooldown = Math.max(0, r.obstacleCooldown - dt);
+
+  // Active High-Altitude Sky-Jump Shortcut Flight!
+  if (r.shortcutJump) {
+    const sj = r.shortcutJump;
+    sj.progress += dt / sj.duration;
+    const f = Math.min(1, sj.progress);
+    r.pos.x = THREE.MathUtils.lerp(sj.startPos.x, sj.endPos.x, f);
+    r.pos.z = THREE.MathUtils.lerp(sj.startPos.z, sj.endPos.z, f);
+    const baseY = THREE.MathUtils.lerp(sj.startPos.y, sj.endPos.y, f);
+    r.pos.y = baseY + Math.sin(f * Math.PI) * (sj.peakY - baseY);
+    r.roadPitch = Math.cos(f * Math.PI) * 0.42;
+    r.yaw = sj.flightYaw;
+    r.moveYaw = sj.flightYaw;
+    r.speed = r.kart.preset.maxSpeed + 26;
+    if (f >= 1) {
+      r.pos.copy(sj.endPos);
+      r.yaw = sj.endYaw;
+      r.moveYaw = sj.endYaw;
+      r.trackIndex = sj.endIdx;
+      r.trackT = sj.endIdx / track.samples;
+      if (r.trackT > 0.42 && r.trackT < 0.65) r.passedHalfway = true;
+      r.shortcutJump = null;
+      r.squashTimer = 0.28;
+      r.boostTimer = Math.max(r.boostTimer, 1.35);
+      if (r.isHuman) {
+        camShake = Math.max(camShake, 0.35);
+        raceCoinsEarned += 10;
+        hudCoinsVal.textContent = raceCoinsEarned;
+        audio.playCoin();
+        showBannerFor(r, '🚀 高空捷徑落地！+10🪙', '#ffdd00', 1.25);
+      }
+    }
+    let adjustedT = r.trackT;
+    if (r.lap === 1 && !r.passedHalfway && adjustedT > 0.8) adjustedT -= 1.0;
+    r.totalProgress = (r.lap - 1) + adjustedT;
+    applyKartVisuals(r, dt);
+    return;
+  }
   if (r.shieldTimer > 0) r.shieldTimer = Math.max(0, r.shieldTimer - dt);
   if (r.spinTimer > 0) r.spinTimer = Math.max(0, r.spinTimer - dt);
   if (r.waterTrapTimer > 0) r.waterTrapTimer = Math.max(0, r.waterTrapTimer - dt);
@@ -5592,6 +5885,35 @@ function updateRacerPhysics(r, dt) {
         if (r.isHuman) {
           audio.playBoost();
           showBannerFor(r, '加速帶衝刺！', '#ffdd00', 0.9);
+        }
+        break;
+      }
+    }
+  }
+
+  // High-Altitude Sky-Jump Shortcut Pads!
+  if (r.shortcutCooldown <= 0 && !r.shortcutJump && gameState === 'racing' && !incapacitated && r.speed > 18) {
+    for (const sc of track.shortcuts || []) {
+      const dx = r.pos.x - sc.entryPos.x;
+      const dz = r.pos.z - sc.entryPos.z;
+      const dy = Math.abs(r.pos.y - sc.entryPos.y);
+      if (dy < 4.0 && dx * dx + dz * dz < sc.radius * sc.radius) {
+        r.shortcutCooldown = 4.0;
+        const flightYaw = Math.atan2(-(sc.exitPos.x - r.pos.x), -(sc.exitPos.z - r.pos.z));
+        r.shortcutJump = {
+          startPos: r.pos.clone(),
+          endPos: sc.exitPos.clone(),
+          endIdx: sc.exitIdx,
+          endYaw: sc.exitYaw,
+          flightYaw,
+          peakY: sc.peakY,
+          progress: 0,
+          duration: 1.35,
+        };
+        if (r.isHuman) {
+          camShake = Math.max(camShake, 0.35);
+          audio.playBoost();
+          showBannerFor(r, '⚡ 高空彈跳抄捷徑 SKY SHORTCUT!', '#ff2a9d', 1.4);
         }
         break;
       }
