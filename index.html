@@ -46,9 +46,7 @@ html, body {
   box-shadow: inset 0 0 90px rgba(0, 220, 255, 0.45);
 }
 
-#speed-lines.active {
-  opacity: 1;
-}
+#speed-lines.active { opacity: 1; }
 
 #split-divider {
   position: absolute;
@@ -63,11 +61,9 @@ html, body {
   pointer-events: none;
 }
 
-.hidden {
-  display: none !important;
-}
+.hidden { display: none !important; }
 
-/* Overlays */
+/* === Clean Arcade Lobby Overlay === */
 .overlay {
   position: absolute;
   inset: 0;
@@ -75,15 +71,14 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 14px 16px;
-  background: linear-gradient(180deg, rgba(10, 18, 38, 0.6) 0%, rgba(10, 18, 38, 0.04) 32%, rgba(10, 18, 38, 0.9) 100%);
+  padding: 16px 16px 18px;
+  background: linear-gradient(180deg, rgba(10, 18, 38, 0.55) 0%, rgba(10, 18, 38, 0.02) 34%, rgba(10, 18, 38, 0.78) 100%);
   z-index: 20;
-  overflow-y: auto;
 }
 
 #finish-screen {
   justify-content: center;
-  background: rgba(10, 18, 38, 0.84);
+  background: rgba(10, 18, 38, 0.85);
   backdrop-filter: blur(8px);
 }
 
@@ -91,18 +86,7 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-.lobby-panels {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  max-width: 920px;
-  gap: 7px;
-  max-height: 52vh;
-  overflow-y: auto;
-  padding: 2px 4px;
+  gap: 6px;
 }
 
 .title-badge {
@@ -112,87 +96,117 @@ html, body {
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 1.5px;
-  box-shadow: 0 4px 14px rgba(255, 100, 0, 0.45);
-  margin-bottom: 4px;
 }
 
 .game-title {
-  font-size: clamp(26px, 4vw, 44px);
+  font-size: clamp(24px, 3.8vw, 40px);
   font-weight: 900;
   letter-spacing: 2px;
-  text-shadow: 0 4px 0 #142850, 0 10px 24px rgba(0, 0, 0, 0.55);
+  text-shadow: 0 4px 0 #142850, 0 8px 20px rgba(0, 0, 0, 0.55);
   text-align: center;
 }
 
-/* Lobby Selector Bars */
-.selector-bar {
-  width: 100%;
+.setup-summary {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 18px;
-  justify-content: center;
   align-items: center;
-  background: rgba(14, 24, 50, 0.84);
-  border: 2px solid rgba(255, 255, 255, 0.16);
-  border-radius: 14px;
-  padding: 8px 14px;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(12, 22, 46, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  padding: 5px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
   backdrop-filter: blur(6px);
 }
 
-.track-bar {
+.setup-summary .dot { opacity: 0.4; }
+.sum-coins { color: #ffdd00; }
+
+/* Bottom Tabbed Lobby Console */
+.lobby-console {
+  width: 100%;
+  max-width: 820px;
+  background: rgba(12, 20, 44, 0.9);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55);
+  display: flex;
   flex-direction: column;
+}
+
+.lobby-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: rgba(8, 14, 30, 0.85);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.tab-btn {
+  border: none;
+  background: transparent;
+  color: #9db7e0;
+  padding: 11px 6px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.tab-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
+.tab-btn.active {
+  color: #ffdd00;
+  border-bottom-color: #ffdd00;
+  background: rgba(255, 215, 0, 0.1);
+}
+
+.tab-body {
+  padding: 14px 18px;
+  min-height: 150px;
+  max-height: 36vh;
+  overflow-y: auto;
+}
+
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+.pane-hint {
+  font-size: 12px;
+  color: #a8c7f8;
+  margin-bottom: 10px;
+  text-align: center;
+  font-weight: 700;
+}
+
+/* Tab 1: Play Grid */
+.play-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 24px;
+  justify-content: center;
+  align-items: center;
+}
+
+.setting-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 7px;
 }
 
-.track-header-row {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-}
-
-.selector-group {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-}
-
 .group-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
-  color: #a8c7f8;
-  letter-spacing: 0.5px;
-}
-
-.name-inputs {
-  display: flex;
-  gap: 8px;
-}
-
-.name-inputs input {
-  width: 112px;
-  padding: 5px 10px;
-  border-radius: 999px;
-  border: 2px solid rgba(255, 255, 255, 0.28);
-  background: rgba(8, 14, 32, 0.85);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-  text-align: center;
-  outline: none;
-  user-select: text;
-  -webkit-user-select: text;
-}
-
-.name-inputs input:focus {
-  border-color: #ffcc00;
+  color: #9ec0f5;
 }
 
 .pill-row {
   display: flex;
-  gap: 7px;
+  gap: 8px;
   flex-wrap: wrap;
   justify-content: center;
 }
@@ -202,60 +216,53 @@ html, body {
   background: rgba(255, 255, 255, 0.08);
   color: #e4eeff;
   border-radius: 999px;
-  padding: 5px 12px;
-  font-size: 12px;
+  padding: 7px 14px;
+  font-size: 13px;
   font-weight: 800;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.pill-btn:hover:not(.locked) {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.55);
-}
-
+.pill-btn:hover { background: rgba(255, 255, 255, 0.18); border-color: rgba(255, 255, 255, 0.5); }
 .pill-btn.selected {
   background: linear-gradient(135deg, #00c6ff, #0072ff);
-  border-color: #ffffff;
-  color: #ffffff;
-  box-shadow: 0 0 12px rgba(0, 180, 255, 0.6);
+  border-color: #fff;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(0, 180, 255, 0.55);
 }
 
-.pill-btn.locked {
-  opacity: 0.45;
-  cursor: not-allowed;
-  background: rgba(0, 0, 0, 0.35);
-}
-
-.mini-btn {
-  border: 1px solid rgba(255, 215, 0, 0.55);
-  background: rgba(255, 200, 0, 0.18);
-  color: #ffdd66;
+.name-inputs { display: flex; gap: 8px; }
+.name-inputs input {
+  width: 118px;
+  padding: 7px 12px;
   border-radius: 999px;
-  padding: 3px 10px;
-  font-size: 11px;
-  font-weight: 800;
-  cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  background: rgba(8, 14, 32, 0.9);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  outline: none;
+  user-select: text;
+  -webkit-user-select: text;
 }
-
-.mini-btn:hover {
-  background: rgba(255, 200, 0, 0.32);
-}
+.name-inputs input:focus { border-color: #ffcc00; }
 
 .net-panel {
-  gap: 10px 14px;
-  border-color: rgba(0, 229, 255, 0.4);
-}
-
-.room-join-wrap {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
   display: flex;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  justify-content: center;
   align-items: center;
 }
 
+.room-join-wrap { display: flex; gap: 6px; align-items: center; }
 .room-join-wrap input {
-  width: 108px;
-  padding: 5px 10px;
+  width: 112px;
+  padding: 6px 10px;
   border-radius: 999px;
   border: 2px solid rgba(0, 229, 255, 0.45);
   background: rgba(8, 14, 32, 0.9);
@@ -267,138 +274,66 @@ html, body {
   user-select: text;
   -webkit-user-select: text;
 }
-
-.net-status {
-  font-size: 12px;
-  font-weight: 800;
-  color: #7ee8ff;
-}
-
+.net-status { font-size: 12px; font-weight: 800; color: #7ee8ff; }
 .net-status.connected { color: #38ef7d; }
 .net-status.error { color: #ff6b6b; }
 
-/* Garage Upgrades & Coins */
-.garage-bar {
-  padding: 6px 12px;
-  gap: 8px 14px;
-  border-color: rgba(255, 215, 0, 0.35);
+/* Tab 2: 8-Track Spacious Grid */
+.track-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+  gap: 9px;
 }
 
-.coin-wallet {
-  font-size: 14px;
-  font-weight: 900;
-  color: #ffdd00;
-  background: rgba(255, 204, 0, 0.16);
-  border: 1px solid rgba(255, 204, 0, 0.5);
-  padding: 3px 12px;
-  border-radius: 999px;
+.track-grid .pill-btn {
+  border-radius: 12px;
+  padding: 10px 12px;
+  text-align: left;
 }
 
-.upgrade-pills {
-  display: flex;
-  gap: 7px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.upgrade-btn {
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  border-radius: 999px;
-  padding: 4px 11px;
-  font-size: 11px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: all 0.14s ease;
-}
-
-.upgrade-btn:hover:not(:disabled) {
-  background: rgba(255, 204, 0, 0.25);
-  border-color: #ffdd00;
-}
-
-.upgrade-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.hud-coins {
-  color: #ffdd00;
-  font-weight: 900;
-}
-
-/* 6-Kart Grid */
-.kart-section {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
+/* Tab 3: Drivers + Vehicles */
 .p2-tabs {
   display: flex;
   gap: 8px;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.driver-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .kart-grid {
-  width: 100%;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
-  gap: 7px;
-}
-
-.driver-bar {
-  padding: 6px 12px;
-  gap: 6px 10px;
-}
-
-.style-tag {
-  font-size: 9px;
-  font-weight: 800;
-  color: #7ee8ff;
-  background: rgba(0, 180, 255, 0.2);
-  padding: 1px 5px;
-  border-radius: 99px;
-  display: inline-block;
-  margin-top: 1px;
+  grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
+  gap: 10px;
 }
 
 .kart-card {
-  background: rgba(16, 26, 52, 0.88);
-  border: 2px solid rgba(255, 255, 255, 0.18);
+  background: rgba(20, 32, 64, 0.85);
+  border: 2px solid rgba(255, 255, 255, 0.16);
   border-radius: 12px;
-  padding: 8px;
+  padding: 9px 10px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
   cursor: pointer;
-  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.14s ease, border-color 0.14s ease;
   position: relative;
 }
 
-.kart-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.5);
-}
+.kart-card:hover { transform: translateY(-2px); border-color: rgba(255, 255, 255, 0.5); }
+.kart-card.selected-p1 { border-color: #ffcc00; box-shadow: 0 0 14px rgba(255, 204, 0, 0.45); }
+.kart-card.selected-p2 { border-color: #00f5ff; box-shadow: 0 0 14px rgba(0, 245, 255, 0.45); }
 
-.kart-card.selected-p1 {
-  border-color: #ffcc00;
-  box-shadow: 0 0 16px rgba(255, 204, 0, 0.5);
-}
-
-.kart-card.selected-p2 {
-  border-color: #00f5ff;
-  box-shadow: 0 0 16px rgba(0, 245, 255, 0.5);
-}
-
-.kart-top-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
+.kart-top-row { display: flex; align-items: center; gap: 9px; padding-right: 22px; }
 .kart-swatch {
   width: 36px;
   height: 36px;
@@ -410,80 +345,107 @@ html, body {
   font-weight: 900;
   font-size: 11px;
   border: 2px solid rgba(255, 255, 255, 0.35);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
 }
 
-.kart-title-wrap h3 {
-  font-size: 12px;
-  font-weight: 900;
-  line-height: 1.2;
-}
-
-.kart-title-wrap p {
+.kart-title-wrap h3 { font-size: 12px; font-weight: 900; line-height: 1.25; }
+.style-tag {
   font-size: 10px;
-  color: #a9bddb;
-}
-
-.pick-badges {
-  position: absolute;
-  top: 5px;
-  right: 6px;
-  display: flex;
-  gap: 3px;
-}
-
-.pick-badge {
-  font-size: 9px;
-  font-weight: 900;
-  padding: 1px 5px;
+  font-weight: 800;
+  color: #7ee8ff;
+  background: rgba(0, 180, 255, 0.2);
+  padding: 1px 6px;
   border-radius: 99px;
-  color: #000;
+  display: inline-block;
+  margin-top: 2px;
 }
 
+.pick-badges { position: absolute; top: 6px; right: 6px; display: flex; gap: 3px; }
+.pick-badge { font-size: 9px; font-weight: 900; padding: 1px 5px; border-radius: 99px; color: #000; }
 .pick-badge.p1 { background: #ffcc00; }
 .pick-badge.p2 { background: #00f5ff; }
 
-.stat-row {
+.stat-row { display: flex; align-items: center; gap: 6px; font-size: 10px; color: #cfe0ff; }
+.stat-bar { flex: 1; height: 4px; background: rgba(255, 255, 255, 0.14); border-radius: 99px; overflow: hidden; }
+.stat-bar > div { height: 100%; background: linear-gradient(90deg, #00d2ff, #38ef7d); }
+
+/* Tab 4: Upgrade Cards */
+.upgrade-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.upgrade-card {
+  border: 2px solid rgba(255, 215, 0, 0.35);
+  background: rgba(255, 204, 0, 0.1);
+  color: #fff;
+  border-radius: 14px;
+  padding: 14px 10px;
+  cursor: pointer;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 5px;
-  font-size: 10px;
-  color: #cfe0ff;
+  gap: 6px;
+  transition: all 0.15s ease;
 }
 
-.stat-bar {
-  flex: 1;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.14);
-  border-radius: 99px;
-  overflow: hidden;
+.upgrade-card:hover:not(:disabled) {
+  background: rgba(255, 204, 0, 0.24);
+  border-color: #ffdd00;
+  transform: translateY(-2px);
 }
 
-.stat-bar > div {
-  height: 100%;
-  background: linear-gradient(90deg, #00d2ff, #38ef7d);
+.upgrade-card:disabled { opacity: 0.45; cursor: not-allowed; }
+.upg-title { font-size: 15px; font-weight: 900; }
+.upg-meta { font-size: 12px; font-weight: 800; color: #ffdd66; }
+
+/* Always-Visible Footer */
+.lobby-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 10px 18px;
+  background: rgba(8, 14, 30, 0.9);
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.controls-guide {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  font-size: 12px;
+  color: #c9dcff;
+}
+
+kbd {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .primary-btn, .secondary-btn {
   border: none;
   border-radius: 999px;
-  padding: 10px 34px;
+  padding: 10px 30px;
   font-size: 16px;
   font-weight: 900;
   letter-spacing: 2px;
   cursor: pointer;
-  transition: transform 0.14s ease, box-shadow 0.14s ease;
+  transition: transform 0.14s ease;
 }
 
 .primary-btn {
   background: linear-gradient(180deg, #ffdd00 0%, #ff9900 100%);
   color: #1c1400;
-  box-shadow: 0 5px 0 #b86200, 0 8px 20px rgba(255, 160, 0, 0.45);
+  box-shadow: 0 4px 0 #b86200, 0 8px 18px rgba(255, 160, 0, 0.45);
 }
-
-.primary-btn:hover {
-  transform: translateY(-2px);
-}
+.primary-btn:hover { transform: translateY(-2px); }
 
 .secondary-btn {
   background: rgba(255, 255, 255, 0.16);
@@ -491,28 +453,7 @@ html, body {
   border: 2px solid rgba(255, 255, 255, 0.35);
 }
 
-.controls-guide {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 14px;
-  justify-content: center;
-  font-size: 11px;
-  color: #dce8ff;
-  background: rgba(12, 20, 40, 0.75);
-  padding: 6px 14px;
-  border-radius: 999px;
-}
-
-kbd {
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 4px;
-  padding: 1px 5px;
-  font-size: 10px;
-  font-weight: 700;
-}
-
-/* Countdown */
+/* === Countdown === */
 #countdown {
   position: absolute;
   top: 42%;
@@ -532,13 +473,8 @@ kbd {
   100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
 
-/* HUD */
-#hud {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 10;
-}
+/* === In-Game HUD === */
+#hud { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
 
 .hud-global-top {
   position: absolute;
@@ -565,21 +501,10 @@ kbd {
 }
 
 .sep { opacity: 0.35; }
+.hud-coins { color: #ffdd00; font-weight: 900; }
+.mode-tag { font-size: 11px; background: rgba(255, 149, 0, 0.9); color: #fff; padding: 1px 7px; border-radius: 99px; }
 
-.mode-tag {
-  font-size: 11px;
-  background: rgba(255, 149, 0, 0.9);
-  color: #fff;
-  padding: 1px 7px;
-  border-radius: 99px;
-}
-
-.hud-actions {
-  display: flex;
-  gap: 6px;
-  pointer-events: auto;
-}
-
+.hud-actions { display: flex; gap: 6px; pointer-events: auto; }
 .hud-actions button {
   width: 34px;
   height: 34px;
@@ -589,10 +514,6 @@ kbd {
   color: #fff;
   font-size: 15px;
   cursor: pointer;
-}
-
-.hud-actions button:hover {
-  background: rgba(40, 65, 120, 0.94);
 }
 
 #minimap {
@@ -614,49 +535,13 @@ kbd {
   height: 112px;
 }
 
-/* Per-Player HUD Pane */
-.player-hud {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-}
+.player-hud { position: absolute; top: 0; bottom: 0; left: 0; width: 100%; }
+#hud.split-mode #hud-p1 { left: 0; width: 50%; }
+#hud.split-mode #hud-p2 { left: 50%; width: 50%; }
 
-#hud.split-mode #hud-p1 {
-  left: 0;
-  width: 50%;
-}
-
-#hud.split-mode #hud-p2 {
-  left: 50%;
-  width: 50%;
-}
-
-.p-top-left {
-  position: absolute;
-  top: 14px;
-  left: 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-#hud.split-mode .p-top-left {
-  top: 54px;
-}
-
-#hud.split-mode #hud-p2 .p-top-left {
-  left: auto;
-  right: 14px;
-}
-
-#hud.split-mode .p-bottom-center {
-  left: 14px;
-  transform: none;
-  width: calc(100% - 132px);
-  align-items: flex-start;
-}
+.p-top-left { position: absolute; top: 14px; left: 16px; display: flex; align-items: center; gap: 10px; }
+#hud.split-mode .p-top-left { top: 54px; }
+#hud.split-mode #hud-p2 .p-top-left { left: auto; right: 14px; }
 
 .rank-box {
   background: linear-gradient(135deg, rgba(16, 28, 56, 0.88), rgba(32, 54, 102, 0.88));
@@ -666,18 +551,8 @@ kbd {
   display: flex;
   align-items: baseline;
 }
-
-.p2-rank-border {
-  border-color: rgba(0, 245, 255, 0.85);
-}
-
-.p-rank {
-  font-size: 34px;
-  font-weight: 900;
-  color: #ffdd00;
-  line-height: 1;
-}
-
+.p2-rank-border { border-color: rgba(0, 245, 255, 0.85); }
+.p-rank { font-size: 34px; font-weight: 900; color: #ffdd00; line-height: 1; }
 .rank-suffix { font-size: 13px; font-weight: 800; color: #ffdd00; margin-left: 2px; }
 .rank-total { font-size: 13px; color: #9fb5d9; margin-left: 4px; font-weight: 700; }
 
@@ -687,20 +562,9 @@ kbd {
   border-radius: 11px;
   padding: 5px 12px;
 }
-
-.p-name-tag {
-  font-size: 12px;
-  font-weight: 900;
-  color: #ffdd00;
-}
-
+.p-name-tag { font-size: 12px; font-weight: 900; color: #ffdd00; }
 .p2-name-col { color: #00f5ff; }
-
-.lap-text {
-  font-size: 15px;
-  font-weight: 900;
-  color: #4ce0ff;
-}
+.lap-text { font-size: 15px; font-weight: 900; color: #4ce0ff; }
 
 .p-banner {
   position: absolute;
@@ -739,11 +603,14 @@ kbd {
   width: min(300px, 60%);
 }
 
-.nitro-slots {
-  display: flex;
-  gap: 10px;
+#hud.split-mode .p-bottom-center {
+  left: 14px;
+  transform: none;
+  width: calc(100% - 132px);
+  align-items: flex-start;
 }
 
+.nitro-slots { display: flex; gap: 10px; }
 .nitro-slot {
   min-width: 66px;
   height: 48px;
@@ -758,46 +625,14 @@ kbd {
   font-weight: 900;
   color: rgba(255, 255, 255, 0.3);
 }
-
 .nitro-slot .slot-icon { font-size: 20px; line-height: 1.1; }
 .nitro-slot .slot-sub { font-size: 9px; color: #fff; }
+.nitro-slot.ready { background: linear-gradient(135deg, #ff3b30, #ff9500); border-color: #fff3b0; color: #fff; box-shadow: 0 0 16px rgba(255, 115, 0, 0.85); }
+.nitro-slot.item-ready { background: linear-gradient(135deg, #1e3a8a, #6d28d9); border-color: #00f5ff; color: #fff; box-shadow: 0 0 16px rgba(0, 229, 255, 0.75); }
 
-.nitro-slot.ready {
-  background: linear-gradient(135deg, #ff3b30, #ff9500);
-  border-color: #fff3b0;
-  color: #fff;
-  box-shadow: 0 0 16px rgba(255, 115, 0, 0.85);
-}
-
-.nitro-slot.item-ready {
-  background: linear-gradient(135deg, #1e3a8a, #6d28d9);
-  border-color: #00f5ff;
-  color: #fff;
-  box-shadow: 0 0 16px rgba(0, 229, 255, 0.75);
-}
-
-.gauge-wrap {
-  width: 100%;
-  background: rgba(12, 20, 42, 0.82);
-  border: 2px solid rgba(255, 255, 255, 0.25);
-  border-radius: 10px;
-  padding: 5px 8px;
-}
-
-.gauge-bar {
-  width: 100%;
-  height: 11px;
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.nitro-fill {
-  width: 0%;
-  height: 100%;
-  background: linear-gradient(90deg, #00c6ff, #0072ff, #ff3b30);
-  border-radius: 999px;
-}
+.gauge-wrap { width: 100%; background: rgba(12, 20, 42, 0.82); border: 2px solid rgba(255, 255, 255, 0.25); border-radius: 10px; padding: 5px 8px; }
+.gauge-bar { width: 100%; height: 11px; background: rgba(255, 255, 255, 0.12); border-radius: 999px; overflow: hidden; }
+.nitro-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #00c6ff, #0072ff, #ff3b30); border-radius: 999px; }
 
 .p-speed-box {
   position: absolute;
@@ -810,126 +645,34 @@ kbd {
   text-align: right;
   min-width: 96px;
 }
-
-.speed-value {
-  font-size: 34px;
-  font-weight: 900;
-  font-style: italic;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-.speed-unit {
-  font-size: 10px;
-  font-weight: 800;
-  color: #4ce0ff;
-  letter-spacing: 1.5px;
-}
+.speed-value { font-size: 34px; font-weight: 900; font-style: italic; line-height: 1; font-variant-numeric: tabular-nums; }
+.speed-unit { font-size: 10px; font-weight: 800; color: #4ce0ff; letter-spacing: 1.5px; }
 
 /* Touch Controls */
-#touch-controls {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 12;
-}
-
-.touch-left {
-  position: absolute;
-  bottom: 22px;
-  left: 18px;
-  display: flex;
-  gap: 10px;
-  pointer-events: auto;
-}
-
-.touch-right {
-  position: absolute;
-  bottom: 98px;
-  right: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  pointer-events: auto;
-}
-
+#touch-controls { position: absolute; inset: 0; pointer-events: none; z-index: 12; }
+.touch-left { position: absolute; bottom: 22px; left: 18px; display: flex; gap: 10px; pointer-events: auto; }
+.touch-right { position: absolute; bottom: 98px; right: 18px; display: flex; flex-direction: column; gap: 9px; pointer-events: auto; }
 .touch-row { display: flex; gap: 9px; justify-content: flex-end; }
-
-.touch-btn {
-  min-width: 64px;
-  height: 54px;
-  padding: 0 12px;
-  border-radius: 14px;
-  border: 2px solid rgba(255, 255, 255, 0.45);
-  background: rgba(14, 24, 52, 0.72);
-  color: #fff;
-  font-size: 15px;
-  font-weight: 900;
-  cursor: pointer;
-}
-
+.touch-btn { min-width: 64px; height: 54px; padding: 0 12px; border-radius: 14px; border: 2px solid rgba(255, 255, 255, 0.45); background: rgba(14, 24, 52, 0.72); color: #fff; font-size: 15px; font-weight: 900; cursor: pointer; }
 .touch-btn.accent-cyan { border-color: #00e5ff; background: rgba(0, 150, 200, 0.65); }
 .touch-btn.accent-orange { border-color: #ffaa00; background: rgba(230, 110, 0, 0.72); }
 .touch-btn.accent-green { border-color: #38ef7d; background: rgba(25, 160, 80, 0.72); }
 .touch-btn.accent-red { border-color: #ff4d4d; background: rgba(190, 35, 35, 0.7); }
 
 /* Finish Screen */
-.unlock-banner {
-  margin-top: 10px;
-  padding: 10px 22px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #ff9500, #ffdd00);
-  color: #1a1000;
-  font-size: 17px;
-  font-weight: 900;
-  box-shadow: 0 0 24px rgba(255, 204, 0, 0.65);
-}
+.unlock-banner { margin-top: 10px; padding: 10px 22px; border-radius: 14px; background: linear-gradient(135deg, #ff9500, #ffdd00); color: #1a1000; font-size: 17px; font-weight: 900; }
+.results-card { width: min(460px, 92vw); background: rgba(16, 28, 56, 0.94); border: 2px solid rgba(255, 255, 255, 0.22); border-radius: 16px; padding: 16px 18px; margin: 14px 0 18px; }
+.result-row { display: flex; justify-content: space-between; font-size: 14px; padding: 6px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
+.standings-list { margin-top: 10px; display: flex; flex-direction: column; gap: 7px; }
+.standing-item { display: flex; justify-content: space-between; align-items: center; padding: 7px 11px; border-radius: 9px; background: rgba(255, 255, 255, 0.07); font-size: 13px; }
+.standing-item.player { background: rgba(255, 204, 0, 0.22); border: 1px solid rgba(255, 204, 0, 0.7); font-weight: 800; }
+.finish-buttons { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
 
-.results-card {
-  width: min(460px, 92vw);
-  background: rgba(16, 28, 56, 0.94);
-  border: 2px solid rgba(255, 255, 255, 0.22);
-  border-radius: 16px;
-  padding: 16px 18px;
-  margin: 14px 0 18px;
-}
-
-.result-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-  padding: 6px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.standings-list {
-  margin-top: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.standing-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 7px 11px;
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.07);
-  font-size: 13px;
-}
-
-.standing-item.player {
-  background: rgba(255, 204, 0, 0.22);
-  border: 1px solid rgba(255, 204, 0, 0.7);
-  font-weight: 800;
-}
-
-.finish-buttons {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  justify-content: center;
+@media (max-width: 640px) {
+  .tab-btn { font-size: 11px; padding: 10px 4px; }
+  .upgrade-grid { grid-template-columns: 1fr; }
+  .lobby-footer { justify-content: center; }
+  .controls-guide { display: none; }
 }
 
   </style>
@@ -941,90 +684,118 @@ kbd {
     <div id="speed-lines"></div>
     <div id="split-divider" class="hidden"></div>
 
-    <!-- Start / Lobby Screen -->
+    <!-- Clean Tabbed Arcade Lobby Screen -->
     <div id="start-screen" class="overlay">
       <div class="lobby-header">
-        <div class="title-badge">3D 闖關解鎖・雙人對戰版</div>
-        <h1 class="game-title">跑跑積木卡丁車</h1>
+        <h1 class="game-title">跑跑積木卡丁車 3D</h1>
+        <div class="setup-summary" id="setup-summary">
+          <span id="sum-track">🌲 積木城鎮</span>
+          <span class="dot">•</span>
+          <span id="sum-kart">閃電金星 #27</span>
+          <span class="dot">•</span>
+          <span id="sum-driver">🏎️ 紅盔車手</span>
+          <span class="dot">•</span>
+          <span class="sum-coins">🪙 <strong id="lobby-coins">50</strong></span>
+        </div>
       </div>
 
-      <div class="lobby-panels">
-        <!-- Row 1: Players, Names & Game Mode -->
-        <div class="selector-bar">
-          <div class="selector-group">
-            <span class="group-label">對戰人數</span>
-            <div class="pill-row" id="player-count-selector">
-              <button class="pill-btn selected" data-players="1">👤 單人闖關</button>
-              <button class="pill-btn" data-players="2">👥 同機雙人</button>
-              <button class="pill-btn" data-players="net">🌐 4人區網/連線</button>
+      <!-- Spacious Bottom Tabbed Console -->
+      <div class="lobby-console">
+        <div class="lobby-tabs" id="lobby-tabs">
+          <button class="tab-btn active" data-tab="play">🏁 模式與連線</button>
+          <button class="tab-btn" data-tab="tracks">🗺️ 賽道 (8)</button>
+          <button class="tab-btn" data-tab="garage">🏎️ 車型與車手</button>
+          <button class="tab-btn" data-tab="upgrade">🔧 改裝強化</button>
+        </div>
+
+        <div class="tab-body">
+          <!-- Tab 1: Mode, Players, Names & LAN -->
+          <div class="tab-pane active" id="tab-play">
+            <div class="play-grid">
+              <div class="setting-block">
+                <span class="group-label">對戰人數</span>
+                <div class="pill-row" id="player-count-selector">
+                  <button class="pill-btn selected" data-players="1">👤 單人</button>
+                  <button class="pill-btn" data-players="2">👥 同機雙人</button>
+                  <button class="pill-btn" data-players="net">🌐 4人區網</button>
+                </div>
+              </div>
+
+              <div class="setting-block">
+                <span class="group-label">玩法模式</span>
+                <div class="pill-row" id="mode-selector">
+                  <button class="pill-btn selected" data-mode="item">🎁 道具賽</button>
+                  <button class="pill-btn" data-mode="speed">⚡ 競速賽</button>
+                </div>
+              </div>
+
+              <div class="setting-block">
+                <span class="group-label">車手名稱</span>
+                <div class="name-inputs">
+                  <input id="p1-name-input" type="text" maxlength="10" placeholder="P1 名稱" value="玩家 1" />
+                  <input id="p2-name-input" class="hidden" type="text" maxlength="10" placeholder="P2 名稱" value="玩家 2" />
+                </div>
+              </div>
+            </div>
+
+            <!-- 4-Player LAN / Online Room Panel -->
+            <div id="net-panel" class="net-panel hidden">
+              <button id="create-room-btn" class="pill-btn selected">🏠 建立 4 人房間</button>
+              <div class="room-join-wrap">
+                <input id="room-code-input" type="text" maxlength="6" placeholder="輸入4碼房號" />
+                <button id="join-room-btn" class="pill-btn">🔗 加入房間</button>
+              </div>
+              <span id="net-status" class="net-status">最多 4 人同房！同 Wi-Fi（區網）或跨網輸入 4 碼房號即刻開戰</span>
             </div>
           </div>
 
-          <div class="selector-group">
-            <span class="group-label">車手名稱</span>
-            <div class="name-inputs">
-              <input id="p1-name-input" type="text" maxlength="10" placeholder="P1 名稱" value="玩家 1" />
-              <input id="p2-name-input" class="hidden" type="text" maxlength="10" placeholder="P2 名稱" value="玩家 2" />
+          <!-- Tab 2: 8 Tracks -->
+          <div class="tab-pane" id="tab-tracks">
+            <div class="pane-hint">8 張立體賽道全開放自由選（已獲獎牌：<strong id="unlock-progress">0 / 8</strong>）</div>
+            <div class="track-grid" id="track-selector"></div>
+          </div>
+
+          <!-- Tab 3: 6 Drivers + 13 Vehicles -->
+          <div class="tab-pane" id="tab-garage">
+            <div id="p2-kart-tabs" class="p2-tabs hidden">
+              <button class="pill-btn selected" data-pick-for="0">目前選擇：P1 車手與車型</button>
+              <button class="pill-btn" data-pick-for="1">目前選擇：P2 車手與車型</button>
+            </div>
+            <div class="driver-row">
+              <span class="group-label">車手：</span>
+              <div class="pill-row" id="driver-selector"></div>
+            </div>
+            <div class="kart-grid" id="kart-grid"></div>
+          </div>
+
+          <!-- Tab 4: Garage Upgrades -->
+          <div class="tab-pane" id="tab-upgrade">
+            <div class="pane-hint">在賽道吃金幣或完賽賺獎金，永久強化你的愛車性能！</div>
+            <div class="upgrade-grid">
+              <button class="upgrade-card upgrade-btn" data-upg="engine">
+                <div class="upg-title">🔥 引擎極速</div>
+                <div class="upg-meta"><span id="upg-engine-lv">Lv.0</span> ・ <span id="upg-engine-cost">40</span> 🪙</div>
+              </button>
+              <button class="upgrade-card upgrade-btn" data-upg="nitro">
+                <div class="upg-title">⚡ 氮氣爆發</div>
+                <div class="upg-meta"><span id="upg-nitro-lv">Lv.0</span> ・ <span id="upg-nitro-cost">40</span> 🪙</div>
+              </button>
+              <button class="upgrade-card upgrade-btn" data-upg="drift">
+                <div class="upg-title">🌀 甩尾集氣</div>
+                <div class="upg-meta"><span id="upg-drift-lv">Lv.0</span> ・ <span id="upg-drift-cost">40</span> 🪙</div>
+              </button>
             </div>
           </div>
-
-          <div class="selector-group">
-            <span class="group-label">玩法模式</span>
-            <div class="pill-row" id="mode-selector">
-              <button class="pill-btn selected" data-mode="item">🎁 道具</button>
-              <button class="pill-btn" data-mode="speed">⚡ 競速</button>
-            </div>
-          </div>
         </div>
 
-        <!-- Network / LAN Room Panel -->
-        <div id="net-panel" class="selector-bar net-panel hidden">
-          <button id="create-room-btn" class="pill-btn selected">🏠 建立房間</button>
-          <div class="room-join-wrap">
-            <input id="room-code-input" type="text" maxlength="6" placeholder="輸入4碼房號" />
-            <button id="join-room-btn" class="pill-btn">🔗 加入房間</button>
+        <!-- Always-Visible Start Footer -->
+        <div class="lobby-footer">
+          <div class="controls-guide" id="controls-guide">
+            <span><kbd>WASD</kbd>/<kbd>方向鍵</kbd> 駕駛</span>
+            <span><kbd>Shift</kbd> 跳躍甩尾</span>
+            <span><kbd>Space</kbd> 道具/N2O</span>
           </div>
-          <span id="net-status" class="net-status">最多 4 人同房！同一 Wi-Fi（區網）或跨網輸入 4 碼房號即可開戰</span>
-        </div>
-
-        <!-- Row 2: 8 Selectable Tracks (All Open!) -->
-        <div class="selector-bar track-bar">
-          <div class="track-header-row">
-            <span class="group-label">選擇賽道場景（8 張立體賽道全開放・已獲獎牌：<strong id="unlock-progress">0 / 8</strong>）</span>
-          </div>
-          <div class="pill-row" id="track-selector"></div>
-        </div>
-
-        <!-- Row 2.5: Coin Wallet & Garage Upgrades -->
-        <div class="selector-bar garage-bar">
-          <div class="coin-wallet">🪙 <strong id="lobby-coins">0</strong></div>
-          <div class="upgrade-pills">
-            <button class="upgrade-btn" data-upg="engine">🔥 引擎 <span id="upg-engine-lv">Lv.0</span> (<span id="upg-engine-cost">40</span>🪙)</button>
-            <button class="upgrade-btn" data-upg="nitro">⚡ 氮氣 <span id="upg-nitro-lv">Lv.0</span> (<span id="upg-nitro-cost">40</span>🪙)</button>
-            <button class="upgrade-btn" data-upg="drift">🌀 甩尾 <span id="upg-drift-lv">Lv.0</span> (<span id="upg-drift-cost">40</span>🪙)</button>
-          </div>
-        </div>
-
-        <!-- Row 3: 6 Drivers + 8 Karts (4 Body Styles) -->
-        <div class="kart-section">
-          <div id="p2-kart-tabs" class="p2-tabs hidden">
-            <button class="pill-btn selected" data-pick-for="0">選擇 P1 車手與車型</button>
-            <button class="pill-btn" data-pick-for="1">選擇 P2 車手與車型</button>
-          </div>
-          <div class="selector-bar driver-bar">
-            <span class="group-label">選擇樂高車手：</span>
-            <div class="pill-row" id="driver-selector"></div>
-          </div>
-          <div class="kart-grid" id="kart-grid"></div>
-        </div>
-
-        <button id="start-btn" class="primary-btn">開始比賽</button>
-
-        <div class="controls-guide" id="controls-guide">
-          <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> 駕駛</span>
-          <span><kbd>Shift</kbd> 甩尾小噴</span>
-          <span><kbd>Space</kbd> 道具 / N2O</span>
-          <span><kbd>R</kbd> 重置</span>
+          <button id="start-btn" class="primary-btn">開始比賽 🏁</button>
         </div>
       </div>
     </div>
@@ -1032,7 +803,7 @@ kbd {
     <!-- Countdown Overlay -->
     <div id="countdown" class="hidden">3</div>
 
-    <!-- Shared Top Bar for 1P/2P -->
+    <!-- In-Game HUD -->
     <div id="hud" class="hidden">
       <div class="hud-global-top">
         <div class="global-timer-pill">
@@ -4396,6 +4167,11 @@ const hudModeTag = document.getElementById('hud-mode-tag');
 const hudTime = document.getElementById('hud-time');
 const hudCoinsVal = document.getElementById('hud-coins-val');
 const lobbyCoinsEl = document.getElementById('lobby-coins');
+const sumTrackEl = document.getElementById('sum-track');
+const sumKartEl = document.getElementById('sum-kart');
+const sumDriverEl = document.getElementById('sum-driver');
+const lobbyTabButtons = document.querySelectorAll('#lobby-tabs .tab-btn');
+const lobbyTabPanes = document.querySelectorAll('.tab-pane');
 const upgradeButtons = document.querySelectorAll('.upgrade-btn');
 const finishRewardEl = document.getElementById('finish-reward');
 const minimapCanvas = document.getElementById('minimap');
@@ -4690,6 +4466,24 @@ window.addEventListener('resize', () => {
 });
 
 // --- Build Lobby UI Dynamically ---
+// Lobby Tab Switching
+lobbyTabButtons.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const target = btn.dataset.tab;
+    lobbyTabButtons.forEach((b) => b.classList.toggle('active', b === btn));
+    lobbyTabPanes.forEach((p) => p.classList.toggle('active', p.id === `tab-${target}`));
+  });
+});
+
+function updateSetupSummary() {
+  const tCfg = TRACK_CONFIGS[selectedTrackId] || TRACK_CONFIGS.village;
+  const kCfg = KART_PRESETS[selectedKarts[0]] || KART_PRESETS.yellow;
+  const dCfg = DRIVER_PRESETS[selectedDrivers[0]] || DRIVER_PRESETS.racer_red;
+  if (sumTrackEl) sumTrackEl.textContent = `${tCfg.icon} ${tCfg.name}`;
+  if (sumKartEl) sumKartEl.textContent = kCfg.name;
+  if (sumDriverEl) sumDriverEl.textContent = `${dCfg.icon} ${dCfg.name}`;
+}
+
 function renderGarageUI() {
   lobbyCoinsEl.textContent = saveData.coins;
   for (const key of ['engine', 'nitro', 'drift']) {
@@ -4741,6 +4535,7 @@ function renderTrackButtons() {
     btn.addEventListener('click', () => {
       selectedTrackId = id;
       renderTrackButtons();
+      updateSetupSummary();
       loadTrack(id);
       setupShowcase();
     });
@@ -4759,6 +4554,7 @@ function renderDriverButtons() {
     btn.addEventListener('click', () => {
       selectedDrivers[slot] = id;
       renderDriverButtons();
+      updateSetupSummary();
       if (gameState === 'menu') setupShowcase();
       if (playType === 'net' && net.connected) net.sendHello(getLocalNetInfo());
     });
@@ -4794,6 +4590,7 @@ function renderKartCards() {
       const slot = playType === '2' ? activePickSlot : 0;
       selectedKarts[slot] = id;
       renderKartCards();
+      updateSetupSummary();
       if (gameState === 'menu') setupShowcase();
       if (playType === 'net' && net.connected) net.sendHello(getLocalNetInfo());
     });
@@ -5932,6 +5729,7 @@ renderTrackButtons();
 renderGarageUI();
 renderDriverButtons();
 renderKartCards();
+updateSetupSummary();
 updateLobbyControlsGuide();
 loadTrack(selectedTrackId);
 setupShowcase();
