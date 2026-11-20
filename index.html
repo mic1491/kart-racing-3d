@@ -595,6 +595,18 @@ kbd {
   font-weight: 900;
 }
 
+.ink-splat {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 38% 42%, rgba(16, 12, 34, 0.94) 0%, rgba(16, 12, 34, 0.88) 18%, transparent 24%),
+    radial-gradient(circle at 62% 52%, rgba(28, 16, 52, 0.94) 0%, rgba(28, 16, 52, 0.86) 20%, transparent 26%),
+    radial-gradient(circle at 50% 34%, rgba(12, 10, 26, 0.92) 0%, rgba(12, 10, 26, 0.85) 14%, transparent 19%),
+    radial-gradient(circle at 46% 64%, rgba(22, 14, 42, 0.9) 0%, rgba(22, 14, 42, 0.82) 13%, transparent 18%);
+  z-index: 15;
+}
+
 .p-bottom-center {
   position: absolute;
   bottom: 18px;
@@ -850,6 +862,7 @@ kbd {
         </div>
         <div class="p-banner hidden" id="p1-banner"></div>
         <div class="p-wrong-way hidden" id="p1-wrong-way">逆向行駛！請調頭</div>
+        <div class="ink-splat hidden" id="p1-ink"></div>
         <div class="p-bottom-center">
           <div class="nitro-slots">
             <div class="nitro-slot" id="p1-slot-0"><span class="slot-icon">?</span></div>
@@ -879,6 +892,7 @@ kbd {
         </div>
         <div class="p-banner hidden" id="p2-banner"></div>
         <div class="p-wrong-way hidden" id="p2-wrong-way">逆向行駛！請調頭</div>
+        <div class="ink-splat hidden" id="p2-ink"></div>
         <div class="p-bottom-center">
           <div class="nitro-slots">
             <div class="nitro-slot" id="p2-slot-0"><span class="slot-icon">?</span></div>
@@ -3445,9 +3459,13 @@ const ITEM_TYPES = {
   turbo_tire: { id: 'turbo_tire', name: '黃金輪胎', icon: '🛞', color: '#fbbf24' },
   super_engine: { id: 'super_engine', name: '狂暴引擎', icon: '🔥', color: '#fb7185' },
   star: { id: 'star', name: '無敵星星', icon: '⭐', color: '#fde047' },
+  devil: { id: 'devil', name: '大魔王顛倒', icon: '😈', color: '#c026d3' },
+  squid: { id: 'squid', name: '墨魚噴墨', icon: '🦑', color: '#312e81' },
+  mine: { id: 'mine', name: '三連地雷', icon: '💣', color: '#ef4444' },
+  tornado: { id: 'tornado', name: '超級龍捲風', icon: '🌪️', color: '#38bdf8' },
 };
 
-const ITEM_POOL = ['nitro', 'missile', 'banana', 'waterbomb', 'shield', 'magnet', 'turbo_tire', 'super_engine'];
+const ITEM_POOL = ['missile', 'waterbomb', 'devil', 'squid', 'mine', 'tornado', 'banana', 'shield', 'nitro', 'turbo_tire', 'super_engine'];
 
 function createQuestionBoxTexture() {
   const canvas = document.createElement('canvas');
@@ -3544,6 +3562,8 @@ class ItemManager {
     this.boxTex = createQuestionBoxTexture();
     this.boxes = [];
     this.bananas = [];
+    this.mines = [];
+    this.tornadoes = [];
     this.missiles = [];
     this.waterBombs = [];
     this.enabled = false;
@@ -3556,6 +3576,8 @@ class ItemManager {
     }
     this.boxes = [];
     this.bananas = [];
+    this.mines = [];
+    this.tornadoes = [];
     this.missiles = [];
     this.waterBombs = [];
   }
@@ -3583,14 +3605,13 @@ class ItemManager {
   }
 
   rollRandomItem(rankIndex) {
-    // KartRider rubber-band comeback balance:
-    // 1st gets defense/traps; 2nd gets balanced/buffs; 3rd-4th get Time Freeze, Star, Super Engine, Magnet!
+    // 1st gets traps & pranks; 2nd gets all attack/troll items; 3rd-4th get massive comeback + troll chaos!
     if (rankIndex === 0) {
-      const leadingPool = ['banana', 'shield', 'turbo_tire', 'waterbomb', 'nitro'];
+      const leadingPool = ['mine', 'banana', 'squid', 'shield', 'devil', 'waterbomb', 'turbo_tire'];
       return leadingPool[Math.floor(Math.random() * leadingPool.length)];
     }
     if (rankIndex >= 2) {
-      const comebackPool = ['freeze', 'star', 'super_engine', 'magnet', 'lightning', 'freeze', 'turbo_tire'];
+      const comebackPool = ['freeze', 'devil', 'tornado', 'lightning', 'star', 'super_engine', 'magnet', 'squid'];
       return comebackPool[Math.floor(Math.random() * comebackPool.length)];
     }
     return ITEM_POOL[Math.floor(Math.random() * ITEM_POOL.length)];
@@ -3700,6 +3721,57 @@ class ItemManager {
         this.audio.playLapChime();
         this.showBannerFor(racer, '⭐ 無敵星星！6 秒無敵撞飛對手！', '#fde047', 1.6);
       }
+    } else if (itemId === 'devil') {
+      // 😈 RED DEVIL: Invert left/right steering of all other racers for 4.5s!
+      if (racer.isHuman) {
+        this.audio.playLightning();
+        this.showBannerFor(racer, '😈 施放大魔王！全場對手左右顛倒！', '#e879f9', 1.6);
+      }
+      for (const other of racers) {
+        if (other === racer || other.finished) continue;
+        if (other.shieldTimer > 0 || other.starTimer > 0) {
+          if (other.shieldTimer > 0) other.shieldTimer = 0;
+          if (other.isHuman) this.showBannerFor(other, '🛡️ 護盾擋下大魔王！', '#38ef7d', 1.1);
+        } else {
+          other.devilTimer = 4.5;
+          if (other.isHuman) {
+            this.audio.playHit();
+            this.showBannerFor(other, '😈 中了大魔王！方向鍵左右顛倒！', '#e879f9', 2.0);
+          }
+        }
+      }
+    } else if (itemId === 'squid') {
+      // 🦑 INK SQUID: Splatter black ink on all opponents' screens for 4.2s!
+      if (racer.isHuman) {
+        this.audio.playSplash();
+        this.showBannerFor(racer, '🦑 墨魚噴墨！遮住全場對手視線！', '#818cf8', 1.5);
+      }
+      for (const other of racers) {
+        if (other === racer || other.finished) continue;
+        if (other.shieldTimer > 0 || other.starTimer > 0) {
+          if (other.shieldTimer > 0) other.shieldTimer = 0;
+        } else {
+          other.squidTimer = 4.2;
+          if (other.isHuman) {
+            this.audio.playSplash();
+            this.showBannerFor(other, '🦑 螢幕被噴黑墨了！', '#a5b4fc', 1.5);
+          }
+        }
+      }
+    } else if (itemId === 'mine') {
+      // 💣 TRIPLE LANDMINES: Drop 3 blinking explosive mines behind your kart!
+      this._spawnMines(racer);
+      if (racer.isHuman) {
+        this.audio.playBeep(360, 0.14, 0.14);
+        this.showBannerFor(racer, '💣 佈置三連爆裂地雷！', '#ff4d4d', 1.2);
+      }
+    } else if (itemId === 'tornado') {
+      // 🌪️ GIANT TORNADO: Launches a spinning 3D cyclone forward!
+      this._spawnTornado(racer);
+      if (racer.isHuman) {
+        this.audio.playMissileLaunch();
+        this.showBannerFor(racer, '🌪️ 釋放超級龍捲風！捲飛前方對手！', '#38bdf8', 1.3);
+      }
     }
     return true;
   }
@@ -3725,6 +3797,49 @@ class ItemManager {
     this.group.add(g);
 
     this.bananas.push({ mesh: g, pos, owner, grace: 0.6, life: 25 });
+  }
+
+  _spawnMines(owner) {
+    const backX = Math.sin(owner.yaw);
+    const backZ = Math.cos(owner.yaw);
+    const rightX = Math.cos(owner.yaw);
+    const rightZ = -Math.sin(owner.yaw);
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.4, metalness: 0.5 });
+    const ledMat = new THREE.MeshBasicMaterial({ color: 0xff1744 });
+
+    for (const lat of [-2.8, 0, 2.8]) {
+      const pos = new THREE.Vector3(
+        owner.pos.x + backX * 3.8 + rightX * lat,
+        owner.pos.y + 0.3,
+        owner.pos.z + backZ * 3.8 + rightZ * lat
+      );
+      const g = new THREE.Group();
+      const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 1.1, 0.42, 12), bodyMat);
+      const led = new THREE.Mesh(new THREE.SphereGeometry(0.32, 8, 8), ledMat);
+      led.position.y = 0.28;
+      g.add(disc, led);
+      g.position.copy(pos);
+      this.group.add(g);
+      this.mines.push({ mesh: g, led, pos, owner, grace: 0.7, life: 28 });
+    }
+  }
+
+  _spawnTornado(owner) {
+    const fwdX = -Math.sin(owner.yaw);
+    const fwdZ = -Math.cos(owner.yaw);
+    const pos = new THREE.Vector3(owner.pos.x + fwdX * 4.0, owner.pos.y, owner.pos.z + fwdZ * 4.0);
+    const g = new THREE.Group();
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.72 });
+    for (let k = 0; k < 5; k++) {
+      const r = 0.7 + k * 0.48;
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(r, 0.22, 8, 16), ringMat);
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = 0.7 + k * 1.05;
+      g.add(ring);
+    }
+    g.position.copy(pos);
+    this.group.add(g);
+    this.tornadoes.push({ mesh: g, pos, yaw: owner.yaw, owner, speed: 78, life: 3.6 });
   }
 
   _spawnMissile(owner, racers) {
@@ -3821,12 +3936,20 @@ class ItemManager {
         this.audio.playSplash();
         this.showBannerFor(victim, '💧 被水炸彈困住了！', '#00c8ff', 1.3);
       }
+    } else if (type === 'mine' || type === 'tornado') {
+      victim.spinTimer = 1.35;
+      victim.velY = 16.5;
+      victim.speed *= 0.25;
+      if (victim.isHuman) {
+        this.audio.playHit();
+        this.showBannerFor(victim, type === 'mine' ? '💣 踩到地雷炸飛啦！' : '🌪️ 被龍捲風捲上天啦！', '#ff3b30', 1.5);
+      }
     } else {
       victim.spinTimer = 1.1;
       victim.speed *= 0.32;
       if (victim.isHuman) {
         this.audio.playHit();
-        this.showBannerFor(victim, type === 'banana' ? '🍌 踩到香蕉皮打滑！' : '💥 被飛彈擊中！', '#ff3b30', 1.3);
+        this.showBannerFor(victim, type === 'banana' ? '🍌 踩到香蕉皮打滑！' : type === 'lightning' ? '🌩️ 被閃電劈中！' : '💥 被飛彈擊中！', '#ff3b30', 1.3);
       }
     }
 
@@ -3898,6 +4021,54 @@ class ItemManager {
       if (hit || b.life <= 0) {
         this.group.remove(b.mesh);
         this.bananas.splice(i, 1);
+      }
+    }
+
+    // 2.5 Update Landmines
+    for (let i = this.mines.length - 1; i >= 0; i--) {
+      const mn = this.mines[i];
+      mn.life -= dt;
+      if (mn.grace > 0) mn.grace -= dt;
+      mn.led.visible = Math.floor(this.elapsed * 8 + i) % 2 === 0;
+      let hit = false;
+      for (const r of racers) {
+        if (r === mn.owner && mn.grace > 0) continue;
+        const dx = r.pos.x - mn.pos.x;
+        const dz = r.pos.z - mn.pos.z;
+        if (dx * dx + dz * dz < 6.2) {
+          this._hitRacer(r, 'mine');
+          hit = true;
+          break;
+        }
+      }
+      if (hit || mn.life <= 0) {
+        this.group.remove(mn.mesh);
+        this.mines.splice(i, 1);
+      }
+    }
+
+    // 2.6 Update Tornadoes
+    for (let i = this.tornadoes.length - 1; i >= 0; i--) {
+      const td = this.tornadoes[i];
+      td.life -= dt;
+      const fwdX = -Math.sin(td.yaw);
+      const fwdZ = -Math.cos(td.yaw);
+      td.pos.x += fwdX * td.speed * dt;
+      td.pos.z += fwdZ * td.speed * dt;
+      td.mesh.position.copy(td.pos);
+      td.mesh.rotation.y += dt * 11;
+
+      for (const r of racers) {
+        if (r === td.owner || r.spinTimer > 0) continue;
+        const dx = r.pos.x - td.pos.x;
+        const dz = r.pos.z - td.pos.z;
+        if (dx * dx + dz * dz < 14.0) {
+          this._hitRacer(r, 'tornado');
+        }
+      }
+      if (td.life <= 0) {
+        this.group.remove(td.mesh);
+        this.tornadoes.splice(i, 1);
       }
     }
 
@@ -4299,6 +4470,7 @@ const pHudEls = [0, 1].map((i) => ({
   nitroFill: document.getElementById(`p${i + 1}-nitro-fill`),
   banner: document.getElementById(`p${i + 1}-banner`),
   wrongWay: document.getElementById(`p${i + 1}-wrong-way`),
+  ink: document.getElementById(`p${i + 1}-ink`),
   slots: [document.getElementById(`p${i + 1}-slot-0`), document.getElementById(`p${i + 1}-slot-1`)],
   bannerTimer: 0,
 }));
@@ -4850,6 +5022,8 @@ function createRacer(presetKey, slotIndex, displayName, controlType, humanIndex 
     spinTimer: 0,
     waterTrapTimer: 0,
     freezeTimer: 0,
+    devilTimer: 0,
+    squidTimer: 0,
     tireBuffTimer: 0,
     engineBuffTimer: 0,
     starTimer: 0,
@@ -5135,7 +5309,9 @@ function updateHumanControls(r, dt) {
   if (r.speed > targetMax) r.speed = THREE.MathUtils.lerp(r.speed, targetMax, Math.min(1, dt * 4));
   if (r.speed < -16) r.speed = -16;
 
-  const rawSteer = (inp.left ? 1 : 0) - (inp.right ? 1 : 0);
+  // Devil prank flips left & right steering!
+  const invertSign = r.devilTimer > 0 ? -1 : 1;
+  const rawSteer = ((inp.left ? 1 : 0) - (inp.right ? 1 : 0)) * invertSign;
   r.steerInput = THREE.MathUtils.lerp(r.steerInput, rawSteer, Math.min(1, dt * 12));
 
   // KartRider × Mario Kart Drift Hop + 3-Tier Sparks (Orange -> Blue -> Purple Ultra Boost!)
@@ -5215,7 +5391,10 @@ function updateAI(r, dt) {
   while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
   while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
 
-  r.steerInput = THREE.MathUtils.clamp(angleDiff * 2.4, -1, 1);
+  let steerTarget = THREE.MathUtils.clamp(angleDiff * 2.4, -1, 1);
+  if (r.devilTimer > 0) steerTarget = Math.sin(raceTime * 7 + r.aiLookAhead) * 0.9;
+  else if (r.squidTimer > 0) steerTarget += Math.sin(raceTime * 4) * 0.45;
+  r.steerInput = THREE.MathUtils.clamp(steerTarget, -1, 1);
   r.yaw += r.steerInput * 2.5 * dt;
 
   const sharpTurn = Math.abs(angleDiff) > 0.32 && r.speed > 26;
@@ -5239,6 +5418,7 @@ function updateAI(r, dt) {
   }
 
   let targetSpeed = preset.maxSpeed * r.aiSkill * rubber;
+  if (r.devilTimer > 0 || r.squidTimer > 0) targetSpeed *= 0.72;
   if (sharpTurn) targetSpeed *= 0.86;
   if (r.boostTimer > 0) targetSpeed += 18;
   r.speed = THREE.MathUtils.lerp(r.speed, targetSpeed, Math.min(1, dt * 2.2));
@@ -5279,6 +5459,8 @@ function updateRacerPhysics(r, dt) {
   if (r.spinTimer > 0) r.spinTimer = Math.max(0, r.spinTimer - dt);
   if (r.waterTrapTimer > 0) r.waterTrapTimer = Math.max(0, r.waterTrapTimer - dt);
   if (r.freezeTimer > 0) r.freezeTimer = Math.max(0, r.freezeTimer - dt);
+  if (r.devilTimer > 0) r.devilTimer = Math.max(0, r.devilTimer - dt);
+  if (r.squidTimer > 0) r.squidTimer = Math.max(0, r.squidTimer - dt);
   if (r.tireBuffTimer > 0) r.tireBuffTimer = Math.max(0, r.tireBuffTimer - dt);
   if (r.engineBuffTimer > 0) r.engineBuffTimer = Math.max(0, r.engineBuffTimer - dt);
   if (r.starTimer > 0) r.starTimer = Math.max(0, r.starTimer - dt);
@@ -5763,6 +5945,7 @@ function updateHUD() {
     h.lap.textContent = Math.min(r.lap, TOTAL_LAPS);
     h.speed.textContent = Math.round(Math.abs(r.speed) * 3.8);
     h.nitroFill.style.width = `${Math.min(100, r.nitroGauge)}%`;
+    if (h.ink) h.ink.classList.toggle('hidden', r.squidTimer <= 0);
 
     h.slots.forEach((el, sIdx) => {
       el.classList.remove('ready', 'item-ready');
