@@ -3144,7 +3144,7 @@ class RaceTrack {
 
         for (const side of [-1, 1]) {
           const post = new THREE.Mesh(postGeo, mat);
-          const pos = p.clone().addScaledVector(r, side * (this.wallOffset + 0.5));
+          const pos = p.clone().addScaledVector(r, side * (this.wallOffset + 1.4));
           post.position.set(pos.x, p.y + 0.68, pos.z);
           post.rotation.y = angle;
           post.castShadow = true;
@@ -7832,12 +7832,13 @@ function updateRacerPhysics(r, dt) {
   } else {
     const halfRoad = track.roadWidth / 2;
     const isOffroadTire = r.mods && r.mods.wheel === 'offroad';
-    if (!isOffroadTire && Math.abs(closest.lateralOffset) > halfRoad + 1.0 && r.boostTimer <= 0 && r.tireBuffTimer <= 0 && r.starTimer <= 0 && r.pos.y <= groundY + 0.3) {
-      r.speed *= Math.pow(0.55, dt);
+    // Allow riding the red/white curb freely without mud slowdown!
+    if (!isOffroadTire && Math.abs(closest.lateralOffset) > halfRoad + 2.6 && r.boostTimer <= 0 && r.tireBuffTimer <= 0 && r.starTimer <= 0 && r.pos.y <= groundY + 0.3) {
+      r.speed *= Math.pow(0.82, dt);
     }
 
     // Open-edge Sky Track: falling off edge tumbles into the clouds and respawns!
-    const maxLat = track.wallOffset - 1.3;
+    const maxLat = track.wallOffset - 1.4;
     if (Math.abs(closest.lateralOffset) > maxLat) {
       if (track.config.openEdge && r.isHuman && gameState === 'racing') {
         r.fallingTimer = 1.15;
@@ -7847,18 +7848,24 @@ function updateRacerPhysics(r, dt) {
         showBannerFor(r, '☁️ 掉到雲海下面了！準備拉回重來！', '#ff6b6b', 1.3);
         return;
       }
+      // Silky-smooth Wall-Bounce & Auto-Glide: never get stuck on roadside posts!
       const sign = Math.sign(closest.lateralOffset);
-      const clampedPos = closest.point.clone().addScaledVector(closest.right, sign * maxLat);
+      const safeLat = maxLat - 0.65;
+      const clampedPos = closest.point.clone().addScaledVector(closest.right, sign * safeLat);
       r.pos.x = clampedPos.x;
       r.pos.z = clampedPos.z;
       const trackYaw = Math.atan2(-closest.tangent.x, -closest.tangent.z);
-      let alignDiff = trackYaw - r.yaw;
+      // Aim nose cleanly back into the road (away from the posts!)
+      const targetReturnYaw = trackYaw + sign * 0.16;
+      let alignDiff = targetReturnYaw - r.yaw;
       while (alignDiff > Math.PI) alignDiff -= Math.PI * 2;
       while (alignDiff < -Math.PI) alignDiff += Math.PI * 2;
-      r.yaw += alignDiff * 0.28;
+      r.yaw += alignDiff * 0.62;
       r.moveYaw = r.yaw;
-      r.speed *= 0.91;
-      if (r.isHuman) camShake = Math.max(camShake, 0.14);
+      // Gentle per-second wall scrub (never per-frame stall!) + keep minimum slide speed
+      r.speed *= Math.pow(0.76, dt);
+      if (r.speed > 0 && r.speed < 18) r.speed = 18;
+      if (r.isHuman) camShake = Math.max(camShake, 0.12);
     }
   }
 
