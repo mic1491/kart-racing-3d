@@ -6035,6 +6035,7 @@ const modBumperRowEl = document.getElementById('mod-bumper-row');
 let cupRound = 0;
 let cupScores = {};
 let battleTimer = 90;
+let zoomSlowMoTimer = 0;
 const gpPrevAction = [false, false];
 const gpPrevHorn = [false, false];
 const gpState = [
@@ -6588,19 +6589,30 @@ function renderModLoadoutUI() {
   }
 }
 
-function triggerHornEmote(r) {
+function triggerHornEmote(r, customPhrase = null) {
   if (!r || !r.kart || !r.kart.root) return;
   if (r.emoteSprite) {
     r.kart.root.remove(r.emoteSprite);
     r.emoteSprite = null;
   }
-  const phrase = EMOTE_PHRASES[Math.floor(Math.random() * EMOTE_PHRASES.length)];
+  const phrase = customPhrase || EMOTE_PHRASES[Math.floor(Math.random() * EMOTE_PHRASES.length)];
   const sp = createEmoteBubbleSprite(phrase);
   r.kart.root.add(sp);
   r.emoteSprite = sp;
   r.emoteTimer = 2.2;
-  audio.init();
-  audio.playHorn();
+  if (!customPhrase) {
+    audio.init();
+    audio.playHorn();
+  }
+}
+
+function triggerCamZoom(humanIdx, targetRacer, duration = 0.9, fov = 42, sideOffset = 2.4, slowMoDur = 0) {
+  const st = camStates[humanIdx];
+  if (!st || !targetRacer) return;
+  st.zoom = { target: targetRacer, timer: duration, maxDur: duration, fov, sideOffset };
+  if (slowMoDur > 0 && playType === '1') {
+    zoomSlowMoTimer = Math.max(zoomSlowMoTimer, slowMoDur);
+  }
 }
 
 function popBattleBalloon(victim) {
@@ -7982,6 +7994,7 @@ function updateRacerPhysics(r, dt) {
               camShake = Math.max(camShake, 0.55);
               audio.playHit();
               showBannerFor(r, '🦖 被暴龍踩扁了！變成紙片車！', '#ff3b30', 1.8);
+              triggerCamZoom(r.humanIndex, r, 0.85, 42, 2.2, 0.2);
             }
           }
           break;
@@ -8315,11 +8328,33 @@ function updateFollowCamera(cam, state, r, dt) {
   const camDist = isBoost ? 8.4 : 7.3;
   const camHeight = isBoost ? 3.15 : 3.45;
 
-  const desiredPos = new THREE.Vector3(r.pos.x + backX * camDist, r.pos.y + camHeight, r.pos.z + backZ * camDist);
-  const desiredLook = new THREE.Vector3(r.pos.x - backX * 11, r.pos.y + 1.4, r.pos.z - backZ * 11);
+  let desiredPos = new THREE.Vector3(r.pos.x + backX * camDist, r.pos.y + camHeight, r.pos.z + backZ * camDist);
+  let desiredLook = new THREE.Vector3(r.pos.x - backX * 11, r.pos.y + 1.4, r.pos.z - backZ * 11);
+  let targetFov = r.boostTimer > 0 ? 82 : r.miniBoostTimer > 0 ? 73 : 65 + Math.max(0, r.speed / 10);
 
-  state.pos.lerp(desiredPos, 1 - Math.exp(-10 * dt));
-  state.look.lerp(desiredLook, 1 - Math.exp(-14 * dt));
+  // Dramatic Zoom-In Mini-Animation (Overtaken / Overtake / Flattened)!
+  if (state.zoom && state.zoom.timer > 0) {
+    state.zoom.timer = Math.max(0, state.zoom.timer - dt);
+    const p = 1 - state.zoom.timer / state.zoom.maxDur;
+    // Fast snap-in, smooth ease-out bell curve!
+    const zBlend = Math.sin(Math.min(1, p) * Math.PI);
+    const tPos = state.zoom.target ? state.zoom.target.pos : r.pos;
+    const rightX = Math.cos(r.yaw);
+    const rightZ = -Math.sin(r.yaw);
+    const zoomPos = new THREE.Vector3(
+      tPos.x + backX * 5.6 + rightX * state.zoom.sideOffset,
+      tPos.y + 2.35,
+      tPos.z + backZ * 5.6 + rightZ * state.zoom.sideOffset
+    );
+    const zoomLook = new THREE.Vector3(tPos.x, tPos.y + 1.35, tPos.z);
+    desiredPos.lerp(zoomPos, zBlend * 0.88);
+    desiredLook.lerp(zoomLook, zBlend * 0.92);
+    targetFov = THREE.MathUtils.lerp(targetFov, state.zoom.fov, zBlend);
+    if (state.zoom.timer <= 0) state.zoom = null;
+  }
+
+  state.pos.lerp(desiredPos, 1 - Math.exp(-12 * dt));
+  state.look.lerp(desiredLook, 1 - Math.exp(-16 * dt));
 
   cam.position.copy(state.pos);
   if (camShake > 0.01) {
@@ -8333,8 +8368,7 @@ function updateFollowCamera(cam, state, r, dt) {
   state.bank = THREE.MathUtils.lerp(state.bank || 0, targetBank, Math.min(1, dt * 7));
   cam.rotation.z += state.bank;
 
-  const targetFov = r.boostTimer > 0 ? 82 : r.miniBoostTimer > 0 ? 73 : 65 + Math.max(0, r.speed / 10);
-  cam.fov = THREE.MathUtils.lerp(cam.fov, targetFov, Math.min(1, dt * 6));
+  cam.fov = THREE.MathUtils.lerp(cam.fov, targetFov, Math.min(1, dt * 10));
   cam.updateProjectionMatrix();
 }
 
@@ -8409,13 +8443,25 @@ function updateHUD() {
   humanRacers.forEach((r, idx) => {
     const h = pHudEls[idx];
     const rank = sorted.indexOf(r) + 1;
-    // Overtake bonus!
-    if (selectedMode !== 'battle' && gameState === 'racing' && raceTime > 2.5 && rank < r.lastRank && r.overtakeCooldown <= 0) {
-      r.overtakeCooldown = 2.0;
-      raceCoinsEarned += 5;
-      hudCoinsVal.textContent = raceCoinsEarned;
-      audio.playCoin();
-      showBannerFor(r, '⚡ OVERTAKE! 超車 +5🪙', '#38ef7d', 1.0);
+    // Overtake & Overtaken Dramatic Zoom-In Mini-Animations!
+    if (selectedMode !== 'battle' && gameState === 'racing' && raceTime > 2.8 && r.overtakeCooldown <= 0) {
+      if (rank < r.lastRank) {
+        r.overtakeCooldown = 3.2;
+        raceCoinsEarned += 5;
+        hudCoinsVal.textContent = raceCoinsEarned;
+        audio.playCoin();
+        showBannerFor(r, '⚡ OVERTAKE! 帥氣超車 +5🪙', '#38ef7d', 1.1);
+        triggerCamZoom(idx, r, 0.65, 50, -1.8, 0);
+      } else if (rank > r.lastRank) {
+        r.overtakeCooldown = 4.5;
+        const passer = sorted[rank - 2];
+        if (passer && passer !== r) {
+          audio.playBeep(260, 0.14, 0.12);
+          showBannerFor(r, `😱 被 ${passer.name} 超車了！！`, '#ff6b6b', 1.35);
+          triggerHornEmote(passer, '😏 超過你囉！');
+          triggerCamZoom(idx, passer, 0.95, 40, 2.6, 0.25);
+        }
+      }
     }
     r.lastRank = rank;
     h.rank.textContent = rank;
@@ -8651,8 +8697,12 @@ function updateGhostReplay(dt) {
 let lastTime = performance.now();
 function animate(now) {
   requestAnimationFrame(animate);
-  const dt = Math.min(0.05, (now - lastTime) / 1000);
+  let dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
+  if (zoomSlowMoTimer > 0) {
+    zoomSlowMoTimer = Math.max(0, zoomSlowMoTimer - dt);
+    if (gameState === 'racing') dt *= 0.58;
+  }
   if (camShake > 0) camShake = Math.max(0, camShake - dt * 1.4);
   skidThrottle = skidThrottle <= 0 ? 0.05 : skidThrottle - dt;
 
