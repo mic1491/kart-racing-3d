@@ -2285,6 +2285,7 @@ class RaceTrack {
     this.jumpRamps = [];
     this.obstacles = [];
     this.coins = [];
+    this.buffOrbs = [];
     this.itemBoxAnchors = [];
     this.elapsed = 0;
 
@@ -2329,6 +2330,15 @@ class RaceTrack {
         if (c.respawn <= 0) c.mesh.visible = true;
       } else {
         c.mesh.rotation.y += dt * 3.2;
+      }
+    }
+    for (const b of this.buffOrbs) {
+      if (b.respawn > 0) {
+        b.respawn -= dt;
+        if (b.respawn <= 0) b.mesh.visible = true;
+      } else {
+        b.mesh.rotation.y += dt * 2.4;
+        b.mesh.position.y = b.baseY + Math.sin(this.elapsed * 4 + b.pos.x) * 0.35;
       }
     }
   }
@@ -2848,6 +2858,28 @@ class RaceTrack {
         this.group.add(mesh);
         this.coins.push({ mesh, pos: new THREE.Vector3(pos.x, p.y + 1.15, pos.z), respawn: 0 });
       }
+    });
+
+    // Place 4 Glowing Track Buff Orbs (🛞 Turbo Tires / 🔥 Super Engine / ❄️ Time Freeze) on every track!
+    const orbSpecs = [
+      { t: 0.27, kind: 'turbo_tire', col: 0xfbbf24 },
+      { t: 0.51, kind: 'super_engine', col: 0xfb7185 },
+      { t: 0.74, kind: 'turbo_tire', col: 0xfbbf24 },
+      { t: 0.93, kind: 'super_engine', col: 0xfb7185 },
+    ];
+    const orbGeo = new THREE.OctahedronGeometry(1.05, 0);
+    orbSpecs.forEach((spec, i) => {
+      const idx = Math.floor(spec.t * this.samples) % this.samples;
+      const p = this.points[idx];
+      const r = this.rights[idx];
+      const pos = p.clone().addScaledVector(r, i % 2 === 0 ? -4.5 : 4.5);
+      const mesh = new THREE.Mesh(
+        orbGeo,
+        new THREE.MeshStandardMaterial({ color: spec.col, emissive: spec.col, emissiveIntensity: 0.65, roughness: 0.15 })
+      );
+      mesh.position.set(pos.x, p.y + 1.85, pos.z);
+      this.group.add(mesh);
+      this.buffOrbs.push({ mesh, kind: spec.kind, baseY: p.y + 1.85, pos: new THREE.Vector3(pos.x, p.y + 1.85, pos.z), respawn: 0 });
     });
   }
 
@@ -3398,9 +3430,13 @@ const ITEM_TYPES = {
   shield: { id: 'shield', name: '天使護盾', icon: '🛡️', color: '#38ef7d' },
   magnet: { id: 'magnet', name: '超級磁鐵', icon: '🧲', color: '#ff2a9d' },
   lightning: { id: 'lightning', name: '天雷閃電', icon: '🌩️', color: '#ffea00' },
+  freeze: { id: 'freeze', name: '時間凍結', icon: '❄️', color: '#7dd3fc' },
+  turbo_tire: { id: 'turbo_tire', name: '黃金輪胎', icon: '🛞', color: '#fbbf24' },
+  super_engine: { id: 'super_engine', name: '狂暴引擎', icon: '🔥', color: '#fb7185' },
+  star: { id: 'star', name: '無敵星星', icon: '⭐', color: '#fde047' },
 };
 
-const ITEM_POOL = ['nitro', 'missile', 'banana', 'waterbomb', 'shield', 'magnet'];
+const ITEM_POOL = ['nitro', 'missile', 'banana', 'waterbomb', 'shield', 'magnet', 'turbo_tire', 'super_engine'];
 
 function createQuestionBoxTexture() {
   const canvas = document.createElement('canvas');
@@ -3457,7 +3493,31 @@ function attachKartStatusMeshes(kartRoot) {
   waterMesh.visible = false;
   kartRoot.add(waterMesh);
 
-  return { shieldMesh, waterMesh };
+  const freezeMesh = new THREE.Mesh(
+    new THREE.BoxGeometry(3.2, 2.8, 4.0),
+    new THREE.MeshStandardMaterial({
+      color: 0xbae6fd,
+      emissive: 0x38bdf8,
+      emissiveIntensity: 0.55,
+      transparent: true,
+      opacity: 0.55,
+      roughness: 0.08,
+    })
+  );
+  freezeMesh.position.set(0, 1.35, 0);
+  freezeMesh.visible = false;
+  kartRoot.add(freezeMesh);
+
+  const starAura = new THREE.Mesh(
+    new THREE.TorusGeometry(2.05, 0.16, 8, 24),
+    new THREE.MeshBasicMaterial({ color: 0xffdd00, transparent: true, opacity: 0.88 })
+  );
+  starAura.rotation.x = Math.PI / 2;
+  starAura.position.set(0, 0.45, 0);
+  starAura.visible = false;
+  kartRoot.add(starAura);
+
+  return { shieldMesh, waterMesh, freezeMesh, starAura };
 }
 
 class ItemManager {
@@ -3512,13 +3572,14 @@ class ItemManager {
   }
 
   rollRandomItem(rankIndex) {
-    // KartRider rubber-band item balance: 1st gets defense/traps, 3rd-4th get comeback items!
+    // KartRider rubber-band comeback balance:
+    // 1st gets defense/traps; 2nd gets balanced/buffs; 3rd-4th get Time Freeze, Star, Super Engine, Magnet!
     if (rankIndex === 0) {
-      const leadingPool = ['banana', 'shield', 'banana', 'waterbomb', 'nitro'];
+      const leadingPool = ['banana', 'shield', 'turbo_tire', 'waterbomb', 'nitro'];
       return leadingPool[Math.floor(Math.random() * leadingPool.length)];
     }
     if (rankIndex >= 2) {
-      const comebackPool = ['magnet', 'lightning', 'nitro', 'missile', 'magnet', 'shield'];
+      const comebackPool = ['freeze', 'star', 'super_engine', 'magnet', 'lightning', 'freeze', 'turbo_tire'];
       return comebackPool[Math.floor(Math.random() * comebackPool.length)];
     }
     return ITEM_POOL[Math.floor(Math.random() * ITEM_POOL.length)];
@@ -3578,7 +3639,6 @@ class ItemManager {
         this.showBannerFor(racer, target ? `🧲 磁鐵鎖定 ${target.name}！` : '🧲 超級磁力衝刺！', '#ff2a9d', 1.4);
       }
     } else if (itemId === 'lightning') {
-      // Strike every racer ahead!
       if (racer.isHuman) {
         this.audio.playLightning();
         this.showBannerFor(racer, '🌩️ 天雷閃電！全體劈擊！', '#ffea00', 1.4);
@@ -3588,6 +3648,46 @@ class ItemManager {
         if (other.totalProgress >= racer.totalProgress - 0.05) {
           this._hitRacer(other, 'lightning');
         }
+      }
+    } else if (itemId === 'freeze') {
+      // ❄️ TIME FREEZE: Freeze ALL other racers in ice blocks for 3.5 seconds!
+      if (racer.isHuman) {
+        this.audio.playShield();
+        this.showBannerFor(racer, '❄️ 時間凍結！全場對手暫停 3.5 秒！', '#7dd3fc', 1.8);
+      }
+      for (const other of racers) {
+        if (other === racer || other.finished) continue;
+        if (other.shieldTimer > 0 || other.starTimer > 0) {
+          if (other.shieldTimer > 0) other.shieldTimer = 0;
+          if (other.isHuman) this.showBannerFor(other, '🛡️ 免疫時間凍結！', '#38ef7d', 1.1);
+        } else {
+          other.freezeTimer = 3.5;
+          other.speed = 0;
+          if (other.isHuman) this.showBannerFor(other, '❄️ 時間被凍結了！', '#7dd3fc', 1.5);
+        }
+      }
+    } else if (itemId === 'turbo_tire') {
+      // 🛞 GOLDEN TURBO TIRES: +10 speed, ultra drift grip & zero grass slowdown for 8s!
+      racer.tireBuffTimer = 8.0;
+      if (racer.isHuman) {
+        this.audio.playBoost();
+        this.showBannerFor(racer, '🛞 黃金超跑輪胎！抓地與極速強化 8 秒！', '#fbbf24', 1.5);
+      }
+    } else if (itemId === 'super_engine') {
+      // 🔥 V8 OVERDRIVE ENGINE: +15 top speed & huge acceleration for 8s!
+      racer.engineBuffTimer = 8.0;
+      if (racer.isHuman) {
+        this.audio.playBoost();
+        this.showBannerFor(racer, '🔥 狂暴 V8 引擎！極速飆升 8 秒！', '#fb7185', 1.5);
+      }
+    } else if (itemId === 'star') {
+      // ⭐ INVINCIBLE STAR: 6s speed + immunity + knock opponents spinning on contact!
+      racer.starTimer = 6.0;
+      racer.boostTimer = Math.max(racer.boostTimer, 2.0);
+      if (racer.isHuman) {
+        this.audio.playBoost();
+        this.audio.playLapChime();
+        this.showBannerFor(racer, '⭐ 無敵星星！6 秒無敵撞飛對手！', '#fde047', 1.6);
       }
     }
     return true;
@@ -3684,6 +3784,7 @@ class ItemManager {
   }
 
   _hitRacer(victim, type) {
+    if (victim.starTimer > 0) return;
     if (victim.shieldTimer > 0) {
       victim.shieldTimer = 0;
       if (victim.isHuman) {
@@ -4737,6 +4838,10 @@ function createRacer(presetKey, slotIndex, displayName, controlType, humanIndex 
     shieldTimer: 0,
     spinTimer: 0,
     waterTrapTimer: 0,
+    freezeTimer: 0,
+    tireBuffTimer: 0,
+    engineBuffTimer: 0,
+    starTimer: 0,
     magnetTimer: 0,
     magnetTarget: null,
     aiItemDelay: 1.5 + Math.random() * 2.0,
@@ -4999,11 +5104,14 @@ function updateHumanControls(r, dt) {
   }
 
   let targetMax = preset.maxSpeed + upgEngine * 1.6;
+  if (r.tireBuffTimer > 0) targetMax += 10;
+  if (r.engineBuffTimer > 0) targetMax += 15;
+  if (r.starTimer > 0) targetMax += 16;
   if (isBoosting) targetMax += 24 + upgNitro * 2.0;
   else if (isMiniBoosting) targetMax += 13;
 
   if (inp.accel || isBoosting) {
-    const accelBoost = isBoosting ? 2.2 : isMiniBoosting ? 1.6 : 1.0;
+    const accelBoost = (isBoosting ? 2.2 : isMiniBoosting ? 1.6 : 1.0) * (r.engineBuffTimer > 0 ? 1.55 : 1.0);
     r.speed += (preset.accel + upgEngine * 1.2) * accelBoost * dt;
   } else if (inp.brake) {
     if (r.speed > 2) r.speed -= 48 * dt;
@@ -5056,7 +5164,7 @@ function updateHumanControls(r, dt) {
   const speedFactor = Math.min(1, Math.abs(r.speed) / 14) * (r.speed >= 0 ? 1 : -1);
   if (r.isDrifting) {
     r.driftTime += dt;
-    const grip = Math.min(0.985, preset.driftGrip + upgDrift * 0.008);
+    const grip = Math.min(0.99, preset.driftGrip + upgDrift * 0.008 + (r.tireBuffTimer > 0 ? 0.035 : 0));
     r.speed *= Math.pow(grip, dt);
     r.yaw += (r.driftDir * 1.72 + r.steerInput * 1.05) * dt * speedFactor;
 
@@ -5159,6 +5267,10 @@ function updateRacerPhysics(r, dt) {
   if (r.shieldTimer > 0) r.shieldTimer = Math.max(0, r.shieldTimer - dt);
   if (r.spinTimer > 0) r.spinTimer = Math.max(0, r.spinTimer - dt);
   if (r.waterTrapTimer > 0) r.waterTrapTimer = Math.max(0, r.waterTrapTimer - dt);
+  if (r.freezeTimer > 0) r.freezeTimer = Math.max(0, r.freezeTimer - dt);
+  if (r.tireBuffTimer > 0) r.tireBuffTimer = Math.max(0, r.tireBuffTimer - dt);
+  if (r.engineBuffTimer > 0) r.engineBuffTimer = Math.max(0, r.engineBuffTimer - dt);
+  if (r.starTimer > 0) r.starTimer = Math.max(0, r.starTimer - dt);
   if (r.magnetTimer > 0) {
     r.magnetTimer = Math.max(0, r.magnetTimer - dt);
     if (r.magnetTarget && !r.magnetTarget.finished) {
@@ -5176,10 +5288,13 @@ function updateRacerPhysics(r, dt) {
     }
   }
 
-  const incapacitated = r.spinTimer > 0 || r.waterTrapTimer > 0;
+  const incapacitated = r.spinTimer > 0 || r.waterTrapTimer > 0 || r.freezeTimer > 0;
 
   if (gameState === 'racing') {
-    if (incapacitated) {
+    if (r.freezeTimer > 0) {
+      r.isDrifting = false;
+      r.speed = 0;
+    } else if (incapacitated) {
       r.isDrifting = false;
       r.speed *= Math.pow(0.18, dt);
     } else if (r.isHuman && !r.finished) {
@@ -5251,7 +5366,7 @@ function updateRacerPhysics(r, dt) {
   r.roadPitch = THREE.MathUtils.lerp(r.roadPitch, slopePitch, Math.min(1, dt * 10));
 
   const halfRoad = track.roadWidth / 2;
-  if (Math.abs(closest.lateralOffset) > halfRoad + 1.0 && r.boostTimer <= 0 && r.pos.y <= groundY + 0.3) {
+  if (Math.abs(closest.lateralOffset) > halfRoad + 1.0 && r.boostTimer <= 0 && r.tireBuffTimer <= 0 && r.starTimer <= 0 && r.pos.y <= groundY + 0.3) {
     r.speed *= Math.pow(0.55, dt);
   }
 
@@ -5329,6 +5444,34 @@ function updateRacerPhysics(r, dt) {
           if (r.isHuman) {
             audio.playHit();
             showBannerFor(r, '💥 撞到移動路障！', '#ff3b30', 1.1);
+          }
+        }
+        break;
+      }
+    }
+  }
+
+  // Track Buff Orbs pickup (🛞 Turbo Tires / 🔥 Super Engine — active in ALL modes!)
+  if (gameState === 'racing' && !r.finished) {
+    for (const b of track.buffOrbs) {
+      if (b.respawn > 0) continue;
+      const dx = r.pos.x - b.pos.x;
+      const dz = r.pos.z - b.pos.z;
+      const dy = Math.abs(r.pos.y + 1.2 - b.pos.y);
+      if (dy < 3.0 && dx * dx + dz * dz < 7.2) {
+        b.respawn = 10.0;
+        b.mesh.visible = false;
+        if (b.kind === 'turbo_tire') {
+          r.tireBuffTimer = 8.0;
+          if (r.isHuman) {
+            audio.playBoost();
+            showBannerFor(r, '🛞 吃到黃金輪胎！抓地＋極速強化 8 秒！', '#fbbf24', 1.4);
+          }
+        } else {
+          r.engineBuffTimer = 8.0;
+          if (r.isHuman) {
+            audio.playBoost();
+            showBannerFor(r, '🔥 吃到狂暴引擎！馬力暴衝 8 秒！', '#fb7185', 1.4);
           }
         }
         break;
@@ -5421,6 +5564,18 @@ function applyKartVisuals(r, dt) {
   r.statusMeshes.shieldMesh.visible = r.shieldTimer > 0;
   if (r.shieldTimer > 0) r.statusMeshes.shieldMesh.scale.setScalar(1 + Math.sin(raceTime * 10) * 0.05);
   r.statusMeshes.waterMesh.visible = r.waterTrapTimer > 0;
+  if (r.statusMeshes.freezeMesh) r.statusMeshes.freezeMesh.visible = r.freezeTimer > 0;
+  if (r.statusMeshes.starAura) {
+    const hasBuffAura = r.starTimer > 0 || r.tireBuffTimer > 0 || r.engineBuffTimer > 0;
+    r.statusMeshes.starAura.visible = hasBuffAura;
+    if (hasBuffAura) {
+      r.statusMeshes.starAura.rotation.z += dt * 6;
+      const col = r.starTimer > 0
+        ? [0xff3b30, 0xffdd00, 0x38ef7d, 0x00e5ff, 0xd946ef][Math.floor(raceTime * 12) % 5]
+        : r.engineBuffTimer > 0 ? 0xfb7185 : 0xfbbf24;
+      r.statusMeshes.starAura.material.color.setHex(col);
+    }
+  }
 
   const targetRoll = -r.steerInput * 0.08 - r.driftVisualYaw * 0.16;
   r.kart.bodyGroup.rotation.z = THREE.MathUtils.lerp(r.kart.bodyGroup.rotation.z, targetRoll, Math.min(1, dt * 10));
@@ -5433,7 +5588,7 @@ function applyKartVisuals(r, dt) {
   for (const pivot of r.kart.frontWheelPivots) pivot.rotation.y = r.steerInput * 0.42;
   for (const wheel of r.kart.allWheels) wheel.rotation.x -= r.speed * dt * 2.1;
 
-  const boostingNow = r.boostTimer > 0 || r.miniBoostTimer > 0;
+  const boostingNow = r.boostTimer > 0 || r.miniBoostTimer > 0 || r.engineBuffTimer > 0 || r.starTimer > 0;
   for (const flame of r.kart.flames) {
     flame.visible = boostingNow;
     if (boostingNow) {
@@ -5482,6 +5637,16 @@ function resolveKartCollisions() {
         const nz = dz / dist;
         if (a.controlType !== 'remote') { a.pos.x -= nx * push; a.pos.z -= nz * push; }
         if (b.controlType !== 'remote') { b.pos.x += nx * push; b.pos.z += nz * push; }
+        // Invincible Star knocks opponents spinning on contact!
+        if (a.starTimer > 0 && b.starTimer <= 0 && b.spinTimer <= 0) {
+          b.spinTimer = 1.0;
+          b.speed *= 0.3;
+          if (a.isHuman) audio.playHit();
+        } else if (b.starTimer > 0 && a.starTimer <= 0 && a.spinTimer <= 0) {
+          a.spinTimer = 1.0;
+          a.speed *= 0.3;
+          if (b.isHuman) audio.playHit();
+        }
       }
     }
   }
