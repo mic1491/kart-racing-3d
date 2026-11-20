@@ -736,7 +736,7 @@ kbd {
   .controls-guide { display: none; }
 }
 
-  </style>
+</style>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js" defer></script>
 </head>
 <body>
@@ -765,7 +765,7 @@ kbd {
       <div class="lobby-console">
         <div class="lobby-tabs" id="lobby-tabs">
           <button class="tab-btn active" data-tab="play">🏁 模式與連線</button>
-          <button class="tab-btn" data-tab="tracks">🗺️ 賽道 (8)</button>
+          <button class="tab-btn" data-tab="tracks">🗺️ 賽道 (10)</button>
           <button class="tab-btn" data-tab="garage">🏎️ 車型與車手</button>
           <button class="tab-btn" data-tab="upgrade">🔧 改裝強化</button>
         </div>
@@ -813,7 +813,7 @@ kbd {
 
           <!-- Tab 2: 8 Tracks -->
           <div class="tab-pane" id="tab-tracks">
-            <div class="pane-hint">8 張立體賽道全開放自由選（已獲獎牌：<strong id="unlock-progress">0 / 8</strong>）</div>
+            <div class="pane-hint">10 張立體賽道全開放（含 ☁️ 雲端天國無護欄掉落、🦖 恐龍侏羅紀暴龍踩扁！已獲獎牌：<strong id="unlock-progress">0 / 10</strong>）</div>
             <div class="track-grid" id="track-selector"></div>
           </div>
 
@@ -1015,7 +1015,8 @@ kbd {
   <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 
-// === audio.js ===
+
+// ===== audio.js =====
 class SoundEngine {
   constructor() {
     this.ctx = null;
@@ -1376,7 +1377,9 @@ class SoundEngine {
   }
 }
 
-// === kart.js ===
+
+// ===== kart.js =====
+
 const KART_ORDER = ['yellow', 'cyan', 'red', 'purple', 'green', 'desert', 'ice', 'cyber', 'hsr', 'shuttle', 'ufo', 'duck', 'carriage'];
 
 const DRIVER_ORDER = ['racer_red', 'racer_black', 'astronaut', 'police', 'knight', 'ninja'];
@@ -2091,8 +2094,10 @@ function createLegoKart(presetKey = 'yellow', driverKey = 'racer_red') {
   return { root, bodyGroup, driverGroup, steeringPivot, frontWheelPivots, allWheels, flames, horseLegs, yLift, preset };
 }
 
-// === track.js ===
-const TRACK_ORDER = ['village', 'desert', 'neon', 'ice', 'beach', 'sakura', 'volcano', 'rainbow'];
+
+// ===== track.js =====
+
+const TRACK_ORDER = ['village', 'desert', 'neon', 'ice', 'beach', 'sakura', 'volcano', 'rainbow', 'sky', 'dino'];
 
 // Control points are now 3D: [x, y, z] for hills, bridges, figure-8 overpasses & drops!
 const TRACK_CONFIGS = {
@@ -2128,6 +2133,7 @@ const TRACK_CONFIGS = {
     rampTs: [0.22, 0.68],
     itemRowTs: [0.16, 0.43, 0.65, 0.86],
     obstacleTs: [0.5],
+    dinoTs: [0.27],
     tunnelRange: [0.72, 0.82],
     shortcut: [0.36, 0.48],
   },
@@ -2164,6 +2170,7 @@ const TRACK_CONFIGS = {
     rampTs: [0.18, 0.58, 0.82],
     itemRowTs: [0.14, 0.36, 0.62, 0.84],
     obstacleTs: [0.31, 0.74],
+    dinoTs: [0.54],
     tunnelRange: [0.76, 0.85],
     shortcut: [0.32, 0.45],
   },
@@ -2383,6 +2390,78 @@ const TRACK_CONFIGS = {
     tunnelRange: [0.41, 0.5],
     shortcut: [0.62, 0.75],
   },
+  sky: {
+    id: 'sky',
+    name: '雲端天國',
+    icon: '☁️',
+    openEdge: true, // NO guardrails — fall off into the clouds to respawn!
+    skyColor: 0x60b6ff,
+    fogColor: 0xbae6fd,
+    hemiSky: 0xffffff,
+    hemiGround: 0x93c5fd,
+    hemiIntensity: 1.2,
+    sunColor: 0xfffde7,
+    sunIntensity: 1.8,
+    groundColor: '#e0f2fe',
+    studColor: '#ffffff',
+    roadBg: '#f8fafc',
+    roadEdge: '#fbbf24',
+    roadCenter: '#38bdf8',
+    curbA: '#fbbf24',
+    curbB: '#ffffff',
+    postA: 0xfbbf24,
+    postB: 0xffffff,
+    archPillar: 0xfbbf24,
+    archTop: 0x38bdf8,
+    // Floating Sky Circuit suspended high above the cloud sea!
+    points: [
+      [0, 30, 140], [0, 30, 20], [0, 34, -95], [85, 42, -195], [210, 46, -165],
+      [255, 38, -55], [140, 32, 10], [260, 38, 105], [215, 44, 220],
+      [90, 36, 240], [0, 30, 195],
+    ],
+    boostTs: [0.09, 0.3, 0.53, 0.75, 0.91],
+    rampTs: [0.2, 0.44, 0.68, 0.85],
+    itemRowTs: [0.15, 0.38, 0.61, 0.82],
+    obstacleTs: [0.34, 0.72],
+    tunnelRange: [0.46, 0.54],
+    shortcut: [0.23, 0.37],
+  },
+  dino: {
+    id: 'dino',
+    name: '恐龍侏羅紀',
+    icon: '🦖',
+    skyColor: 0x86efac,
+    fogColor: 0x4ade80,
+    hemiSky: 0xdcfce7,
+    hemiGround: 0x3f6212,
+    hemiIntensity: 1.0,
+    sunColor: 0xfef08a,
+    sunIntensity: 1.75,
+    groundColor: '#2d5a27',
+    studColor: '#234a1e',
+    roadBg: '#4a3b2c',
+    roadEdge: '#facc15',
+    roadCenter: '#fde047',
+    curbA: '#eab308',
+    curbB: '#166534',
+    postA: 0x854d0e,
+    postB: 0xfacc15,
+    archPillar: 0x15803d,
+    archTop: 0xca8a04,
+    // Prehistoric Jurassic Valley with rolling hills & 3 giant stomping T-Rexes!
+    points: [
+      [0, 0, 140], [0, 0, 20], [0, 4, -100], [90, 12, -200], [205, 16, -165],
+      [250, 10, -55], [145, 4, 5], [240, 8, 115], [190, 12, 225],
+      [75, 4, 240], [0, 0, 195],
+    ],
+    boostTs: [0.08, 0.31, 0.58, 0.83],
+    rampTs: [0.24, 0.65],
+    itemRowTs: [0.13, 0.37, 0.62, 0.86],
+    obstacleTs: [0.4],
+    dinoTs: [0.18, 0.48, 0.78],
+    tunnelRange: [0.68, 0.75],
+    shortcut: [0.26, 0.39],
+  },
 };
 
 class RaceTrack {
@@ -2401,6 +2480,7 @@ class RaceTrack {
     this.jumpRamps = [];
     this.shortcuts = [];
     this.obstacles = [];
+    this.dinos = [];
     this.coins = [];
     this.buffOrbs = [];
     this.itemBoxAnchors = [];
@@ -2416,6 +2496,7 @@ class RaceTrack {
     this._buildJumpRamps();
     this._buildSkyShortcut();
     this._buildMovingObstacles();
+    this._buildStompingDinos();
     this._buildCoins();
     this._buildItemBoxAnchors();
     this._buildRichTrackDetails();
@@ -2441,6 +2522,39 @@ class RaceTrack {
       obs.pos.copy(pos);
       obs.mesh.position.set(pos.x, pos.y + 1.1, pos.z);
       obs.mesh.rotation.y += dt * 1.8;
+    }
+    for (const d of this.dinos) {
+      // Stomp cycle: lift foot high, pause briefly, SLAM down onto the road!
+      const cyc = (this.elapsed * d.speed + d.phase) % 1;
+      let footLift = 0;
+      if (cyc < 0.42) {
+        // Foot slammed flat on asphalt (DANGER!)
+        footLift = 0;
+      } else if (cyc < 0.72) {
+        // Lifting up
+        footLift = Math.sin(((cyc - 0.42) / 0.3) * (Math.PI / 2)) * 8.5;
+      } else if (cyc < 0.88) {
+        // Hovering high ready to crush
+        footLift = 8.5;
+      } else {
+        // Fast slam down!
+        const p = (cyc - 0.88) / 0.12;
+        footLift = (1 - p * p) * 8.5;
+      }
+      d.stompLeg.position.y = d.legBaseY + footLift;
+      d.stompActive = footLift < 1.35;
+      d.justSlammed = !d.wasActive && d.stompActive;
+      d.wasActive = d.stompActive;
+
+      // Animate head roar & tail sway
+      d.head.rotation.x = d.stompActive ? 0.25 : -0.15 + Math.sin(this.elapsed * 3 + d.phase) * 0.08;
+      d.tail.rotation.y = Math.sin(this.elapsed * 2.4 + d.phase) * 0.25;
+
+      // Pulse warning ring on road
+      const ringScale = d.stompActive ? 1.15 : 0.85 + Math.sin(this.elapsed * 10) * 0.12;
+      d.warningRing.scale.set(ringScale, ringScale, 1);
+      d.warningRing.material.color.setHex(d.stompActive ? 0xff1744 : 0xfacc15);
+      d.warningRing.material.opacity = d.stompActive ? 0.92 : 0.55;
     }
     for (const c of this.coins) {
       if (c.respawn > 0) {
@@ -2504,6 +2618,8 @@ class RaceTrack {
       sakura: ['#d16ba5', '#f8bbd0', '#fff0f5'],
       volcano: ['#1c0606', '#5e1410', '#d84315'],
       rainbow: ['#030414', '#160b38', '#3d1566'],
+      sky: ['#1e88e5', '#7dd3fc', '#f0f9ff'],
+      dino: ['#15803d', '#4ade80', '#fef08a'],
     };
     const [topCol, midCol, botCol] = palettes[this.trackId] || palettes.village;
     const canvas = document.createElement('canvas');
@@ -2713,26 +2829,30 @@ class RaceTrack {
       roughness: 0.3,
     });
 
-    for (let i = 0; i < this.samples; i += 6) {
-      if (i < 6 || i > this.samples - 6) continue;
-      const p = this.points[i];
-      const tan = this.tangents[i];
-      const r = this.rights[i];
-      const angle = Math.atan2(tan.x, tan.z);
-      const mat = (i / 6) % 2 === 0 ? matA : matB;
+    // Skip barrier posts on openEdge Sky Track so you can visibly see the drop into the clouds!
+    if (!this.config.openEdge) {
+      for (let i = 0; i < this.samples; i += 6) {
+        if (i < 6 || i > this.samples - 6) continue;
+        const p = this.points[i];
+        const tan = this.tangents[i];
+        const r = this.rights[i];
+        const angle = Math.atan2(tan.x, tan.z);
+        const mat = (i / 6) % 2 === 0 ? matA : matB;
 
-      for (const side of [-1, 1]) {
-        const post = new THREE.Mesh(postGeo, mat);
-        const pos = p.clone().addScaledVector(r, side * (this.wallOffset + 0.5));
-        post.position.set(pos.x, p.y + 0.68, pos.z);
-        post.rotation.y = angle;
-        post.castShadow = true;
-        this.group.add(post);
+        for (const side of [-1, 1]) {
+          const post = new THREE.Mesh(postGeo, mat);
+          const pos = p.clone().addScaledVector(r, side * (this.wallOffset + 0.5));
+          post.position.set(pos.x, p.y + 0.68, pos.z);
+          post.rotation.y = angle;
+          post.castShadow = true;
+          this.group.add(post);
+        }
       }
     }
   }
 
   _buildBridgePillars() {
+    if (this.config.openEdge) return; // Cloud track floats freely in the sky!
     const pillarMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.65 });
     for (let i = 0; i < this.samples; i += 14) {
       const p = this.points[i];
@@ -3302,7 +3422,225 @@ class RaceTrack {
     else if (this.trackId === 'sakura') this._buildSakuraScenery();
     else if (this.trackId === 'volcano') this._buildVolcanoScenery();
     else if (this.trackId === 'rainbow') this._buildRainbowScenery();
+    else if (this.trackId === 'sky') this._buildSkyScenery();
+    else if (this.trackId === 'dino') this._buildDinoScenery();
     else this._buildNeonScenery();
+  }
+
+  _buildStompingDinos() {
+    const dinoTs = this.config.dinoTs || [];
+    if (!dinoTs.length) return;
+
+    const skinColors = [0x22c55e, 0xea580c, 0x16a34a];
+    const bellyMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, roughness: 0.45 });
+    const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffeb3b });
+    const pupilMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+    const clawMat = new THREE.MeshStandardMaterial({ color: 0xfffbeb, roughness: 0.35 });
+
+    dinoTs.forEach((t, idx) => {
+      const sampleIdx = Math.floor(t * this.samples) % this.samples;
+      const p = this.points[sampleIdx];
+      const tan = this.tangents[sampleIdx];
+      const r = this.rights[sampleIdx];
+      const side = idx % 2 === 0 ? 1 : -1;
+
+      // Giant LEGO T-Rex stands right next to the road, stomping its huge foot onto the lane!
+      const dinoPos = p.clone().addScaledVector(r, side * (this.roadWidth / 2 + 5.2));
+      const stompLane = side * 3.8; // stomps onto the half of the road on its side!
+      const stompWorldPos = p.clone().addScaledVector(r, stompLane);
+
+      const skinMat = new THREE.MeshStandardMaterial({
+        color: skinColors[idx % skinColors.length],
+        roughness: 0.35,
+        metalness: 0.05,
+      });
+
+      const dino = new THREE.Group();
+      dino.position.set(dinoPos.x, p.y, dinoPos.z);
+      // Face across the track toward the stomp zone!
+      const faceDir = stompWorldPos.clone().sub(dinoPos);
+      dino.rotation.y = Math.atan2(faceDir.x, faceDir.z);
+
+      // Standing rear leg
+      const standLeg = new THREE.Mesh(new THREE.BoxGeometry(3.8, 9.5, 4.2), skinMat);
+      standLeg.position.set(-2.6, 4.75, -1.2);
+      standLeg.castShadow = true;
+      dino.add(standLeg);
+
+      // Chunky LEGO torso
+      const body = new THREE.Mesh(new THREE.BoxGeometry(8.5, 8.8, 12.5), skinMat);
+      body.position.set(0, 12.2, 0.5);
+      body.rotation.x = 0.18;
+      body.castShadow = true;
+      dino.add(body);
+
+      const belly = new THREE.Mesh(new THREE.BoxGeometry(6.6, 7.2, 2.2), bellyMat);
+      belly.position.set(0, 11.4, 6.2);
+      dino.add(belly);
+
+      // Tiny T-Rex arms
+      for (const ax of [-4.4, 4.4]) {
+        const arm = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.4, 3.2), skinMat);
+        arm.position.set(ax, 12.0, 5.8);
+        dino.add(arm);
+      }
+
+      // Giant LEGO Head + Jaws + Teeth + Glowing Eyes
+      const head = new THREE.Group();
+      head.position.set(0, 17.5, 6.2);
+      const skull = new THREE.Mesh(new THREE.BoxGeometry(6.8, 5.4, 8.6), skinMat);
+      skull.position.set(0, 1.2, 2.6);
+      skull.castShadow = true;
+      head.add(skull);
+
+      const jaw = new THREE.Mesh(new THREE.BoxGeometry(5.8, 2.0, 7.2), skinMat);
+      jaw.position.set(0, -1.8, 2.4);
+      head.add(jaw);
+
+      // Row of white LEGO teeth
+      for (let tx = -2.2; tx <= 2.2; tx += 1.1) {
+        const tooth = new THREE.Mesh(new THREE.BoxGeometry(0.65, 1.1, 0.65), whiteMat);
+        tooth.position.set(tx, -0.7, 6.4);
+        head.add(tooth);
+      }
+      // Glowing yellow eyes
+      for (const ex of [-3.5, 3.5]) {
+        const eye = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.4, 1.4), eyeMat);
+        eye.position.set(ex, 2.4, 4.2);
+        const pupil = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.7, 0.6), pupilMat);
+        pupil.position.set(ex, 2.4, 4.5);
+        head.add(eye, pupil);
+      }
+      dino.add(head);
+
+      // Giant swaying LEGO tail
+      const tail = new THREE.Group();
+      tail.position.set(0, 11.2, -5.8);
+      const t1 = new THREE.Mesh(new THREE.BoxGeometry(5.6, 5.2, 7.5), skinMat);
+      t1.position.set(0, -0.5, -3.5);
+      const t2 = new THREE.Mesh(new THREE.BoxGeometry(3.4, 3.2, 6.8), skinMat);
+      t2.position.set(0, -1.2, -9.8);
+      tail.add(t1, t2);
+      dino.add(tail);
+
+      // GIANT STOMPING LEG & FOOT reaching right onto the asphalt!
+      const stompLeg = new THREE.Group();
+      const legDist = dinoPos.distanceTo(stompWorldPos);
+      stompLeg.position.set(0, 0, legDist);
+
+      const shin = new THREE.Mesh(new THREE.BoxGeometry(4.4, 11.5, 4.6), skinMat);
+      shin.position.set(0, 6.8, -0.4);
+      shin.castShadow = true;
+      stompLeg.add(shin);
+
+      const foot = new THREE.Mesh(new THREE.BoxGeometry(6.8, 2.2, 7.6), skinMat);
+      foot.position.set(0, 1.1, 0.6);
+      foot.castShadow = true;
+      stompLeg.add(foot);
+
+      // 3 giant white claws on the stomping foot!
+      for (const cx of [-2.2, 0, 2.2]) {
+        const claw = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.4, 2.1), clawMat);
+        claw.position.set(cx, 0.8, 4.8);
+        stompLeg.add(claw);
+      }
+      dino.add(stompLeg);
+      this.group.add(dino);
+
+      // Glowing danger target ring on the asphalt right under the stomping foot!
+      const warningRing = new THREE.Mesh(
+        new THREE.RingGeometry(3.2, 4.9, 24),
+        new THREE.MeshBasicMaterial({ color: 0xfacc15, side: THREE.DoubleSide, transparent: true, opacity: 0.6 })
+      );
+      warningRing.rotation.x = -Math.PI / 2;
+      warningRing.position.set(stompWorldPos.x, p.y + 0.12, stompWorldPos.z);
+      this.group.add(warningRing);
+
+      this.dinos.push({
+        stompPos: stompWorldPos,
+        radius: 4.9,
+        stompLeg,
+        legBaseY: 0,
+        head,
+        tail,
+        warningRing,
+        speed: 0.24 + (idx % 2) * 0.05,
+        phase: idx * 0.37,
+        stompActive: false,
+        wasActive: false,
+        justSlammed: false,
+      });
+    });
+  }
+
+  _buildDinoScenery() {
+    // Prehistoric Jurassic palm/fern trees, giant amber crystals, and mossy boulders!
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x713f12, roughness: 0.8 });
+    const fernMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.45 });
+    const rockMat = new THREE.MeshStandardMaterial({ color: 0x57534e, roughness: 0.9 });
+    const amberMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xd97706, emissiveIntensity: 0.45, roughness: 0.2 });
+
+    for (let i = 0; i < this.samples; i += 14) {
+      const p = this.points[i];
+      const r = this.rights[i];
+      for (const side of [-1, 1]) {
+        const pos = p.clone().addScaledVector(r, side * (this.wallOffset + 15 + (i % 4) * 4.5));
+        if (this._isClearOfTrack(pos, this.wallOffset + 9)) {
+          const g = new THREE.Group();
+          if (i % 28 === 0) {
+            // Giant LEGO prehistoric fern tree
+            const trunk = new THREE.Mesh(new THREE.BoxGeometry(2.2, 13, 2.2), trunkMat);
+            trunk.position.y = 6.5;
+            const c1 = new THREE.Mesh(new THREE.BoxGeometry(10, 2.2, 3.2), fernMat);
+            c1.position.y = 13.5;
+            const c2 = new THREE.Mesh(new THREE.BoxGeometry(3.2, 2.2, 10), fernMat);
+            c2.position.y = 13.8;
+            const c3 = new THREE.Mesh(new THREE.BoxGeometry(6.5, 2.5, 6.5), fernMat);
+            c3.position.y = 15.2;
+            g.add(trunk, c1, c2, c3);
+          } else {
+            // Mossy prehistoric rock + glowing amber crystal
+            const rock = new THREE.Mesh(new THREE.BoxGeometry(6.5, 4.5, 5.5), rockMat);
+            rock.position.y = 2.25;
+            const amber = new THREE.Mesh(new THREE.OctahedronGeometry(2.2, 0), amberMat);
+            amber.position.set(1.2, 5.8, 0);
+            g.add(rock, amber);
+          }
+          g.position.set(pos.x, 0, pos.z);
+          this.group.add(g);
+        }
+      }
+    }
+    this._buildClouds(0xdcfce7, 0x86efac);
+  }
+
+  _buildSkyScenery() {
+    // Sea of giant fluffy LEGO clouds below & beside the floating Sky Track + golden sky halos!
+    const cloudMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xe0f2fe, emissiveIntensity: 0.5, roughness: 0.85 });
+    for (let i = 0; i < 42; i++) {
+      const c = new THREE.Group();
+      const b1 = new THREE.Mesh(new THREE.BoxGeometry(28 + (i % 4) * 8, 9, 18 + (i % 3) * 6), cloudMat);
+      const b2 = new THREE.Mesh(new THREE.BoxGeometry(18, 7, 14), cloudMat);
+      b2.position.set(4, 6, 0);
+      c.add(b1, b2);
+      c.position.set(
+        -160 + ((i * 83) % 580),
+        4 + ((i * 7) % 14),
+        -260 + ((i * 113) % 620)
+      );
+      this.group.add(c);
+    }
+    // Floating golden sky rings framing the sky highway
+    const haloMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
+    for (let i = 40; i < this.samples; i += 75) {
+      const p = this.points[i];
+      const tan = this.tangents[i];
+      const halo = new THREE.Mesh(new THREE.TorusGeometry(this.roadWidth / 2 + 4.5, 0.55, 8, 28), haloMat);
+      halo.position.set(p.x, p.y + 4, p.z);
+      halo.rotation.y = Math.atan2(tan.x, tan.z);
+      this.group.add(halo);
+    }
   }
 
   _isClearOfTrack(pos, minClearance) {
@@ -3678,7 +4016,9 @@ class RaceTrack {
   }
 }
 
-// === items.js ===
+
+// ===== items.js =====
+
 const ITEM_TYPES = {
   nitro: { id: 'nitro', name: '黃金氮氣', icon: '⚡', color: '#ff9500' },
   missile: { id: 'missile', name: '追蹤飛彈', icon: '🚀', color: '#ff3b30' },
@@ -3696,9 +4036,11 @@ const ITEM_TYPES = {
   mine: { id: 'mine', name: '三連地雷', icon: '💣', color: '#ef4444' },
   tornado: { id: 'tornado', name: '超級龍捲風', icon: '🌪️', color: '#38bdf8' },
   laser: { id: 'laser', name: '雷射炮', icon: '🔫', color: '#ff2a55' },
+  cannon: { id: 'cannon', name: '雲端大炮', icon: '💥', color: '#f97316' },
+  teleport: { id: 'teleport', name: '空間瞬移', icon: '🌀', color: '#22d3ee' },
 };
 
-const ITEM_POOL = ['laser', 'missile', 'waterbomb', 'devil', 'squid', 'mine', 'tornado', 'banana', 'shield', 'nitro', 'turbo_tire', 'super_engine'];
+const ITEM_POOL = ['cannon', 'teleport', 'laser', 'missile', 'waterbomb', 'devil', 'squid', 'mine', 'tornado', 'banana', 'shield', 'nitro', 'turbo_tire', 'super_engine'];
 
 function createQuestionBoxTexture() {
   const canvas = document.createElement('canvas');
@@ -3798,6 +4140,8 @@ class ItemManager {
     this.mines = [];
     this.tornadoes = [];
     this.lasers = [];
+    this.cannons = [];
+    this.portals = [];
     this.missiles = [];
     this.waterBombs = [];
     this.enabled = false;
@@ -3813,6 +4157,8 @@ class ItemManager {
     this.mines = [];
     this.tornadoes = [];
     this.lasers = [];
+    this.cannons = [];
+    this.portals = [];
     this.missiles = [];
     this.waterBombs = [];
   }
@@ -3846,7 +4192,7 @@ class ItemManager {
       return leadingPool[Math.floor(Math.random() * leadingPool.length)];
     }
     if (rankIndex >= 2) {
-      const comebackPool = ['laser', 'freeze', 'devil', 'tornado', 'lightning', 'star', 'super_engine', 'magnet', 'laser'];
+      const comebackPool = ['cannon', 'teleport', 'cannon', 'teleport', 'laser', 'freeze', 'devil', 'tornado', 'star', 'super_engine'];
       return comebackPool[Math.floor(Math.random() * comebackPool.length)];
     }
     return ITEM_POOL[Math.floor(Math.random() * ITEM_POOL.length)];
@@ -4009,6 +4355,12 @@ class ItemManager {
     } else if (itemId === 'laser') {
       // 🔫 LASER CANNON: Fires a blazing 3D laser beam that blasts opponent(s) BACKWARDS!
       this._fireLaserCannon(racer, racers, track);
+    } else if (itemId === 'cannon') {
+      // 💥 GIANT SKY CANNON: Mini-animation loads kart into a giant 3D cannon & blasts into the CLOUDS!
+      this._triggerSkyCannon(racer, track);
+    } else if (itemId === 'teleport') {
+      // 🌀 QUANTUM TELEPORT: Swirling warp portal instantly teleports kart far ahead!
+      this._triggerTeleport(racer, track);
     }
     return true;
   }
@@ -4162,6 +4514,110 @@ class ItemManager {
         '#ff2a55',
         1.5
       );
+    }
+  }
+
+  _triggerSkyCannon(racer, track) {
+    if (!track) return;
+    // Build Giant 3D LEGO Golden-Black Cannon right at racer's position!
+    const cannon = new THREE.Group();
+    const barrelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.3, metalness: 0.6 });
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xffc107, roughness: 0.25, metalness: 0.55 });
+    const woodMat = new THREE.MeshStandardMaterial({ color: 0x7c2d12, roughness: 0.7 });
+
+    // Base carriage
+    const base = new THREE.Mesh(new THREE.BoxGeometry(3.4, 1.1, 3.8), woodMat);
+    base.position.y = 0.65;
+    // Giant tilted barrel pointing forward & 45° up into the clouds!
+    const barrelGroup = new THREE.Group();
+    barrelGroup.position.set(0, 1.8, 0);
+    barrelGroup.rotation.x = 0.68; // tilted skyward toward -Z
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(1.45, 1.75, 5.2, 16), barrelMat);
+    barrel.rotation.x = Math.PI / 2;
+    const muzzleRing = new THREE.Mesh(new THREE.TorusGeometry(1.5, 0.28, 10, 20), goldMat);
+    muzzleRing.position.z = -2.55;
+    const backCap = new THREE.Mesh(new THREE.SphereGeometry(1.65, 12, 10), goldMat);
+    backCap.position.z = 2.5;
+    barrelGroup.add(barrel, muzzleRing, backCap);
+    cannon.add(base, barrelGroup);
+
+    const exitIdx = (racer.trackIndex + 58) % track.samples;
+    const exitPt = track.points[exitIdx];
+    const exitTan = track.tangents[exitIdx];
+    const flightYaw = Math.atan2(-(exitPt.x - racer.pos.x), -(exitPt.z - racer.pos.z));
+
+    cannon.position.copy(racer.pos);
+    cannon.rotation.y = flightYaw;
+    this.group.add(cannon);
+    this.cannons.push({ mesh: cannon, barrelGroup, life: 2.8, fired: false });
+
+    // Attach 2-phase Cannon State to racer: Phase 1 (0.65s load into barrel) -> Phase 2 (1.85s cloud flight!)
+    racer.cannonState = {
+      phase: 'loading',
+      timer: 0,
+      loadDuration: 0.65,
+      flyDuration: 1.85,
+      cannonMesh: cannon,
+      barrelGroup,
+      startPos: racer.pos.clone(),
+      endPos: exitPt.clone(),
+      endIdx: exitIdx,
+      endYaw: Math.atan2(-exitTan.x, -exitTan.z),
+      flightYaw,
+      peakY: Math.max(racer.pos.y, exitPt.y) + 56, // Soar straight up into the clouds!
+      crossedFinish: racer.trackIndex + 58 >= track.samples,
+    };
+
+    if (racer.isHuman) {
+      this.audio.playBeep(440, 0.15, 0.14);
+      setTimeout(() => this.audio.playBeep(660, 0.15, 0.14), 200);
+      setTimeout(() => this.audio.playBeep(880, 0.18, 0.15), 400);
+      this.showBannerFor(racer, '💥 裝填雲端巨炮！準備發射！！', '#f97316', 1.4);
+    }
+  }
+
+  _spawnPortalRing(pos, yaw, colorHex) {
+    const g = new THREE.Group();
+    const ring1 = new THREE.Mesh(
+      new THREE.TorusGeometry(2.6, 0.28, 10, 24),
+      new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0.9 })
+    );
+    const inner = new THREE.Mesh(
+      new THREE.CircleGeometry(2.4, 24),
+      new THREE.MeshBasicMaterial({ color: 0xa855f7, transparent: true, opacity: 0.45, side: THREE.DoubleSide })
+    );
+    g.add(ring1, inner);
+    g.position.set(pos.x, pos.y + 2.2, pos.z);
+    g.rotation.y = yaw;
+    this.group.add(g);
+    this.portals.push({ mesh: g, life: 1.1, maxLife: 1.1 });
+  }
+
+  _triggerTeleport(racer, track) {
+    if (!track) return;
+    // Entry Warp Portal at current position
+    this._spawnPortalRing(racer.pos, racer.yaw, 0x00f5ff);
+
+    const exitIdx = (racer.trackIndex + 50) % track.samples;
+    const exitPt = track.points[exitIdx];
+    const exitTan = track.tangents[exitIdx];
+    const exitYaw = Math.atan2(-exitTan.x, -exitTan.z);
+    const crossedFinish = racer.trackIndex + 50 >= track.samples;
+
+    // Quantum Teleport State (brief 0.28s warp flash -> instant blink ahead!)
+    racer.teleportState = {
+      timer: 0,
+      duration: 0.28,
+      done: false,
+      exitPos: exitPt.clone(),
+      exitIdx,
+      exitYaw,
+      crossedFinish,
+    };
+
+    if (racer.isHuman) {
+      this.audio.playMagnet();
+      this.showBannerFor(racer, '🌀 空間傳送門開啟！瞬間移動！', '#22d3ee', 1.4);
     }
   }
 
@@ -4407,6 +4863,27 @@ class ItemManager {
       }
     }
 
+    // 2.8 Update Giant Cannons & Warp Portals
+    for (let i = this.cannons.length - 1; i >= 0; i--) {
+      const cn = this.cannons[i];
+      cn.life -= dt;
+      if (cn.life <= 0) {
+        this.group.remove(cn.mesh);
+        this.cannons.splice(i, 1);
+      }
+    }
+    for (let i = this.portals.length - 1; i >= 0; i--) {
+      const pt = this.portals[i];
+      pt.life -= dt;
+      const ratio = Math.max(0.01, pt.life / pt.maxLife);
+      pt.mesh.rotation.z += dt * 9;
+      pt.mesh.scale.setScalar(ratio);
+      if (pt.life <= 0) {
+        this.group.remove(pt.mesh);
+        this.portals.splice(i, 1);
+      }
+    }
+
     for (let i = this.missiles.length - 1; i >= 0; i--) {
       const m = this.missiles[i];
       m.life -= dt;
@@ -4494,7 +4971,8 @@ class ItemManager {
   }
 }
 
-// === network.js ===
+
+// ===== network.js =====
 // 4-Player Star-Topology PeerJS WebRTC Room Manager (Host + up to 3 Guests = 4 Human Players!)
 class RoomNetwork {
   constructor(callbacks) {
@@ -4706,7 +5184,14 @@ class RoomNetwork {
   }
 }
 
-// === main.js ===
+
+// ===== main.js =====
+
+
+
+
+
+
 const TOTAL_LAPS = 3;
 const SAVE_KEY = 'kart_lego_3d_save_v3';
 const UPGRADE_COSTS = [40, 70, 110, 160, 220];
@@ -5544,6 +6029,9 @@ function createRacer(presetKey, slotIndex, displayName, controlType, humanIndex 
     rampCooldown: 0,
     shortcutJump: null,
     shortcutCooldown: 0,
+    cannonState: null,
+    teleportState: null,
+    fallingTimer: 0,
     obstacleCooldown: 0,
     yaw: start.yaw,
     moveYaw: start.yaw,
@@ -5568,6 +6056,8 @@ function createRacer(presetKey, slotIndex, displayName, controlType, humanIndex 
     freezeTimer: 0,
     devilTimer: 0,
     squidTimer: 0,
+    flattenedTimer: 0,
+    dinoCooldown: 0,
     tireBuffTimer: 0,
     engineBuffTimer: 0,
     starTimer: 0,
@@ -6023,6 +6513,152 @@ function updateRacerPhysics(r, dt) {
   if (r.shortcutCooldown > 0) r.shortcutCooldown = Math.max(0, r.shortcutCooldown - dt);
   if (r.obstacleCooldown > 0) r.obstacleCooldown = Math.max(0, r.obstacleCooldown - dt);
 
+  // 1. Active Giant Sky Cannon Animation (Load into barrel -> BOOM -> Soar 56m into the Clouds!)
+  if (r.cannonState) {
+    const cs = r.cannonState;
+    cs.timer += dt;
+    if (cs.phase === 'loading') {
+      const f = Math.min(1, cs.timer / cs.loadDuration);
+      // Kart slides/shrinks into the shaking cannon barrel!
+      r.pos.set(cs.startPos.x, cs.startPos.y + 1.45, cs.startPos.z);
+      r.yaw = cs.flightYaw;
+      r.moveYaw = cs.flightYaw;
+      r.kart.root.position.copy(r.pos);
+      r.kart.root.rotation.y = cs.flightYaw;
+      const sc = Math.max(0.22, 1 - f * 0.78);
+      r.kart.root.scale.setScalar(sc);
+      if (cs.barrelGroup) {
+        const swell = 1 + Math.sin(f * Math.PI * 5) * 0.12;
+        cs.barrelGroup.scale.set(swell, swell, 1 - f * 0.15);
+      }
+      if (f >= 1) {
+        cs.phase = 'flying';
+        cs.timer = 0;
+        r.kart.root.scale.setScalar(1);
+        if (cs.barrelGroup) cs.barrelGroup.scale.set(1, 1, 1);
+        // BOOM muzzle explosion!
+        for (let k = 0; k < 28; k++) {
+          spawnParticle(
+            cs.startPos.clone().add(new THREE.Vector3(0, 2.8, 0)),
+            new THREE.Vector3((Math.random() - 0.5) * 22, 6 + Math.random() * 14, (Math.random() - 0.5) * 22),
+            k % 2 === 0 ? 0xff9500 : 0xffffff,
+            0.65,
+            1.6
+          );
+        }
+        if (r.isHuman) {
+          camShake = 0.65;
+          audio.playBoost();
+          audio.playFireworkPop();
+          showBannerFor(r, '🚀 BOOM!! 飛向雲端！！', '#ffdd00', 1.5);
+        }
+      }
+    } else {
+      const f = Math.min(1, cs.timer / cs.flyDuration);
+      r.pos.x = THREE.MathUtils.lerp(cs.startPos.x, cs.endPos.x, f);
+      r.pos.z = THREE.MathUtils.lerp(cs.startPos.z, cs.endPos.z, f);
+      const baseY = THREE.MathUtils.lerp(cs.startPos.y, cs.endPos.y, f);
+      r.pos.y = baseY + Math.sin(f * Math.PI) * (cs.peakY - baseY);
+      r.roadPitch = Math.cos(f * Math.PI) * 0.65;
+      r.yaw = cs.flightYaw;
+      r.moveYaw = cs.flightYaw;
+      r.speed = r.kart.preset.maxSpeed + 34;
+      // Golden comet tail in the clouds!
+      spawnParticle(
+        r.pos.clone(),
+        new THREE.Vector3((Math.random() - 0.5) * 6, -2, (Math.random() - 0.5) * 6),
+        0xffdd00,
+        0.4,
+        1.25
+      );
+      if (f >= 1) {
+        r.pos.copy(cs.endPos);
+        r.yaw = cs.endYaw;
+        r.moveYaw = cs.endYaw;
+        r.trackIndex = cs.endIdx;
+        r.trackT = cs.endIdx / track.samples;
+        if (r.trackT > 0.42 && r.trackT < 0.65) r.passedHalfway = true;
+        r.cannonState = null;
+        r.squashTimer = 0.3;
+        r.boostTimer = Math.max(r.boostTimer, 1.5);
+        if (r.isHuman) {
+          camShake = 0.38;
+          showBannerFor(r, '☁️ 從雲端完美降落！', '#38ef7d', 1.2);
+        }
+      }
+    }
+    let adjustedT = r.trackT;
+    if (r.lap === 1 && !r.passedHalfway && adjustedT > 0.8) adjustedT -= 1.0;
+    r.totalProgress = (r.lap - 1) + adjustedT;
+    applyKartVisuals(r, dt);
+    return;
+  }
+
+  // 2. Active Quantum Instant Teleport!
+  if (r.teleportState) {
+    const ts = r.teleportState;
+    ts.timer += dt;
+    const f = Math.min(1, ts.timer / ts.duration);
+    r.kart.root.scale.setScalar(Math.max(0.08, 1 - f));
+    r.kart.root.rotation.y += dt * 18;
+    if (f >= 1) {
+      r.kart.root.scale.setScalar(1);
+      r.pos.copy(ts.exitPos);
+      r.yaw = ts.exitYaw;
+      r.moveYaw = ts.exitYaw;
+      r.trackIndex = ts.exitIdx;
+      r.trackT = ts.exitIdx / track.samples;
+      if (r.trackT > 0.42 && r.trackT < 0.65) r.passedHalfway = true;
+      r.teleportState = null;
+      r.boostTimer = Math.max(r.boostTimer, 1.4);
+      itemManager._spawnPortalRing(r.pos, r.yaw, 0x22d3ee);
+      for (let k = 0; k < 22; k++) {
+        spawnParticle(
+          r.pos.clone().add(new THREE.Vector3(0, 1.5, 0)),
+          new THREE.Vector3((Math.random() - 0.5) * 18, 4 + Math.random() * 8, (Math.random() - 0.5) * 18),
+          0x00f5ff,
+          0.5,
+          1.2
+        );
+      }
+      if (r.isHuman) {
+        camShake = 0.35;
+        audio.playBoost();
+        showBannerFor(r, '🌀 空間瞬移完成！瞬間超車！', '#22d3ee', 1.3);
+      }
+    }
+    return;
+  }
+
+  // 3. Falling off the Cloud Track (openEdge) -> tumble into clouds & respawn back on track!
+  if (r.fallingTimer > 0) {
+    r.fallingTimer -= dt;
+    r.velY -= 42 * dt;
+    r.pos.y += r.velY * dt;
+    r.kart.root.position.copy(r.pos);
+    r.kart.root.rotation.y += dt * 7;
+    r.kart.root.rotation.x += dt * 4;
+    if (r.fallingTimer <= 0) {
+      const safeIdx = (r.trackIndex - 4 + track.samples) % track.samples;
+      const sp = track.points[safeIdx];
+      const stan = track.tangents[safeIdx];
+      const syaw = Math.atan2(-stan.x, -stan.z);
+      r.pos.copy(sp);
+      r.velY = 0;
+      r.yaw = syaw;
+      r.moveYaw = syaw;
+      r.speed = 18;
+      r.trackIndex = safeIdx;
+      r.trackT = safeIdx / track.samples;
+      r.kart.root.rotation.set(0, syaw, 0);
+      if (r.isHuman) {
+        audio.playBeep(660, 0.14, 0.12);
+        showBannerFor(r, '☁️ 已拉回雲端賽道！繼續衝！', '#38bdf8', 1.1);
+      }
+    }
+    return;
+  }
+
   // Active High-Altitude Sky-Jump Shortcut Flight!
   if (r.shortcutJump) {
     const sj = r.shortcutJump;
@@ -6066,6 +6702,8 @@ function updateRacerPhysics(r, dt) {
   if (r.freezeTimer > 0) r.freezeTimer = Math.max(0, r.freezeTimer - dt);
   if (r.devilTimer > 0) r.devilTimer = Math.max(0, r.devilTimer - dt);
   if (r.squidTimer > 0) r.squidTimer = Math.max(0, r.squidTimer - dt);
+  if (r.flattenedTimer > 0) r.flattenedTimer = Math.max(0, r.flattenedTimer - dt);
+  if (r.dinoCooldown > 0) r.dinoCooldown = Math.max(0, r.dinoCooldown - dt);
   if (r.tireBuffTimer > 0) r.tireBuffTimer = Math.max(0, r.tireBuffTimer - dt);
   if (r.engineBuffTimer > 0) r.engineBuffTimer = Math.max(0, r.engineBuffTimer - dt);
   if (r.starTimer > 0) r.starTimer = Math.max(0, r.starTimer - dt);
@@ -6099,6 +6737,10 @@ function updateRacerPhysics(r, dt) {
       updateHumanControls(r, dt);
     } else {
       updateAI(r, dt);
+    }
+    if (r.flattenedTimer > 0) {
+      const flatMax = r.kart.preset.maxSpeed * 0.52;
+      if (r.speed > flatMax) r.speed = THREE.MathUtils.lerp(r.speed, flatMax, Math.min(1, dt * 8));
     }
   } else {
     r.speed *= Math.pow(0.1, dt);
@@ -6168,9 +6810,17 @@ function updateRacerPhysics(r, dt) {
     r.speed *= Math.pow(0.55, dt);
   }
 
-  // Wall-Slide Assist: smoothly guide nose along track tangent & keep 90% speed (never get stuck!)
+  // Open-edge Sky Track: falling off edge tumbles into the clouds and respawns!
   const maxLat = track.wallOffset - 1.3;
   if (Math.abs(closest.lateralOffset) > maxLat) {
+    if (track.config.openEdge && r.isHuman && gameState === 'racing') {
+      r.fallingTimer = 1.15;
+      r.velY = -6;
+      r.speed *= 0.4;
+      audio.playHit();
+      showBannerFor(r, '☁️ 掉到雲海下面了！準備拉回重來！', '#ff6b6b', 1.3);
+      return;
+    }
     const sign = Math.sign(closest.lateralOffset);
     const clampedPos = closest.point.clone().addScaledVector(closest.right, sign * maxLat);
     r.pos.x = clampedPos.x;
@@ -6278,6 +6928,53 @@ function updateRacerPhysics(r, dt) {
     }
   }
 
+  // Giant Stomping LEGO T-Rex collision -> FLATTEN KART INTO A PANCAKE!
+  if (gameState === 'racing' && track.dinos && track.dinos.length > 0) {
+    for (const d of track.dinos) {
+      const dx = r.pos.x - d.stompPos.x;
+      const dz = r.pos.z - d.stompPos.z;
+      const distSq = dx * dx + dz * dz;
+      // Subtle seismic thud when nearby T-Rex slams its giant foot!
+      if (r.isHuman && d.justSlammed && distSq < 2800) {
+        camShake = Math.max(camShake, 0.24);
+      }
+      if (d.stompActive && r.dinoCooldown <= 0 && !incapacitated) {
+        const dy = Math.abs(r.pos.y - d.stompPos.y);
+        if (dy < 4.5 && distSq < (d.radius + 1.1) * (d.radius + 1.1)) {
+          r.dinoCooldown = 3.2;
+          if (r.starTimer > 0) {
+            if (r.isHuman) showBannerFor(r, '⭐ 無敵星彈開暴龍腳掌！', '#ffdd00', 1.1);
+          } else if (r.shieldTimer > 0) {
+            r.shieldTimer = 0;
+            if (r.isHuman) {
+              audio.playShield();
+              showBannerFor(r, '🛡️ 護盾擋下暴龍踩踏！', '#38ef7d', 1.1);
+            }
+          } else {
+            r.flattenedTimer = 2.8;
+            r.speed *= 0.32;
+            r.isDrifting = false;
+            for (let k = 0; k < 14; k++) {
+              spawnParticle(
+                r.pos.clone().add(new THREE.Vector3(0, 0.6, 0)),
+                new THREE.Vector3((Math.random() - 0.5) * 14, 3 + Math.random() * 5, (Math.random() - 0.5) * 14),
+                0xd6d3d1,
+                0.45,
+                1.1
+              );
+            }
+            if (r.isHuman) {
+              camShake = Math.max(camShake, 0.55);
+              audio.playHit();
+              showBannerFor(r, '🦖 被暴龍踩扁了！變成紙片車！', '#ff3b30', 1.8);
+            }
+          }
+          break;
+        }
+      }
+    }
+  }
+
   // Track Buff Orbs pickup (🛞 Turbo Tires / 🔥 Super Engine — active in ALL modes!)
   if (gameState === 'racing' && !r.finished) {
     for (const b of track.buffOrbs) {
@@ -6372,6 +7069,15 @@ function applyKartVisuals(r, dt) {
   r.kart.root.rotation.y = r.yaw + r.driftVisualYaw + spinExtra;
 
   // Springy Squash & Stretch on hop/jump landing!
+  if (r.flattenedTimer > 0) {
+    // Pancake-flattened by a giant T-Rex stomp!
+    const targetSy = r.flattenedTimer < 0.25 ? THREE.MathUtils.lerp(1, 0.18, r.flattenedTimer / 0.25) : 0.18;
+    const targetSx = r.flattenedTimer < 0.25 ? THREE.MathUtils.lerp(1, 1.42, r.flattenedTimer / 0.25) : 1.42;
+    r.kart.root.scale.set(targetSx, targetSy, 1 + (targetSx - 1) * 0.65);
+  } else if (!r.teleportState && (!r.cannonState || r.cannonState.phase !== 'load')) {
+    r.kart.root.scale.set(1, 1, 1);
+  }
+
   if (r.squashTimer > 0) {
     const s = Math.sin((r.squashTimer / 0.24) * Math.PI) * 0.14;
     r.kart.bodyGroup.scale.set(1 + s, 1 - s, 1 + s * 0.5);
@@ -6918,6 +7624,6 @@ function animate(now) {
 
 requestAnimationFrame(animate);
 
-  </script>
+</script>
 </body>
 </html>
