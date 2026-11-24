@@ -6645,27 +6645,42 @@ function popBattleBalloon(victim) {
 
 function pollGamepads() {
   if (!navigator.getGamepads) return;
-  const pads = navigator.getGamepads();
-  let connectedCount = 0;
+  const rawPads = navigator.getGamepads();
+  const activePads = Array.from(rawPads).filter((g) => g && g.connected);
+  const connectedCount = activePads.length;
+
   for (let i = 0; i < 2; i++) {
-    const gp = pads[i];
-    if (gp && gp.connected) {
-      connectedCount++;
+    const gp = activePads[i];
+    if (gp) {
       const ax0 = gp.axes[0] || 0;
+      const ax1 = gp.axes[1] || 0;
+      // Support USB Arcade Stick POV Hat (axes[9] on Zero-Delay / DragonRise encoders)
+      let hatUp = false, hatDown = false, hatLeft = false, hatRight = false;
+      if (gp.axes.length > 9 && gp.axes[9] <= 1.05) {
+        const h = gp.axes[9];
+        if (Math.abs(h + 1.0) < 0.15) hatUp = true;
+        else if (Math.abs(h + 0.714) < 0.15) { hatUp = true; hatRight = true; }
+        else if (Math.abs(h + 0.428) < 0.15) hatRight = true;
+        else if (Math.abs(h + 0.143) < 0.15) { hatDown = true; hatRight = true; }
+        else if (Math.abs(h - 0.143) < 0.15) hatDown = true;
+        else if (Math.abs(h - 0.428) < 0.15) { hatDown = true; hatLeft = true; }
+        else if (Math.abs(h - 0.714) < 0.15) hatLeft = true;
+        else if (Math.abs(h - 1.0) < 0.15) { hatUp = true; hatLeft = true; }
+      }
       const btns = gp.buttons || [];
       const b = (idx) => !!(btns[idx] && (btns[idx].pressed || btns[idx].value > 0.35));
       gpState[i] = {
-        accel: b(0) || b(7),
-        brake: b(1) || b(6),
-        left: ax0 < -0.28 || b(14),
-        right: ax0 > 0.28 || b(15),
+        accel: b(0) || b(7) || ax1 < -0.38 || hatUp,
+        brake: b(1) || b(6) || ax1 > 0.38 || hatDown,
+        left: ax0 < -0.28 || b(14) || hatLeft,
+        right: ax0 > 0.28 || b(15) || hatRight,
         drift: b(2) || b(5),
       };
       const actNow = b(3) || b(4);
       if (actNow && !gpPrevAction[i]) actionQueued[i] = true;
       gpPrevAction[i] = actNow;
 
-      const hornNow = b(8) || b(12);
+      const hornNow = b(8) || b(9);
       if (hornNow && !gpPrevHorn[i] && humanRacers[i]) triggerHornEmote(humanRacers[i]);
       gpPrevHorn[i] = hornNow;
     } else {
@@ -6674,7 +6689,7 @@ function pollGamepads() {
   }
   if (gamepadStatusEl) {
     gamepadStatusEl.classList.toggle('hidden', connectedCount === 0);
-    if (connectedCount > 0) gamepadStatusEl.textContent = `🎮 已連接 ${connectedCount} 支手把`;
+    if (connectedCount > 0) gamepadStatusEl.textContent = `🕹️ 已連接 ${connectedCount} 支搖桿/手把`;
   }
 }
 
