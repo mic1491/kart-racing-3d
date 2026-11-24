@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export const TRACK_ORDER = ['village', 'desert', 'neon', 'ice', 'beach', 'sakura', 'volcano', 'rainbow', 'sky', 'dino'];
+export const TRACK_ORDER = ['village', 'desert', 'neon', 'ice', 'beach', 'sakura', 'volcano', 'rainbow', 'sky', 'dino', 'candy', 'island'];
 
 // Control points are now 3D: [x, y, z] for hills, bridges, figure-8 overpasses & drops!
 export const TRACK_CONFIGS = {
@@ -369,6 +369,79 @@ export const TRACK_CONFIGS = {
     tunnelRange: [0.68, 0.75],
     shortcut: [0.26, 0.39],
   },
+  candy: {
+    id: 'candy',
+    name: '糖果王國',
+    icon: '🍭',
+    skyColor: 0xffc8e8,
+    fogColor: 0xffd6ef,
+    hemiSky: 0xfff0fa,
+    hemiGround: 0xf472b6,
+    hemiIntensity: 1.15,
+    sunColor: 0xfffaf0,
+    sunIntensity: 1.7,
+    groundColor: '#ffb3d9',
+    studColor: '#ff9ccc',
+    roadBg: '#6b3a2a',
+    roadEdge: '#ffffff',
+    roadCenter: '#ff4fa3',
+    curbA: '#ff2d6f',
+    curbB: '#ffffff',
+    postA: 0xff4fa3,
+    postB: 0x7dd3fc,
+    archPillar: 0xff4fa3,
+    archTop: 0x8b5cf6,
+    // 11. 巧克力大道穿過巨型甜甜圈、繞過蛋糕山，最後從棒棒糖森林衝回終點！
+    points: [
+      [0, 0, 140], [0, 0, 20], [0, 4, -80], [-60, 10, -170], [30, 16, -240],
+      [150, 12, -215], [200, 6, -120], [140, 2, -40], [230, 8, 40],
+      [260, 14, 160], [170, 10, 240], [60, 4, 250], [0, 0, 195],
+    ],
+    boostTs: [0.08, 0.27, 0.49, 0.71, 0.9],
+    rampTs: [0.2, 0.6],
+    itemRowTs: [0.14, 0.38, 0.62, 0.84],
+    obstacleTs: [0.45, 0.78],
+    donutGateTs: [0.33, 0.67],
+  },
+  island: {
+    id: 'island',
+    name: '海島大冒險',
+    icon: '🏝️',
+    water: true, // 地面是海：路面缺口掉下去會落海，救回後繼續
+    skyColor: 0x7dd3fc,
+    fogColor: 0xbfe9ff,
+    hemiSky: 0xf0fbff,
+    hemiGround: 0x0ea5e9,
+    hemiIntensity: 1.05,
+    sunColor: 0xfff7e0,
+    sunIntensity: 1.8,
+    groundColor: '#0e7fc2',
+    studColor: '#2a9fe0',
+    roadBg: '#3b4252',
+    roadEdge: '#ffffff',
+    roadCenter: '#ffd54f',
+    curbA: '#ff7043',
+    curbB: '#ffffff',
+    postA: 0xff7043,
+    postB: 0xffffff,
+    archPillar: 0x0ea5e9,
+    archTop: 0xf97316,
+    // 12. 跳島 → 跨海懸索大橋 → 潛進海底玻璃隧道（看鯨魚！）→ 連續跳島衝回終點
+    points: [
+      [0, 2, 140], [0, 2, 20], [0, 2, -90], [60, 2, -165], [150, 20, -205], [260, 28, -210], [360, 20, -180], [425, 3, -95],
+      [405, -8, 0], [340, -20, 60], [260, -20, 75], [190, -7, 50], [135, 3, 5], [95, 2, 90], [62, 2, 175], [40, 2, 232],
+      [-12, 2, 238], [-22, 2, 195],
+    ],
+    gaps: [[0.095, 0.11], [0.8, 0.815], [0.87, 0.885]],
+    bridgeRange: [0.235, 0.445],
+    bridgeTowers: [0.29, 0.39],
+    tunnelRange: [0.47, 0.75],
+    underwater: true,
+    boostTs: [0.06, 0.31, 0.6, 0.84, 0.95],
+    rampTs: [],
+    itemRowTs: [0.15, 0.36, 0.66, 0.91],
+    obstacleTs: [0.2, 0.93],
+  },
 };
 
 export class RaceTrack {
@@ -396,6 +469,7 @@ export class RaceTrack {
     this.coins = [];
     this.buffOrbs = [];
     this.itemBoxAnchors = [];
+    this.spinners = [];
     this.elapsed = 0;
 
     if (this.isBattleArena) {
@@ -502,6 +576,13 @@ export class RaceTrack {
     for (const f of this.fans) {
       f.blades.rotation.z += dt * 14;
     }
+    if (this.waterMesh) {
+      this.waterMesh.material.map.offset.set(this.elapsed * 0.004, this.elapsed * 0.006);
+    }
+    for (const sp of this.spinners) {
+      sp.mesh.rotation[sp.axis] += dt * sp.speed;
+      if (sp.bob) sp.mesh.position.y = sp.baseY + Math.sin(this.elapsed * 1.6 + sp.baseY) * sp.bob;
+    }
     for (const c of this.coins) {
       if (c.respawn > 0) {
         c.respawn -= dt;
@@ -594,7 +675,7 @@ export class RaceTrack {
     const orbColor = this.trackId === 'volcano' ? 0xff5722 : isNight ? 0xe0f2fe : 0xfff59d;
     const orb = new THREE.Mesh(
       new THREE.SphereGeometry(28, 16, 12),
-      new THREE.MeshBasicMaterial({ color: orbColor, fog: false })
+      new THREE.MeshBasicMaterial({ color: new THREE.Color(orbColor).multiplyScalar(2.2), fog: false })
     );
     orb.position.set(280, 220, -340);
     this.group.add(orb);
@@ -625,8 +706,11 @@ export class RaceTrack {
 
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(1500, 1500),
-      new THREE.MeshStandardMaterial({ map: groundTex, roughness: 0.92 })
+      this.config.water
+        ? new THREE.MeshStandardMaterial({ map: groundTex, roughness: 0.15, metalness: 0.1, transparent: true, opacity: 0.72, side: THREE.DoubleSide, depthWrite: false })
+        : new THREE.MeshStandardMaterial({ map: groundTex, roughness: 0.92 })
     );
+    if (this.config.water) this.waterMesh = ground;
     ground.rotation.x = -Math.PI / 2;
     ground.position.set(110, -0.15, 20);
     ground.receiveShadow = true;
@@ -691,6 +775,14 @@ export class RaceTrack {
     return tex;
   }
 
+  // 跳島缺口：這些路段不鋪路，掉下去就落海
+  inGap(idx) {
+    const gaps = this.config.gaps;
+    if (!gaps) return false;
+    const t = idx / this.samples;
+    return gaps.some(([a, b]) => t >= a && t < b);
+  }
+
   _buildRibbon(innerOffset, outerOffset, yOffset, uvRepeatY, material) {
     const positions = [];
     const uvs = [];
@@ -710,7 +802,7 @@ export class RaceTrack {
       const v = (i / this.samples) * uvRepeatY;
       uvs.push(0, v, 1, v);
 
-      if (i < this.samples) {
+      if (i < this.samples && !this.inGap(i)) {
         const a = i * 2;
         const b = a + 1;
         const c = a + 2;
@@ -778,7 +870,7 @@ export class RaceTrack {
     // Skip barrier posts on openEdge Sky Track so you can visibly see the drop into the clouds!
     if (!this.config.openEdge) {
       for (let i = 0; i < this.samples; i += 6) {
-        if (i < 6 || i > this.samples - 6) continue;
+        if (i < 6 || i > this.samples - 6 || this.inGap(i) || this.inGap(i + 2) || this.inGap(i - 2)) continue;
         const p = this.points[i];
         const tan = this.tangents[i];
         const r = this.rights[i];
@@ -919,7 +1011,7 @@ export class RaceTrack {
     }
     const padTex = new THREE.CanvasTexture(padCanvas);
     padTex.colorSpace = THREE.SRGBColorSpace;
-    const padMat = new THREE.MeshBasicMaterial({ map: padTex });
+    const padMat = new THREE.MeshBasicMaterial({ map: padTex, color: new THREE.Color(1.6, 1.6, 1.6) });
 
     for (const t of this.config.boostTs) {
       const idx = Math.floor(t * this.samples) % this.samples;
@@ -1261,11 +1353,13 @@ export class RaceTrack {
         village: 0x475569, desert: 0x8d5524, neon: 0x1e1b4b, ice: 0x38bdf8,
         beach: 0x64748b, sakura: 0x4b5563, volcano: 0x2b1515, rainbow: 0x2e1065,
       };
-      const caveMat = new THREE.MeshStandardMaterial({
-        color: caveColors[this.trackId] || 0x475569,
-        roughness: 0.75,
-        side: THREE.DoubleSide,
-      });
+      const caveMat = this.config.underwater
+        ? new THREE.MeshStandardMaterial({ color: 0x9be7ff, transparent: true, opacity: 0.18, roughness: 0.05, metalness: 0.3, side: THREE.DoubleSide, depthWrite: false })
+        : new THREE.MeshStandardMaterial({
+          color: caveColors[this.trackId] || 0x475569,
+          roughness: 0.75,
+          side: THREE.DoubleSide,
+        });
       const caveMesh = new THREE.Mesh(caveGeo, caveMat);
       this.group.add(caveMesh);
 
@@ -1286,7 +1380,7 @@ export class RaceTrack {
         this.group.add(lightRib);
 
         // Mountain peak blocks over the cave exterior
-        if (s > 1 && s < steps - 1 && s % 8 === 0) {
+        if (!this.config.underwater && s > 1 && s < steps - 1 && s % 8 === 0) {
           const cap = new THREE.Mesh(new THREE.BoxGeometry(radius * 2.2, 9 + (s % 3) * 4, 14), mountMat);
           cap.position.set(p.x, p.y + radius * 0.95 + 2.5, p.z);
           cap.rotation.y = yaw;
@@ -1370,6 +1464,8 @@ export class RaceTrack {
     else if (this.trackId === 'rainbow') this._buildRainbowScenery();
     else if (this.trackId === 'sky') this._buildSkyScenery();
     else if (this.trackId === 'dino') this._buildDinoScenery();
+    else if (this.trackId === 'candy') this._buildCandyScenery();
+    else if (this.trackId === 'island') this._buildIslandScenery();
     else this._buildNeonScenery();
   }
 
@@ -2078,7 +2174,7 @@ export class RaceTrack {
           body.position.y = h / 2;
           bldg.add(body);
           const col = neonColors[(i + (side > 0 ? 1 : 0)) % neonColors.length];
-          const neonMat = new THREE.MeshBasicMaterial({ color: col });
+          const neonMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(col).multiplyScalar(2.2) });
           const roofStrip = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, 0.8, w + 0.3), neonMat);
           roofStrip.position.y = h - 0.6;
           bldg.add(roofStrip);
@@ -2092,6 +2188,303 @@ export class RaceTrack {
         }
       }
     }
+  }
+
+  // 🍭 糖果王國：棒棒糖森林、軟糖、旋轉甜甜圈拱門、巨型生日蛋糕（全部用基本幾何體程序生成，不佔檔案大小）
+  _buildCandyScenery() {
+    const pastel = [0xff4fa3, 0x7dd3fc, 0xfde047, 0xa78bfa, 0x4ade80, 0xfb923c];
+    const stickMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
+    const mats = pastel.map((c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.25, emissive: c, emissiveIntensity: 0.12 }));
+    const stickGeo = new THREE.CylinderGeometry(0.45, 0.45, 9, 8);
+    const discGeo = new THREE.CylinderGeometry(3.6, 3.6, 1.1, 20);
+    const swirlGeo = new THREE.TorusGeometry(2.2, 0.45, 6, 20);
+    const gumGeo = new THREE.SphereGeometry(2.6, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+
+    for (let i = 0; i < this.samples; i += 12) {
+      const p = this.points[i];
+      const r = this.rights[i];
+      for (const side of [-1, 1]) {
+        const pos = p.clone().addScaledVector(r, side * (this.wallOffset + 12 + (i % 5) * 4));
+        if (!this._isClearOfTrack(pos, this.wallOffset + 7)) continue;
+        const k = (i + (side > 0 ? 3 : 0)) % pastel.length;
+        if ((i / 12) % 3 === 2) {
+          const gum = new THREE.Mesh(gumGeo, mats[k]);
+          gum.position.set(pos.x, 0, pos.z);
+          gum.scale.setScalar(0.8 + (i % 4) * 0.25);
+          this.group.add(gum);
+          continue;
+        }
+        const pop = new THREE.Group();
+        const stick = new THREE.Mesh(stickGeo, stickMat);
+        stick.position.y = 4.5;
+        const head = new THREE.Group();
+        const disc = new THREE.Mesh(discGeo, mats[k]);
+        disc.rotation.x = Math.PI / 2;
+        const swirl = new THREE.Mesh(swirlGeo, mats[(k + 2) % mats.length]);
+        swirl.position.z = 0.6;
+        head.add(disc, swirl);
+        head.position.y = 11.5;
+        pop.add(stick, head);
+        pop.position.set(pos.x, 0, pos.z);
+        pop.rotation.y = Math.atan2(r.x, r.z);
+        this.group.add(pop);
+        this.spinners.push({ mesh: head, axis: 'z', speed: 1.2 * side });
+      }
+    }
+
+    // 🍩 巨型旋轉甜甜圈拱門：賽道直接從甜甜圈中間穿過去！（內徑 20，路面寬度內完全不會擦到）
+    const sprinkleGeo = new THREE.BoxGeometry(0.7, 2.2, 0.7);
+    for (const t of this.config.donutGateTs || []) {
+      const idx = Math.floor(t * this.samples) % this.samples;
+      const p = this.points[idx];
+      const tan = this.tangents[idx];
+      const gate = new THREE.Group();
+      const dough = new THREE.Mesh(new THREE.TorusGeometry(24, 4, 14, 44), new THREE.MeshStandardMaterial({ color: 0xe0a060, roughness: 0.6 }));
+      const icing = new THREE.Mesh(new THREE.TorusGeometry(24, 4.15, 14, 44), new THREE.MeshStandardMaterial({ color: 0xff6fb5, roughness: 0.3 }));
+      icing.scale.set(1, 1, 0.55);
+      icing.position.z = 1.4;
+      const ring = new THREE.Group();
+      ring.add(dough, icing);
+      for (let s = 0; s < 36; s++) {
+        const a = (s / 36) * Math.PI * 2;
+        const sp = new THREE.Mesh(sprinkleGeo, mats[s % mats.length]);
+        sp.position.set(Math.cos(a) * (24 + ((s % 3) - 1) * 2.2), Math.sin(a) * (24 + ((s % 3) - 1) * 2.2), 3.4);
+        sp.rotation.z = a + s;
+        ring.add(sp);
+      }
+      gate.add(ring);
+      gate.position.set(p.x, p.y + 6, p.z);
+      gate.rotation.y = Math.atan2(tan.x, tan.z);
+      this.group.add(gate);
+      this.spinners.push({ mesh: ring, axis: 'z', speed: 0.5 });
+    }
+
+    // 🎂 巨型生日蛋糕山（地標）
+    const cake = new THREE.Group();
+    const layers = [[34, 12, 0xfff1f2], [26, 11, 0xfbcfe8], [18, 10, 0xfff1f2]];
+    let y = 0;
+    layers.forEach(([rad, h, col]) => {
+      const layer = new THREE.Mesh(new THREE.CylinderGeometry(rad, rad, h, 32), new THREE.MeshStandardMaterial({ color: col, roughness: 0.5 }));
+      layer.position.y = y + h / 2;
+      const drip = new THREE.Mesh(new THREE.TorusGeometry(rad, 1.3, 6, 32), mats[0]);
+      drip.rotation.x = Math.PI / 2;
+      drip.position.y = y + h;
+      cake.add(layer, drip);
+      y += h;
+    });
+    for (let c = 0; c < 8; c++) {
+      const a = (c / 8) * Math.PI * 2;
+      const candle = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 7, 8), mats[(c + 1) % mats.length]);
+      candle.position.set(Math.cos(a) * 11, y + 3.5, Math.sin(a) * 11);
+      const flame = new THREE.Mesh(new THREE.SphereGeometry(1.1, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffd54f }));
+      flame.position.set(Math.cos(a) * 11, y + 8, Math.sin(a) * 11);
+      flame.scale.y = 1.6;
+      cake.add(candle, flame);
+    }
+    cake.position.set(95, 0, 110);
+    if (this._isClearOfTrack(cake.position, this.wallOffset + 36)) this.group.add(cake);
+    else { cake.position.set(-110, 0, -40); this.group.add(cake); }
+
+    // 天上飄的棉花糖雲
+    this._buildClouds(0xfff0fa, 0xffc8e8);
+  }
+
+  // 🏝️ 海島大冒險：沙島＋椰子樹、跳島跳台、跨海懸索大橋、海底世界（珊瑚、海草、魚群、鯨魚）
+  _buildIslandScenery() {
+    const sandMat = new THREE.MeshStandardMaterial({ color: 0xf2d49b, roughness: 0.9 });
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63, roughness: 0.8 });
+    const leafMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.5 });
+    const islandGeo = new THREE.CylinderGeometry(19, 24, 5, 18);
+    const [bA, bB] = this.config.bridgeRange;
+    const [uA, uB] = this.config.tunnelRange;
+    const nearGap = (i) => this.inGap(i) || this.inGap(i + 3) || this.inGap(i - 3);
+
+    // 沙島：鋪在一般路段下面（跳島缺口、大橋、海底隧道除外）
+    for (let i = 0; i < this.samples; i += 6) {
+      const t = i / this.samples;
+      if (nearGap(i) || (t > bA - 0.01 && t < bB + 0.02) || (t > uA - 0.01 && t < uB + 0.01)) continue;
+      const p = this.points[i];
+      const isle = new THREE.Mesh(islandGeo, sandMat);
+      isle.position.set(p.x, p.y - 3.4, p.z);
+      isle.receiveShadow = true;
+      this.group.add(isle);
+      if (i % 18 === 0) {
+        const r = this.rights[i];
+        for (const side of [-1, 1]) {
+          const pos = p.clone().addScaledVector(r, side * (this.wallOffset + 3.5));
+          const palm = new THREE.Group();
+          const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.65, 8, 7), trunkMat);
+          trunk.position.y = 4;
+          trunk.rotation.z = side * 0.18;
+          palm.add(trunk);
+          for (let k = 0; k < 5; k++) {
+            const leaf = new THREE.Mesh(new THREE.BoxGeometry(5, 0.25, 1.3), leafMat);
+            const a = (k / 5) * Math.PI * 2;
+            leaf.position.set(Math.cos(a) * 2 + side * 1.3, 8, Math.sin(a) * 2);
+            leaf.rotation.set(0, -a, -0.45);
+            palm.add(leaf);
+          }
+          palm.position.set(pos.x, p.y - 1, pos.z);
+          this.group.add(palm);
+        }
+      }
+    }
+
+    // 跳島跳台：整條路寬的大跳台，確保一定飛得過去（速度太慢會掉海）
+    const rampMat = new THREE.MeshStandardMaterial({ color: 0xff7043, emissive: 0xff5722, emissiveIntensity: 0.35, roughness: 0.4 });
+    const stripeMat = new THREE.MeshBasicMaterial({ color: 0xffeb3b });
+    for (const [gA] of this.config.gaps) {
+      const idx = Math.floor((gA - 0.007) * this.samples);
+      const p = this.points[idx];
+      const tan = this.tangents[idx];
+      const r = this.rights[idx];
+      const ramp = new THREE.Group();
+      const slab = new THREE.Mesh(new THREE.BoxGeometry(this.roadWidth + 1, 0.6, 9), rampMat);
+      slab.rotation.x = 0.26;
+      slab.position.y = 1.0;
+      ramp.add(slab);
+      for (let k = -2; k <= 2; k++) {
+        const st = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.65, 8.6), stripeMat);
+        st.rotation.x = 0.26;
+        st.position.set(k * 4.4, 1.05, 0);
+        ramp.add(st);
+      }
+      ramp.position.copy(p);
+      ramp.rotation.y = Math.atan2(-tan.x, -tan.z);
+      this.group.add(ramp);
+      for (let k = -2; k <= 2; k++) {
+        this.jumpRamps.push({ position: p.clone().addScaledVector(r, k * 4.6), radius: 5.2 });
+      }
+    }
+
+    // 🌉 跨海懸索大橋：兩座紅色主塔＋鋼纜
+    const towerMat = new THREE.MeshStandardMaterial({ color: 0xd9382a, roughness: 0.45 });
+    const cableMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.3 });
+    const towerTops = [];
+    for (const t of this.config.bridgeTowers) {
+      const idx = Math.floor(t * this.samples);
+      const p = this.points[idx];
+      const tan = this.tangents[idx];
+      const r = this.rights[idx];
+      const h = p.y + 34;
+      const tops = [];
+      for (const side of [-1, 1]) {
+        const pos = p.clone().addScaledVector(r, side * (this.wallOffset + 1.5));
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(3, h, 3), towerMat);
+        leg.position.set(pos.x, h / 2 - 1, pos.z);
+        leg.castShadow = true;
+        this.group.add(leg);
+        tops.push(new THREE.Vector3(pos.x, h - 2, pos.z));
+      }
+      for (const yy of [p.y + 14, h - 3]) {
+        const beam = new THREE.Mesh(new THREE.BoxGeometry((this.wallOffset + 1.5) * 2 + 3, 2.2, 2.4), towerMat);
+        beam.position.set(p.x, yy, p.z);
+        beam.rotation.y = Math.atan2(-r.z, r.x);
+        this.group.add(beam);
+      }
+      towerTops.push(tops);
+    }
+    const [bs, be] = this.config.bridgeRange;
+    const iS = Math.floor(bs * this.samples);
+    const iE = Math.floor(be * this.samples);
+    for (const sideIdx of [0, 1]) {
+      const side = sideIdx === 0 ? -1 : 1;
+      const pts = [];
+      for (let i = iS; i <= iE; i += 2) {
+        const p = this.points[i];
+        const r = this.rights[i];
+        const base = p.clone().addScaledVector(r, side * (this.wallOffset + 1.5));
+        // 鋼纜高度：塔頂最高、中間下垂
+        const t = i / this.samples;
+        const [t1, t2] = this.config.bridgeTowers;
+        let sag;
+        if (t < t1) sag = (t - bs) / (t1 - bs);
+        else if (t > t2) sag = (be - t) / (be - t2);
+        else sag = 0.45 + Math.pow((t - (t1 + t2) / 2) / ((t2 - t1) / 2), 2) * 0.55;
+        base.y = p.y + 2 + sag * 32;
+        pts.push(base);
+        if (i % 6 === 0) {
+          const hanger = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, base.y - p.y, 5), cableMat);
+          hanger.position.set(base.x, (base.y + p.y) / 2, base.z);
+          this.group.add(hanger);
+        }
+      }
+      const cable = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), pts.length * 2, 0.45, 6, false), cableMat);
+      this.group.add(cable);
+    }
+
+    // 🐠 海底世界：沙地海床、珊瑚、海草、魚群、鯨魚
+    const seabed = new THREE.Mesh(new THREE.PlaneGeometry(1500, 1500), new THREE.MeshStandardMaterial({ color: 0xd9c08a, roughness: 1 }));
+    seabed.rotation.x = -Math.PI / 2;
+    seabed.position.set(110, -30, 20);
+    this.group.add(seabed);
+    const coralCols = [0xff6b9a, 0xffa94d, 0xc084fc, 0xf43f5e, 0xfde047];
+    const weedMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.6 });
+    const iU = Math.floor(uA * this.samples);
+    const iUe = Math.floor(uB * this.samples);
+    for (let i = iU; i < iUe; i += 3) {
+      const p = this.points[i];
+      const r = this.rights[i];
+      for (const side of [-1, 1]) {
+        const pos = p.clone().addScaledVector(r, side * (this.wallOffset + 6 + (i % 4) * 5));
+        if ((i / 3) % 2 === 0) {
+          const coral = new THREE.Mesh(new THREE.ConeGeometry(2 + (i % 3), 6 + (i % 5) * 2, 6), new THREE.MeshStandardMaterial({ color: coralCols[i % coralCols.length], roughness: 0.6 }));
+          coral.position.set(pos.x, -27, pos.z);
+          this.group.add(coral);
+        } else {
+          const weed = new THREE.Mesh(new THREE.BoxGeometry(0.6, 14 + (i % 4) * 3, 0.6), weedMat);
+          weed.position.set(pos.x, -24, pos.z);
+          weed.rotation.z = Math.sin(i) * 0.2;
+          this.group.add(weed);
+        }
+      }
+    }
+    // 魚群：繞著隧道游
+    const midIdx = Math.floor(((uA + uB) / 2) * this.samples);
+    const mid = this.points[midIdx];
+    const fishCols = [0xffa500, 0xfde047, 0x38bdf8, 0xf472b6, 0xffffff];
+    for (let sch = 0; sch < 5; sch++) {
+      const pivot = new THREE.Group();
+      pivot.position.set(mid.x, 0, mid.z);
+      for (let f = 0; f < 7; f++) {
+        const fish = new THREE.Group();
+        const body = new THREE.Mesh(new THREE.SphereGeometry(0.9, 8, 6), new THREE.MeshStandardMaterial({ color: fishCols[(sch + f) % fishCols.length], roughness: 0.4 }));
+        body.scale.set(1, 0.7, 1.8);
+        const tail = new THREE.Mesh(new THREE.ConeGeometry(0.7, 1.2, 4), body.material);
+        tail.rotation.x = -Math.PI / 2;
+        tail.position.z = 2;
+        fish.add(body, tail);
+        fish.position.set(40 + sch * 14 + (f % 3) * 2, -6 - sch * 3 - (f % 2) * 1.5, f * 2.6);
+        pivot.add(fish);
+      }
+      pivot.rotation.y = sch * 1.3;
+      this.group.add(pivot);
+      this.spinners.push({ mesh: pivot, axis: 'y', speed: (sch % 2 ? -1 : 1) * (0.25 + sch * 0.04) });
+    }
+    // 🐋 大鯨魚：慢慢繞著海底隧道游，從玻璃隧道裡就看得到
+    const whalePivot = new THREE.Group();
+    whalePivot.position.set(mid.x, 0, mid.z);
+    const whale = new THREE.Group();
+    const whaleMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.5 });
+    const belly = new THREE.MeshStandardMaterial({ color: 0xdbeafe, roughness: 0.6 });
+    const wb = new THREE.Mesh(new THREE.SphereGeometry(7, 16, 12), whaleMat);
+    wb.scale.set(1, 0.8, 2.6);
+    const wbelly = new THREE.Mesh(new THREE.SphereGeometry(6.3, 14, 10), belly);
+    wbelly.scale.set(0.9, 0.5, 2.4);
+    wbelly.position.y = -2.4;
+    const wtail = new THREE.Mesh(new THREE.BoxGeometry(14, 1, 4), whaleMat);
+    wtail.position.z = 20;
+    const weye = new THREE.Mesh(new THREE.SphereGeometry(0.6, 8, 6), new THREE.MeshBasicMaterial({ color: 0x000000 }));
+    weye.position.set(5.6, 1, -10);
+    const weye2 = weye.clone();
+    weye2.position.x = -5.6;
+    whale.add(wb, wbelly, wtail, weye, weye2);
+    whale.position.set(75, -14, 0);
+    whalePivot.add(whale);
+    this.group.add(whalePivot);
+    this.spinners.push({ mesh: whalePivot, axis: 'y', speed: -0.12 });
+
+    this._buildClouds(0xffffff, 0xe0f2fe);
   }
 
   _buildClouds(colorHex, emissiveHex) {

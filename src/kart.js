@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 
-export const KART_ORDER = ['yellow', 'cyan', 'red', 'purple', 'green', 'desert', 'ice', 'cyber', 'hsr', 'shuttle', 'ufo', 'duck', 'carriage'];
+export const KART_ORDER = ['yellow', 'cyan', 'red', 'purple', 'green', 'desert', 'ice', 'cyber', 'hsr', 'shuttle', 'ufo', 'duck', 'carriage', 'boba'];
 
-export const DRIVER_ORDER = ['racer_red', 'racer_black', 'astronaut', 'police', 'knight', 'ninja'];
+export const DRIVER_ORDER = ['racer_red', 'racer_black', 'astronaut', 'police', 'knight', 'ninja', 'bear', 'baseball', 'chef', 'cat', 'pirate', 'princess', 'robot', 'dino', 'wizard'];
 
 export const DRIVER_PRESETS = {
   racer_red: { id: 'racer_red', name: '紅盔車手', icon: '🏎️', helmet: 0xd92323, suit: 0x154596, accent: 0xe53935, hand: 0xd92323, visor: 0xdff6ff, visorOp: 0.22, style: 'helmet', beard: false },
@@ -10,6 +10,15 @@ export const DRIVER_PRESETS = {
   astronaut: { id: 'astronaut', name: '太空人', icon: '👨‍🚀', helmet: 0xf8fafc, suit: 0xf1f5f9, accent: 0x0284c7, hand: 0xe2e8f0, visor: 0xffc400, visorOp: 0.42, style: 'astro', beard: false },
   police: { id: 'police', name: '積木警長', icon: '👮', helmet: 0x0f2b5b, suit: 0x1e3a8a, accent: 0xffd700, hand: 0xffd500, visor: 0x111111, visorOp: 0.2, style: 'cap', beard: true },
   knight: { id: 'knight', name: '黃金騎士', icon: '⚔️', helmet: 0xffc107, suit: 0x94a3b8, accent: 0xffc107, hand: 0x64748b, visor: 0x334155, visorOp: 0.25, style: 'knight', beard: false },
+  bear: { id: 'bear', name: '台灣黑熊', icon: '🐻', helmet: 0x1a1a1a, suit: 0x1f2937, accent: 0xf8fafc, hand: 0x1a1a1a, visor: 0x111827, visorOp: 0.15, style: 'bear', beard: false },
+  baseball: { id: 'baseball', name: '棒球少年', icon: '⚾', helmet: 0x1d4ed8, suit: 0xf8fafc, accent: 0x1d4ed8, hand: 0xffd500, visor: 0x000000, visorOp: 0, style: 'baseball', beard: false },
+  chef: { id: 'chef', name: '珍奶店長', icon: '🧋', helmet: 0x5b3a1e, suit: 0xffffff, accent: 0xc8915a, hand: 0xffd500, visor: 0x000000, visorOp: 0, style: 'chef', beard: true },
+  cat: { id: 'cat', name: '喵喵車手', icon: '🐱', helmet: 0xfb923c, suit: 0xfdba74, accent: 0xffffff, hand: 0xffffff, visor: 0x7dd3fc, visorOp: 0.3, style: 'cat', beard: false },
+  pirate: { id: 'pirate', name: '海盜船長', icon: '🏴‍☠️', helmet: 0x111111, suit: 0x991b1b, accent: 0xfacc15, hand: 0xffd500, visor: 0x000000, visorOp: 0, style: 'pirate', beard: true },
+  princess: { id: 'princess', name: '糖果公主', icon: '👑', helmet: 0x8b5a2b, suit: 0xf472b6, accent: 0xfde68a, hand: 0xffd500, visor: 0x000000, visorOp: 0, style: 'princess', beard: false },
+  robot: { id: 'robot', name: '機器人 K9', icon: '🤖', helmet: 0x94a3b8, suit: 0x64748b, accent: 0x22d3ee, hand: 0x475569, visor: 0x22d3ee, visorOp: 0.75, style: 'robot', beard: false },
+  dino: { id: 'dino', name: '小暴龍', icon: '🦖', helmet: 0x22c55e, suit: 0x16a34a, accent: 0xfde047, hand: 0x22c55e, visor: 0x14532d, visorOp: 0.2, style: 'dino', beard: false },
+  wizard: { id: 'wizard', name: '星空魔法師', icon: '🧙', helmet: 0x6d28d9, suit: 0x4c1d95, accent: 0xfde047, hand: 0xffd500, visor: 0x000000, visorOp: 0, style: 'wizard', beard: true },
   ninja: { id: 'ninja', name: '烈焰忍者', icon: '🥷', helmet: 0xb91c1c, suit: 0x18181b, accent: 0xef4444, hand: 0x18181b, visor: 0x000000, visorOp: 0.12, style: 'ninja', beard: false },
 };
 
@@ -104,6 +113,13 @@ export const KART_PRESETS = {
     decalBg: '#c62828', decalText: '#ffd54f', decalStroke: '#ffffff',
     swatchCss: 'linear-gradient(135deg, #c62828 50%, #ffd54f 50%)',
     statSpeed: 92, statDrift: 95, maxSpeed: 56.2, accel: 38, driftGrip: 0.95, mapColor: '#ffd54f',
+  },
+  boba: {
+    id: 'boba', bodyStyle: 'boba', styleLabel: '🧋 台灣之光', name: '珍珠奶茶號', desc: '加速超Q彈・甩尾黏地', number: '88',
+    primary: 0xc8915a, secondary: 0x2b1a12, accent: 0xfff7ed, bumper: 0xff4fa3, exhaust: 0xf5d0a9,
+    decalBg: '#c8915a', decalText: '#2b1a12', decalStroke: '#ffffff',
+    swatchCss: 'linear-gradient(135deg, #e8c39e 50%, #2b1a12 50%)',
+    statSpeed: 88, statDrift: 98, maxSpeed: 55.2, accel: 40, driftGrip: 0.965, mapColor: '#e8c39e',
   },
 };
 
@@ -434,6 +450,38 @@ export function createLegoKart(presetKey = 'yellow', driverKey = 'racer_red', mo
     duckTail.position.set(0, 1.25, 1.45);
     duckTail.rotation.x = 0.65;
     bodyGroup.add(duckBody, duckNeck, billTop, billBot, duckTail);
+  } else if (style === 'boba') {
+    // 🧋 珍珠奶茶號：車尾背著一杯超大透明珍奶，珍珠會在杯底滾動！
+    const base = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.5, 3.1), primaryMat);
+    base.position.set(0, 0.5, 0.05);
+    const nose = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.36, 0.7), new THREE.MeshStandardMaterial({ color: 0xff4fa3, roughness: 0.3 }));
+    nose.position.set(0, 0.55, -1.7);
+    const cupGroup = new THREE.Group();
+    const cup = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.95, 0.72, 2.1, 20, 1, true),
+      new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, roughness: 0.05, side: THREE.DoubleSide })
+    );
+    const tea = new THREE.Mesh(new THREE.CylinderGeometry(0.88, 0.7, 1.6, 20), new THREE.MeshStandardMaterial({ color: 0xd9a066, roughness: 0.35 }));
+    tea.position.y = -0.2;
+    const lid = new THREE.Mesh(new THREE.SphereGeometry(0.97, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.55, roughness: 0.05 }));
+    lid.scale.y = 0.35;
+    lid.position.y = 1.05;
+    const straw = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 2.4, 10), new THREE.MeshStandardMaterial({ color: 0xff4fa3, roughness: 0.3 }));
+    straw.position.set(0.25, 1.55, 0.1);
+    straw.rotation.z = -0.28;
+    const pearlMat = new THREE.MeshStandardMaterial({ color: 0x1a0f0a, roughness: 0.15, metalness: 0.2 });
+    const pearls = new THREE.Group();
+    for (let k = 0; k < 14; k++) {
+      const a = k * 2.4;
+      const pr = new THREE.Mesh(new THREE.SphereGeometry(0.17, 8, 6), pearlMat);
+      pr.position.set(Math.cos(a) * (0.25 + (k % 3) * 0.17), -0.82 + Math.floor(k / 7) * 0.26, Math.sin(a) * (0.25 + (k % 3) * 0.17));
+      pearls.add(pr);
+    }
+    pearls.userData.spinPearls = true;
+    cupGroup.add(cup, tea, lid, straw, pearls);
+    cupGroup.position.set(0, 1.85, 1.4);
+    bodyGroup.add(base, nose, cupGroup);
+    root.userData.bobaPearls = pearls;
   } else if (style === 'carriage') {
     // 🐴 Royal Gold & Crimson LEGO Horse-Drawn Carriage!
     const cabinBase = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.72, 2.0), primaryMat);
@@ -631,6 +679,9 @@ export function createLegoKart(presetKey = 'yellow', driverKey = 'racer_red', mo
   const flameInnerGeo = new THREE.ConeGeometry(0.15, 0.9, 8);
   flameInnerGeo.rotateX(Math.PI / 2);
   const flameInnerMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95 });
+  // 亮度超過 1 → 開光暈時會發光
+  flameOuterMat.color.multiplyScalar(2.6);
+  flameInnerMat.color.multiplyScalar(3);
 
   const pipeXs = (style === 'cyber' || style === 'shuttle') ? [-0.55, 0, 0.55] : [-0.42, 0.42];
   for (const sx of pipeXs) {
@@ -717,7 +768,76 @@ export function createLegoKart(presetKey = 'yellow', driverKey = 'racer_red', mo
     driverGroup.add(beard);
   }
 
-  if (driver.style === 'cap') {
+  const HAT_STYLES = ['baseball', 'chef', 'pirate', 'princess', 'wizard'];
+  if (HAT_STYLES.includes(driver.style)) {
+    // 不戴安全帽的車手：先放頭髮，再戴各自的帽子
+    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.5), helmetMat);
+    hair.position.set(0, 1.12, 0.03);
+    hair.scale.set(1, 0.6, 1);
+    driverGroup.add(hair);
+    const hatMat = new THREE.MeshStandardMaterial({ color: driver.style === 'chef' ? 0xffffff : driver.style === 'pirate' ? 0x111111 : driver.style === 'wizard' ? 0x5b21b6 : driver.style === 'baseball' ? 0x1d4ed8 : 0xfbbf24, roughness: 0.4, metalness: driver.style === 'princess' ? 0.6 : 0 });
+    if (driver.style === 'baseball') {
+      // 反戴的棒球帽
+      const crown = new THREE.Mesh(new THREE.SphereGeometry(0.31, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.5), hatMat);
+      crown.position.set(0, 1.17, 0);
+      const brim = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.04, 0.3), hatMat);
+      brim.position.set(0, 1.19, 0.36);
+      const logo = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.04), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+      logo.position.set(0, 1.3, -0.25);
+      driverGroup.add(crown, brim, logo);
+    } else if (driver.style === 'chef') {
+      // 高高的廚師帽
+      const band = new THREE.Mesh(new THREE.CylinderGeometry(0.29, 0.29, 0.14, 16), hatMat);
+      band.position.set(0, 1.24, 0);
+      const puff = new THREE.Mesh(new THREE.SphereGeometry(0.33, 14, 10), hatMat);
+      puff.position.set(0, 1.5, 0);
+      puff.scale.set(1, 0.85, 1);
+      driverGroup.add(band, puff);
+    } else if (driver.style === 'pirate') {
+      // 海盜三角帽＋骷髏標誌＋眼罩
+      const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.46, 0.05, 3), hatMat);
+      brim.position.set(0, 1.22, 0);
+      brim.rotation.y = Math.PI;
+      const top = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 0.26, 12), hatMat);
+      top.position.set(0, 1.36, 0);
+      const skull = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+      skull.position.set(0, 1.37, -0.27);
+      const patch = new THREE.Mesh(new THREE.CircleGeometry(0.06, 10), new THREE.MeshBasicMaterial({ color: 0x111111 }));
+      patch.position.set(0.095, 1.0, -0.275);
+      patch.rotation.y = Math.PI;
+      driverGroup.add(brim, top, skull, patch);
+    } else if (driver.style === 'princess') {
+      // 金色皇冠＋粉紅寶石
+      const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.24, 0.1, 16, 1, true), new THREE.MeshStandardMaterial({ color: 0xfbbf24, roughness: 0.2, metalness: 0.7, side: THREE.DoubleSide }));
+      ring.position.set(0, 1.3, 0);
+      driverGroup.add(ring);
+      for (let k = 0; k < 5; k++) {
+        const a = (k / 5) * Math.PI * 2;
+        const spike = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.14, 4), ring.material);
+        spike.position.set(Math.sin(a) * 0.22, 1.41, -Math.cos(a) * 0.22);
+        driverGroup.add(spike);
+      }
+      const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.05), new THREE.MeshStandardMaterial({ color: 0xff4fa3, emissive: 0xff4fa3, emissiveIntensity: 0.6 }));
+      gem.position.set(0, 1.32, -0.24);
+      driverGroup.add(gem);
+      for (const side of [-1, 1]) {
+        const tail = new THREE.Mesh(new THREE.SphereGeometry(0.11, 10, 8), helmetMat);
+        tail.position.set(side * 0.3, 1.02, 0.12);
+        tail.scale.set(0.8, 1.6, 0.8);
+        driverGroup.add(tail);
+      }
+    } else if (driver.style === 'wizard') {
+      // 星空魔法師的尖帽
+      const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.46, 0.04, 20), hatMat);
+      brim.position.set(0, 1.22, 0);
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.75, 16), hatMat);
+      cone.position.set(0, 1.6, 0.06);
+      cone.rotation.x = 0.22;
+      const star = new THREE.Mesh(new THREE.OctahedronGeometry(0.08), new THREE.MeshStandardMaterial({ color: 0xfde047, emissive: 0xfde047, emissiveIntensity: 1.5 }));
+      star.position.set(0, 1.5, -0.2);
+      driverGroup.add(brim, cone, star);
+    }
+  } else if (driver.style === 'cap') {
     // Police cap + badge
     const capTop = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.31, 0.22, 16), helmetMat);
     capTop.position.set(0, 1.24, 0);
@@ -749,6 +869,38 @@ export function createLegoKart(presetKey = 'yellow', driverKey = 'racer_red', mo
       const plume = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.32, 0.56), new THREE.MeshStandardMaterial({ color: 0xe53935 }));
       plume.position.set(0, 1.44, 0.06);
       driverGroup.add(plume);
+    } else if (driver.style === 'bear' || driver.style === 'cat') {
+      // 動物耳朵：黑熊是圓耳朵，貓咪是尖耳朵
+      for (const side of [-1, 1]) {
+        const ear = driver.style === 'bear'
+          ? new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), helmetMat)
+          : new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.24, 4), helmetMat);
+        ear.position.set(side * 0.24, 1.36, 0.02);
+        if (driver.style === 'cat') ear.rotation.z = -side * 0.25;
+        driverGroup.add(ear);
+      }
+      if (driver.style === 'bear') {
+        // 胸前白色 V 字（台灣黑熊的招牌）
+        const v = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.04, 6, 12, Math.PI), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+        v.position.set(0, 0.62, -0.23);
+        v.rotation.z = Math.PI;
+        driverGroup.add(v);
+      }
+    } else if (driver.style === 'robot') {
+      // 機器人天線＋發光眼罩
+      const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.3, 6), new THREE.MeshStandardMaterial({ color: 0x475569 }));
+      ant.position.set(0, 1.5, 0.02);
+      const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xff3b30).multiplyScalar(2) }));
+      bulb.position.set(0, 1.66, 0.02);
+      driverGroup.add(ant, bulb);
+    } else if (driver.style === 'dino') {
+      // 恐龍裝：頭頂一排黃色背刺
+      for (let k = 0; k < 4; k++) {
+        const spike = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.18, 4), suitAccentMat);
+        spike.position.set(0, 1.4 - k * 0.04, -0.12 + k * 0.14);
+        spike.rotation.x = 0.3 + k * 0.25;
+        driverGroup.add(spike);
+      }
     } else if (driver.style === 'ninja') {
       // Trailing red ninja headband tails
       const tail = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.08, 0.48), new THREE.MeshStandardMaterial({ color: 0xef4444 }));

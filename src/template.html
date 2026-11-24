@@ -26,6 +26,9 @@
           <span id="sum-driver">🏎️ 紅盔車手</span>
           <span class="dot">•</span>
           <span class="sum-coins">🪙 <strong id="lobby-coins">50</strong></span>
+          <span class="dot">•</span>
+          <button id="text-size-btn" class="text-size-btn" title="切換字體大小">🔠 字體：大</button>
+          <button id="pad-setup-btn" class="text-size-btn" title="手把測試與按鍵設定">🎮 手把設定</button>
         </div>
       </div>
 
@@ -33,7 +36,7 @@
       <div class="lobby-console">
         <div class="lobby-tabs" id="lobby-tabs">
           <button class="tab-btn active" data-tab="play">🏁 模式與連線</button>
-          <button class="tab-btn" data-tab="tracks">🗺️ 賽道 (10)</button>
+          <button class="tab-btn" data-tab="tracks">🗺️ 賽道 (12)</button>
           <button class="tab-btn" data-tab="garage">🏎️ 車型與車手</button>
           <button class="tab-btn" data-tab="upgrade">🔧 改裝強化</button>
         </div>
@@ -62,6 +65,41 @@
               </div>
 
               <div class="setting-block">
+                <span class="group-label">電腦對手難度</span>
+                <div class="pill-row" id="difficulty-selector">
+                  <button class="pill-btn" data-diff="easy">🐣 簡單</button>
+                  <button class="pill-btn selected" data-diff="normal">🏎️ 普通</button>
+                  <button class="pill-btn" data-diff="hard">🔥 困難</button>
+                </div>
+              </div>
+
+              <div class="setting-block">
+                <span class="group-label">畫質</span>
+                <div class="pill-row" id="quality-selector">
+                  <button class="pill-btn selected" data-q="auto">✨ 自動</button>
+                  <button class="pill-btn" data-q="high">💎 華麗</button>
+                  <button class="pill-btn" data-q="medium">🙂 中</button>
+                  <button class="pill-btn" data-q="low">🔋 省電</button>
+                </div>
+              </div>
+
+              <div class="setting-block">
+                <span class="group-label">角色語音</span>
+                <div class="pill-row" id="voice-selector">
+                  <button class="pill-btn selected" data-voice="on">🗣️ 開</button>
+                  <button class="pill-btn" data-voice="off">🤐 關</button>
+                </div>
+              </div>
+
+              <div class="setting-block">
+                <span class="group-label">新手轉向輔助</span>
+                <div class="pill-row" id="assist-selector">
+                  <button class="pill-btn selected" data-assist="on">🧭 開（推薦）</button>
+                  <button class="pill-btn" data-assist="off">🎯 關（老手）</button>
+                </div>
+              </div>
+
+              <div class="setting-block">
                 <span class="group-label">車手名稱</span>
                 <div class="name-inputs">
                   <input id="p1-name-input" type="text" maxlength="10" placeholder="P1 名稱" value="玩家 1" />
@@ -83,7 +121,7 @@
 
           <!-- Tab 2: 8 Tracks -->
           <div class="tab-pane" id="tab-tracks">
-            <div class="pane-hint">10 張立體賽道全開放（含 ☁️ 雲端天國無護欄掉落、🦖 恐龍侏羅紀暴龍踩扁！已獲獎牌：<strong id="unlock-progress">0 / 10</strong>）</div>
+            <div class="pane-hint">12 張立體賽道全開放（新！🏝️ 海島大冒險：跳島、跨海大橋、海底隧道；🍭 糖果王國穿越巨型甜甜圈、☁️ 雲端天國無護欄、🦖 恐龍踩扁！已獲獎牌：<strong id="unlock-progress">0 / 12</strong>）</div>
             <div class="track-grid" id="track-selector"></div>
           </div>
 
@@ -237,19 +275,17 @@
 
       <!-- Touch Controls Overlay (1P mode) -->
       <div id="touch-controls" class="hidden">
-        <div class="touch-left">
-          <button class="touch-btn" id="btn-left">◀</button>
-          <button class="touch-btn" id="btn-right">▶</button>
+        <!-- 左手：大型轉向板，手指左右滑動即可（越往外轉越多），不怕手指滑出按鍵 -->
+        <div class="steer-pad" id="steer-pad">
+          <div class="steer-half left">◀</div>
+          <div class="steer-half right">▶</div>
+          <div class="steer-knob" id="steer-knob"></div>
         </div>
+        <!-- 右手：自動油門；甩尾、道具放大，煞車縮小放旁邊 -->
         <div class="touch-right">
-          <div class="touch-row">
-            <button class="touch-btn accent-cyan" id="btn-drift">甩尾</button>
-            <button class="touch-btn accent-orange" id="btn-use">道具/N2O</button>
-          </div>
-          <div class="touch-row">
-            <button class="touch-btn accent-red" id="btn-brake">煞車</button>
-            <button class="touch-btn accent-green" id="btn-gas">加速</button>
-          </div>
+          <button class="touch-btn accent-red small" id="btn-brake">煞車<br/>倒車</button>
+          <button class="touch-btn accent-cyan big" id="btn-drift">甩尾</button>
+          <button class="touch-btn accent-orange big" id="btn-use">道具<br/>N2O</button>
         </div>
       </div>
     </div>

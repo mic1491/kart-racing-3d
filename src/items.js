@@ -21,6 +21,7 @@ export const ITEM_TYPES = {
   teleport: { id: 'teleport', name: '空間瞬移', icon: '🌀', color: '#22d3ee' },
   blizzard: { id: 'blizzard', name: '冰風暴法術', icon: '🌨️', color: '#38bdf8' },
   meteor: { id: 'meteor', name: '流星雨法術', icon: '☄️', color: '#ff6b00' },
+  dragon: { id: 'dragon', name: '神龍附身', icon: '🐉', color: '#ef4444' },
 };
 
 const ITEM_POOL = ['blizzard', 'meteor', 'blizzard', 'meteor', 'cannon', 'teleport', 'laser', 'missile', 'waterbomb', 'devil', 'squid', 'mine', 'tornado', 'banana', 'shield', 'nitro', 'turbo_tire', 'super_engine'];
@@ -176,8 +177,9 @@ export class ItemManager {
     const boxGeo = new THREE.BoxGeometry(2.0, 2.0, 2.0);
     const boxMat = new THREE.MeshStandardMaterial({
       map: this.boxTex,
-      emissive: 0x332244,
-      emissiveIntensity: 0.35,
+      emissive: 0xffffff,
+      emissiveMap: this.boxTex,
+      emissiveIntensity: 0.9,
       roughness: 0.2,
     });
 
@@ -196,8 +198,10 @@ export class ItemManager {
       const leadingPool = ['blizzard', 'meteor', 'mine', 'banana', 'squid', 'shield', 'devil', 'waterbomb', 'turbo_tire'];
       return leadingPool[Math.floor(Math.random() * leadingPool.length)];
     }
+    // 最後一名：35% 機率直接拿到大絕招「神龍附身」，讓落後的人永遠有翻盤機會
+    if (rankIndex >= 3 && Math.random() < 0.35) return 'dragon';
     if (rankIndex >= 2) {
-      const comebackPool = ['blizzard', 'meteor', 'cannon', 'teleport', 'laser', 'freeze', 'devil', 'tornado', 'star', 'super_engine'];
+      const comebackPool = ['blizzard', 'meteor', 'cannon', 'teleport', 'laser', 'freeze', 'devil', 'tornado', 'star', 'super_engine', 'dragon', 'dragon'];
       return comebackPool[Math.floor(Math.random() * comebackPool.length)];
     }
     return ITEM_POOL[Math.floor(Math.random() * ITEM_POOL.length)];
@@ -207,7 +211,16 @@ export class ItemManager {
     if (!racer.items || racer.items.length === 0) return false;
     const itemId = racer.items.shift();
 
-    if (itemId === 'nitro') {
+    if (itemId === 'dragon') {
+      // 🐉 落後專用大絕招：神龍附身自動駕駛 3.6 秒、無敵、撞飛路上的對手
+      racer.dragonTimer = 3.6;
+      racer.starTimer = Math.max(racer.starTimer, 3.6);
+      if (racer.isHuman) {
+        this.audio.playBoost();
+        this.showBannerFor(racer, '🐉 神龍附身！自動駕駛衝衝衝！', '#ffd700', 2.0);
+        if (this.onSay) this.onSay(racer, 'dragon');
+      }
+    } else if (itemId === 'nitro') {
       racer.boostTimer = Math.max(racer.boostTimer, 2.5);
       if (racer.isHuman) {
         this.audio.playBoost();
@@ -264,7 +277,7 @@ export class ItemManager {
       for (const other of racers) {
         if (other === racer || other.finished) continue;
         if (other.totalProgress >= racer.totalProgress - 0.05) {
-          this._hitRacer(other, 'lightning');
+          this._hitRacer(other, 'lightning', racer);
         }
       }
     } else if (itemId === 'freeze') {
@@ -382,7 +395,7 @@ export class ItemManager {
         }
         other.blizzardTimer = Math.max(other.blizzardTimer, racer.isHuman ? 4.5 : 2.8);
         other.speed *= 0.68;
-        if (this.onRacerHit) this.onRacerHit(other, 'blizzard');
+        if (this.onRacerHit) this.onRacerHit(other, 'blizzard', racer);
         for (let k = 0; k < 16; k++) {
           this.spawnParticle(
             other.pos.clone().add(new THREE.Vector3((Math.random() - 0.5) * 4, 2 + Math.random() * 4, (Math.random() - 0.5) * 4)),
@@ -560,7 +573,7 @@ export class ItemManager {
         r.spinTimer = 1.4;
         r.velY = 17.5;
         r.speed = -16;
-        if (this.onRacerHit) this.onRacerHit(r, 'laser');
+        if (this.onRacerHit) this.onRacerHit(r, 'laser', owner);
         if (track && !track.isBattleArena) {
           const knockIdx = (r.trackIndex - 20 + track.samples) % track.samples;
           const kp = track.points[knockIdx];
@@ -786,7 +799,7 @@ export class ItemManager {
     this.waterBombs.push({ mesh, pos, vel: new THREE.Vector3(fwdX * 72, 12, fwdZ * 72), owner, life: 1.65 });
   }
 
-  _hitRacer(victim, type) {
+  _hitRacer(victim, type, attacker = null) {
     if (victim.starTimer > 0) return;
     if (victim.shieldTimer > 0) {
       victim.shieldTimer = 0;
@@ -805,7 +818,7 @@ export class ItemManager {
       }
       return;
     }
-    if (this.onRacerHit) this.onRacerHit(victim, type);
+    if (this.onRacerHit) this.onRacerHit(victim, type, attacker);
 
     if (type === 'waterbomb') {
       victim.waterTrapTimer = 1.85;
@@ -891,7 +904,7 @@ export class ItemManager {
         const dx = r.pos.x - b.pos.x;
         const dz = r.pos.z - b.pos.z;
         if (dx * dx + dz * dz < 4.4) {
-          this._hitRacer(r, 'banana');
+          this._hitRacer(r, 'banana', b.owner);
           hit = true;
           break;
         }
@@ -914,7 +927,7 @@ export class ItemManager {
         const dx = r.pos.x - mn.pos.x;
         const dz = r.pos.z - mn.pos.z;
         if (dx * dx + dz * dz < 6.2) {
-          this._hitRacer(r, 'mine');
+          this._hitRacer(r, 'mine', mn.owner);
           hit = true;
           break;
         }
@@ -941,7 +954,7 @@ export class ItemManager {
         const dx = r.pos.x - td.pos.x;
         const dz = r.pos.z - td.pos.z;
         if (dx * dx + dz * dz < 14.0) {
-          this._hitRacer(r, 'tornado');
+          this._hitRacer(r, 'tornado', td.owner);
         }
       }
       if (td.life <= 0) {
@@ -1011,7 +1024,7 @@ export class ItemManager {
         const dx = r.pos.x - m.pos.x;
         const dz = r.pos.z - m.pos.z;
         if (dx * dx + dz * dz < 6.0) {
-          this._hitRacer(r, 'missile');
+          this._hitRacer(r, 'missile', m.owner);
           hit = true;
           break;
         }
@@ -1052,7 +1065,7 @@ export class ItemManager {
           if (r === w.owner) continue;
           const dx = r.pos.x - w.pos.x;
           const dz = r.pos.z - w.pos.z;
-          if (dx * dx + dz * dz < 110) this._hitRacer(r, 'waterbomb');
+          if (dx * dx + dz * dz < 110) this._hitRacer(r, 'waterbomb', w.owner);
         }
         for (let k = 0; k < 16; k++) {
           this.spawnParticle(
@@ -1117,7 +1130,7 @@ export class ItemManager {
           } else {
             m.target.meteorSlowTimer = Math.max(m.target.meteorSlowTimer, m.owner.isHuman ? 4.2 : 2.6);
             m.target.speed *= 0.62;
-            if (this.onRacerHit) this.onRacerHit(m.target, 'meteor');
+            if (this.onRacerHit) this.onRacerHit(m.target, 'meteor', m.owner);
             if (m.target.isHuman) {
               this.audio.playHit();
               this.showBannerFor(m.target, '☄️ 被流星雨擊中！車速大幅減慢！', '#ff6b00', 1.8);
