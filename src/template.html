@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>跑跑積木卡丁車 3D 豪華版 | KartRider LEGO 3D</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js" defer></script>
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="game-canvas"></canvas>
+    <canvas id="confetti-canvas" class="hidden"></canvas>
+    <div id="speed-lines"></div>
+    <div id="split-divider" class="hidden"></div>
+
+    <!-- Clean Tabbed Arcade Lobby Screen -->
+    <div id="start-screen" class="overlay">
+      <div class="lobby-header">
+        <h1 class="game-title">跑跑積木卡丁車 3D</h1>
+        <div class="setup-summary" id="setup-summary">
+          <span id="sum-track">🌲 積木城鎮</span>
+          <span class="dot">•</span>
+          <span id="sum-kart">閃電金星 #27</span>
+          <span class="dot">•</span>
+          <span id="sum-driver">🏎️ 紅盔車手</span>
+          <span class="dot">•</span>
+          <span class="sum-coins">🪙 <strong id="lobby-coins">50</strong></span>
+        </div>
+      </div>
+
+      <!-- Spacious Bottom Tabbed Console -->
+      <div class="lobby-console">
+        <div class="lobby-tabs" id="lobby-tabs">
+          <button class="tab-btn active" data-tab="play">🏁 模式與連線</button>
+          <button class="tab-btn" data-tab="tracks">🗺️ 賽道 (10)</button>
+          <button class="tab-btn" data-tab="garage">🏎️ 車型與車手</button>
+          <button class="tab-btn" data-tab="upgrade">🔧 改裝強化</button>
+        </div>
+
+        <div class="tab-body">
+          <!-- Tab 1: Mode, Players, Names & LAN -->
+          <div class="tab-pane active" id="tab-play">
+            <div class="play-grid">
+              <div class="setting-block">
+                <span class="group-label">對戰人數</span>
+                <div class="pill-row" id="player-count-selector">
+                  <button class="pill-btn selected" data-players="1">👤 單人</button>
+                  <button class="pill-btn" data-players="2">👥 同機雙人</button>
+                  <button class="pill-btn" data-players="net">🌐 4人區網</button>
+                </div>
+              </div>
+
+              <div class="setting-block">
+                <span class="group-label">玩法模式</span>
+                <div class="pill-row" id="mode-selector">
+                  <button class="pill-btn selected" data-mode="item">🎁 道具賽</button>
+                  <button class="pill-btn" data-mode="speed">⚡ 競速賽</button>
+                  <button class="pill-btn" data-mode="battle">🎈 氣球大亂鬥</button>
+                  <button class="pill-btn" data-mode="cup">🏆 冠軍錦標賽</button>
+                </div>
+              </div>
+
+              <div class="setting-block">
+                <span class="group-label">車手名稱</span>
+                <div class="name-inputs">
+                  <input id="p1-name-input" type="text" maxlength="10" placeholder="P1 名稱" value="玩家 1" />
+                  <input id="p2-name-input" class="hidden" type="text" maxlength="10" placeholder="P2 名稱" value="玩家 2" />
+                </div>
+              </div>
+            </div>
+
+            <!-- 4-Player LAN / Online Room Panel -->
+            <div id="net-panel" class="net-panel hidden">
+              <button id="create-room-btn" class="pill-btn selected">🏠 建立 4 人房間</button>
+              <div class="room-join-wrap">
+                <input id="room-code-input" type="text" maxlength="6" placeholder="輸入4碼房號" />
+                <button id="join-room-btn" class="pill-btn">🔗 加入房間</button>
+              </div>
+              <span id="net-status" class="net-status">最多 4 人同房！同 Wi-Fi（區網）或跨網輸入 4 碼房號即刻開戰</span>
+            </div>
+          </div>
+
+          <!-- Tab 2: 8 Tracks -->
+          <div class="tab-pane" id="tab-tracks">
+            <div class="pane-hint">10 張立體賽道全開放（含 ☁️ 雲端天國無護欄掉落、🦖 恐龍侏羅紀暴龍踩扁！已獲獎牌：<strong id="unlock-progress">0 / 10</strong>）</div>
+            <div class="track-grid" id="track-selector"></div>
+          </div>
+
+          <!-- Tab 3: 6 Drivers + 13 Vehicles -->
+          <div class="tab-pane" id="tab-garage">
+            <div id="p2-kart-tabs" class="p2-tabs hidden">
+              <button class="pill-btn selected" data-pick-for="0">目前選擇：P1 車手與車型</button>
+              <button class="pill-btn" data-pick-for="1">目前選擇：P2 車手與車型</button>
+            </div>
+            <div class="driver-row">
+              <span class="group-label">車手：</span>
+              <div class="pill-row" id="driver-selector"></div>
+            </div>
+            <div class="kart-grid" id="kart-grid"></div>
+          </div>
+
+          <!-- Tab 4: Per-Car 3D LEGO Mod Loadout + Garage Upgrades -->
+          <div class="tab-pane" id="tab-upgrade">
+            <div class="pane-hint">🧱 每台車自由配裝 3D 樂高零件（目前配裝：<strong id="mod-kart-name">閃電金星 #27</strong>），改裝立即顯示在車上！</div>
+            <div id="mod-loadout-panel" class="mod-loadout-panel">
+              <div class="mod-row">
+                <span class="group-label">輪胎：</span>
+                <div class="pill-row" id="mod-wheel-row"></div>
+              </div>
+              <div class="mod-row">
+                <span class="group-label">尾翼：</span>
+                <div class="pill-row" id="mod-wing-row"></div>
+              </div>
+              <div class="mod-row">
+                <span class="group-label">車頭：</span>
+                <div class="pill-row" id="mod-bumper-row"></div>
+              </div>
+            </div>
+            <div class="upgrade-grid">
+              <button class="upgrade-card upgrade-btn" data-upg="engine">
+                <div class="upg-title">🔥 引擎極速</div>
+                <div class="upg-meta"><span id="upg-engine-lv">Lv.0</span> ・ <span id="upg-engine-cost">40</span> 🪙</div>
+              </button>
+              <button class="upgrade-card upgrade-btn" data-upg="nitro">
+                <div class="upg-title">⚡ 氮氣爆發</div>
+                <div class="upg-meta"><span id="upg-nitro-lv">Lv.0</span> ・ <span id="upg-nitro-cost">40</span> 🪙</div>
+              </button>
+              <button class="upgrade-card upgrade-btn" data-upg="drift">
+                <div class="upg-title">🌀 甩尾集氣</div>
+                <div class="upg-meta"><span id="upg-drift-lv">Lv.0</span> ・ <span id="upg-drift-cost">40</span> 🪙</div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Always-Visible Start Footer -->
+        <div class="lobby-footer">
+          <div class="controls-guide" id="controls-guide">
+            <span><kbd>WASD</kbd>/<kbd>方向鍵</kbd> 駕駛</span>
+            <span><kbd>Shift</kbd> 甩尾/空中360°特技</span>
+            <span><kbd>Space</kbd> 道具/N2O</span>
+            <span><kbd>H</kbd> 喇叭表情</span>
+            <span id="gamepad-status" class="gamepad-badge hidden">🎮 已連接手把</span>
+          </div>
+          <button id="start-btn" class="primary-btn">開始比賽 🏁</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Countdown Overlay -->
+    <div id="countdown" class="hidden">3</div>
+
+    <!-- In-Game HUD -->
+    <div id="hud" class="hidden">
+      <div class="hud-global-top">
+        <div class="global-timer-pill">
+          <span id="hud-track-name">🌲 積木城鎮</span>
+          <span class="sep">|</span>
+          <span id="hud-mode-tag" class="mode-tag">道具</span>
+          <span class="sep">|</span>
+          <span id="hud-time">00:00.00</span>
+          <span class="sep">|</span>
+          <span class="hud-coins">🪙 <span id="hud-coins-val">0</span></span>
+        </div>
+        <div class="hud-actions">
+          <button id="horn-btn" title="喇叭與表情氣泡 (H)">📢</button>
+          <button id="pause-btn" title="暫停 (P / Esc)">⏸️</button>
+          <button id="touch-toggle-btn" title="切換觸控按鍵">📱</button>
+          <button id="mute-btn" title="音效開關">🔊</button>
+          <button id="restart-btn" title="重新開始 (R)">↻</button>
+          <button id="menu-btn" title="返回大廳">🏠</button>
+        </div>
+      </div>
+
+      <canvas id="minimap" width="144" height="144"></canvas>
+
+      <!-- Player 1 HUD Pane -->
+      <div class="player-hud" id="hud-p1">
+        <div class="p-top-left">
+          <div class="rank-box">
+            <span class="p-rank" id="p1-rank">1</span><span class="rank-suffix" id="p1-rank-suffix">st</span>
+            <span class="rank-total">/ 4</span>
+          </div>
+          <div class="lap-time-box">
+            <div class="p-name-tag" id="p1-hud-name">玩家 1</div>
+            <div class="lap-text">LAP <span id="p1-lap">1</span> / 3</div>
+          </div>
+        </div>
+        <div class="p-banner hidden" id="p1-banner"></div>
+        <div class="p-wrong-way hidden" id="p1-wrong-way">逆向行駛！請調頭</div>
+        <div class="ink-splat hidden" id="p1-ink"></div>
+        <div class="p-bottom-center">
+          <div class="nitro-slots">
+            <div class="nitro-slot" id="p1-slot-0"><span class="slot-icon">?</span></div>
+            <div class="nitro-slot" id="p1-slot-1"><span class="slot-icon">?</span></div>
+          </div>
+          <div class="gauge-wrap">
+            <div class="gauge-bar"><div class="nitro-fill" id="p1-nitro-fill"></div></div>
+          </div>
+        </div>
+        <div class="p-speed-box">
+          <div class="speed-value" id="p1-speed">0</div>
+          <div class="speed-unit">KM/H</div>
+        </div>
+      </div>
+
+      <!-- Player 2 HUD Pane (2P Split-Screen only) -->
+      <div class="player-hud hidden" id="hud-p2">
+        <div class="p-top-left">
+          <div class="rank-box p2-rank-border">
+            <span class="p-rank" id="p2-rank">2</span><span class="rank-suffix" id="p2-rank-suffix">nd</span>
+            <span class="rank-total">/ 4</span>
+          </div>
+          <div class="lap-time-box">
+            <div class="p-name-tag p2-name-col" id="p2-hud-name">玩家 2</div>
+            <div class="lap-text">LAP <span id="p2-lap">1</span> / 3</div>
+          </div>
+        </div>
+        <div class="p-banner hidden" id="p2-banner"></div>
+        <div class="p-wrong-way hidden" id="p2-wrong-way">逆向行駛！請調頭</div>
+        <div class="ink-splat hidden" id="p2-ink"></div>
+        <div class="p-bottom-center">
+          <div class="nitro-slots">
+            <div class="nitro-slot" id="p2-slot-0"><span class="slot-icon">?</span></div>
+            <div class="nitro-slot" id="p2-slot-1"><span class="slot-icon">?</span></div>
+          </div>
+          <div class="gauge-wrap">
+            <div class="gauge-bar"><div class="nitro-fill" id="p2-nitro-fill"></div></div>
+          </div>
+        </div>
+        <div class="p-speed-box">
+          <div class="speed-value" id="p2-speed">0</div>
+          <div class="speed-unit">KM/H</div>
+        </div>
+      </div>
+
+      <!-- Touch Controls Overlay (1P mode) -->
+      <div id="touch-controls" class="hidden">
+        <div class="touch-left">
+          <button class="touch-btn" id="btn-left">◀</button>
+          <button class="touch-btn" id="btn-right">▶</button>
+        </div>
+        <div class="touch-right">
+          <div class="touch-row">
+            <button class="touch-btn accent-cyan" id="btn-drift">甩尾</button>
+            <button class="touch-btn accent-orange" id="btn-use">道具/N2O</button>
+          </div>
+          <div class="touch-row">
+            <button class="touch-btn accent-red" id="btn-brake">煞車</button>
+            <button class="touch-btn accent-green" id="btn-gas">加速</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pause Overlay -->
+    <div id="pause-screen" class="overlay pause-overlay hidden">
+      <div class="title-badge">遊戲暫停</div>
+      <h1 class="game-title">⏸️ 暫停中</h1>
+      <div class="finish-buttons" style="margin-top: 18px;">
+        <button id="resume-btn" class="primary-btn">▶ 繼續比賽</button>
+        <button id="pause-restart-btn" class="secondary-btn">↻ 重新開始</button>
+        <button id="pause-menu-btn" class="secondary-btn">🏠 返回大廳</button>
+      </div>
+    </div>
+
+    <!-- Finish Screen (Transparent center so 3D Podium & Fireworks shine!) -->
+    <div id="finish-screen" class="overlay hidden">
+      <div class="finish-top-header">
+        <div class="title-badge" id="finish-badge">🏆 盛大頒獎典禮</div>
+        <h1 id="finish-rank-title" class="game-title">第 1 名！冠軍！</h1>
+        <p id="finish-subtitle" class="finish-subtitle">全場歡呼！你站上了最高頒獎台！</p>
+        <div id="unlock-banner" class="unlock-banner hidden"></div>
+      </div>
+
+      <div class="finish-bottom-panel">
+        <div class="results-card">
+          <div class="result-row">
+            <span>賽道 / 模式</span>
+            <strong id="finish-meta">積木城鎮・道具模式</strong>
+          </div>
+          <div class="result-row">
+            <span>完賽時間 / 最快單圈</span>
+            <strong><span id="finish-time">00:00.00</span> / <span id="finish-best-lap">00:00.00</span></strong>
+          </div>
+          <div class="result-row">
+            <span>本場獎勵 / 幽靈紀錄</span>
+            <strong id="finish-reward">+50 🪙</strong>
+          </div>
+          <div class="standings-list" id="standings-list"></div>
+        </div>
+        <div class="finish-buttons">
+          <button id="next-track-btn" class="primary-btn hidden">前往下一關 ➔</button>
+          <button id="play-again-btn" class="primary-btn">再比一場</button>
+          <button id="change-kart-btn" class="secondary-btn">返回大廳</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
