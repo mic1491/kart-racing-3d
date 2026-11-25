@@ -695,16 +695,16 @@ kbd {
 .speed-value { font-size: calc(34px * var(--hfs, 1)); font-weight: 900; font-style: italic; line-height: 1; font-variant-numeric: tabular-nums; }
 .speed-unit { font-size: calc(10px * var(--hfs, 1)); font-weight: 800; color: #4ce0ff; letter-spacing: 1.5px; }
 
-/* Touch Controls：底部置中超大左右轉向板 ＋ 右側垂直精巧功能鍵（永不被過場黑邊擋住、雙擊不放大！） */
+/* Touch Controls：底部正中央超大左右轉向板 ＋ 右側三鍵排在轉向板正上方（零重疊、不擋左右鍵！） */
 #hud { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 #touch-controls { position: absolute; inset: 0; pointer-events: none; z-index: 22; touch-action: none; }
 .steer-pad {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: max(22px, calc(env(safe-area-inset-bottom, 0px) + 14px));
-  width: min(54vw, 360px);
-  height: clamp(94px, 22vh, 134px);
+  bottom: max(20px, calc(env(safe-area-inset-bottom, 0px) + 12px));
+  width: min(76vw, 420px);
+  height: clamp(92px, 18vh, 126px);
   display: flex;
   border-radius: 30px;
   background: rgba(14, 24, 52, 0.56);
@@ -721,7 +721,7 @@ kbd {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(36px, 8vw, 52px);
+  font-size: clamp(38px, 8.5vw, 54px);
   color: rgba(255, 255, 255, 0.9);
   transition: background 0.08s;
 }
@@ -742,15 +742,15 @@ kbd {
 }
 .steer-pad.active .steer-knob { opacity: 0.92; }
 
-/* 右側往上排直的精巧功能鍵（上：煞車倒車、中：道具 N2O、下：甩尾） */
+/* 右側三鍵往上直排，整體抬高到左右轉向板上方，絕不擋到左右鍵！ */
 .touch-right {
   position: absolute;
   right: max(12px, calc(env(safe-area-inset-right, 0px) + 8px));
-  bottom: max(22px, calc(env(safe-area-inset-bottom, 0px) + 14px));
+  bottom: calc(max(20px, calc(env(safe-area-inset-bottom, 0px) + 12px)) + clamp(92px, 18vh, 126px) + 14px);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   pointer-events: auto;
   touch-action: none;
 }
@@ -773,13 +773,13 @@ kbd {
   box-shadow: 0 4px 0 rgba(0, 0, 0, 0.38);
 }
 .touch-btn.big {
-  width: 60px;
-  height: 60px;
+  width: 58px;
+  height: 58px;
   font-size: 13px;
 }
 .touch-btn.small {
-  width: 50px;
-  height: 50px;
+  width: 48px;
+  height: 48px;
   font-size: 11px;
 }
 .touch-btn.pressed { transform: scale(0.92); filter: brightness(1.35); box-shadow: 0 0 18px rgba(255, 255, 255, 0.75); }
@@ -793,17 +793,17 @@ kbd {
 #hud.touch-on .p-speed-box { bottom: auto; top: 54px; right: max(12px, env(safe-area-inset-right, 12px)); transform: scale(0.84); transform-origin: top right; }
 #hud.touch-on .p-bottom-center { bottom: auto; top: 50px; width: min(210px, 52vw); }
 #hud.touch-on .nitro-slot { width: 46px; height: 46px; }
-/* 手機直向：置中大轉向板稍微偏左留給右側直排按鈕，寬度拉大超好按！ */
+/* 手機直向：左右鍵正中央超大塊，右側三鍵整齊排在它正上方！ */
 @media (max-width: 640px) {
   #hud.touch-on .steer-pad {
-    left: 42%;
+    left: 50%;
     transform: translateX(-50%);
-    width: 66vw;
-    height: 108px;
-    bottom: max(26px, calc(env(safe-area-inset-bottom, 0px) + 18px));
+    width: 88vw;
+    height: 110px;
+    bottom: max(22px, calc(env(safe-area-inset-bottom, 0px) + 14px));
   }
   #hud.touch-on .touch-right {
-    bottom: max(26px, calc(env(safe-area-inset-bottom, 0px) + 18px));
+    bottom: calc(max(22px, calc(env(safe-area-inset-bottom, 0px) + 14px)) + 124px);
     gap: 9px;
   }
 }
