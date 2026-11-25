@@ -767,21 +767,21 @@ kbd {
 }
 .steer-pad.active .steer-knob { opacity: 0.92; }
 
-/* 三顆鍵：一排放在左右鍵正上方（甩尾｜煞車｜道具） */
+/* 三顆鍵：靠右直排（由下往上：甩尾 → 道具 → 煞車），右手拇指最好按 */
 .touch-right {
   position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: var(--above-pad, 132px);
+  right: var(--edge-r, 12px);
+  bottom: var(--edge-b, 12px);
   display: flex;
+  flex-direction: column-reverse;
   align-items: center;
-  gap: var(--gap, 14px);
+  gap: var(--gap, 10px);
   pointer-events: auto;
   touch-action: none;
 }
 #btn-drift { order: 1; }
-#btn-brake { order: 2; }
-#btn-use { order: 3; }
+#btn-use { order: 2; }
+#btn-brake { order: 3; }
 .touch-btn {
   border-radius: 50%;
   border: 2.5px solid rgba(255, 255, 255, 0.7);
@@ -826,7 +826,8 @@ kbd {
 
 /* ---- 橫放 ---- */
 @media (orientation: landscape) {
-  #hud.touch-on { --pad-w: min(56vw, 480px); }
+  /* 左右鍵：置中，但寬度要讓出右邊直排按鍵的位置 */
+  #hud.touch-on { --gap: 8px; --pad-w: min(52vw, 460px, calc(100% - 2 * (var(--big) + 28px))); }
   #hud.touch-on .hud-global-top { top: 8px; left: auto; right: calc(var(--edge-r, 12px) + var(--map) + 10px); transform: none; }
   #hud.touch-on .p-speed-box { top: calc(8px + var(--map) + 8px); bottom: auto; right: var(--edge-r, 12px); }
   /* 道具欄：左下角，在左右鍵旁邊 */
@@ -842,9 +843,11 @@ kbd {
   #hud.touch-on .p-banner { top: 19%; }
   #hud.touch-on .cine-stamp { top: 24%; }
   #hud.touch-on .status-alert { top: 31%; max-width: calc(100% - 2 * (var(--map) + 30px)); }
+  /* 右邊直排很高：時速表改放左邊名次下方，避免撞到 */
+  #hud.touch-on .p-speed-box { top: calc(8px + 52px); right: auto; left: var(--edge, 12px); }
 }
 @media (orientation: landscape) and (max-height: 430px) {
-  #hud.touch-on { --map: 84px; --pad-h: clamp(84px, 24vh, 100px); --big: clamp(54px, 15vh, 62px); --small: clamp(46px, 12vh, 52px); }
+  #hud.touch-on { --map: 84px; --pad-h: clamp(84px, 24vh, 100px); --big: clamp(52px, 15vh, 60px); --small: clamp(44px, 12vh, 50px); }
 }
 
 /* ---- 直拿 ---- */
@@ -855,8 +858,10 @@ kbd {
     --pad-h: clamp(100px, 15vh, 128px);
     --big: clamp(60px, 17vw, 74px);
     --small: clamp(50px, 14vw, 58px);
-    --gap: clamp(18px, 7vw, 36px);
+    --gap: 10px;
   }
+  /* 直拿：右邊直排疊在左右鍵上方 */
+  #hud.touch-on .touch-right { bottom: var(--above-pad); }
   #hud.touch-on #touch-toggle-btn { display: none; }
   /* 第二排：計時列（左）＋時速表（右） */
   #hud.touch-on .hud-global-top { top: calc(8px + var(--map) + 8px); left: var(--edge, 12px); right: auto; transform: none; }
