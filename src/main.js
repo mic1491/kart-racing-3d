@@ -928,6 +928,22 @@ if (btnUse) {
   ['pointerup', 'pointercancel', 'pointerleave'].forEach((ev) => btnUse.addEventListener(ev, () => btnUse.classList.remove('pressed')));
 }
 
+// 徹底防止 iOS Safari / 手機瀏覽器連點按鈕兩下觸發頁面放大！
+let lastTouchEndAt = 0;
+document.addEventListener('touchend', (e) => {
+  if (e.target && e.target.closest && e.target.closest('#hud, #touch-controls, button, .steer-pad')) {
+    const now = Date.now();
+    if (now - lastTouchEndAt < 320) e.preventDefault();
+    lastTouchEndAt = now;
+  }
+}, { passive: false });
+document.addEventListener('dblclick', (e) => {
+  if (e.target && e.target.closest && e.target.closest('#hud, #touch-controls, button, .steer-pad')) {
+    e.preventDefault();
+  }
+}, { passive: false });
+document.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
+
 let touchVisible = window.matchMedia('(pointer: coarse)').matches;
 touchControlsEl.classList.toggle('hidden', !touchVisible);
 hud.classList.toggle('touch-on', touchVisible);

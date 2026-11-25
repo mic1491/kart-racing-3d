@@ -695,21 +695,25 @@ kbd {
 .speed-value { font-size: calc(34px * var(--hfs, 1)); font-weight: 900; font-style: italic; line-height: 1; font-variant-numeric: tabular-nums; }
 .speed-unit { font-size: calc(10px * var(--hfs, 1)); font-weight: 800; color: #4ce0ff; letter-spacing: 1.5px; }
 
-/* Touch Controls：人體工學拇指弧形配置（直向 / 橫向手機都不重疊、不誤觸！） */
-#touch-controls { position: absolute; inset: 0; pointer-events: none; z-index: 12; }
+/* Touch Controls：底部置中超大左右轉向板 ＋ 右側垂直精巧功能鍵（永不被過場黑邊擋住、雙擊不放大！） */
+#hud { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+#touch-controls { position: absolute; inset: 0; pointer-events: none; z-index: 22; touch-action: none; }
 .steer-pad {
   position: absolute;
-  left: max(16px, calc(env(safe-area-inset-left, 0px) + 12px));
-  bottom: max(26px, calc(env(safe-area-inset-bottom, 0px) + 18px));
-  width: min(44vw, calc(var(--touch, 80px) * 2.35));
-  height: clamp(78px, calc(var(--touch, 80px) * 1.25), 116px);
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: max(22px, calc(env(safe-area-inset-bottom, 0px) + 14px));
+  width: min(54vw, 360px);
+  height: clamp(94px, 22vh, 134px);
   display: flex;
-  border-radius: 28px;
-  background: rgba(14, 24, 52, 0.52);
-  border: 3px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  border-radius: 30px;
+  background: rgba(14, 24, 52, 0.56);
+  border: 3px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.38);
   pointer-events: auto;
   touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
   overflow: hidden;
 }
 .steer-half {
@@ -717,19 +721,19 @@ kbd {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(28px, calc(var(--touch, 80px) * 0.44), 44px);
-  color: rgba(255, 255, 255, 0.88);
+  font-size: clamp(36px, 8vw, 52px);
+  color: rgba(255, 255, 255, 0.9);
   transition: background 0.08s;
 }
-.steer-half.left { border-right: 2px dashed rgba(255, 255, 255, 0.32); }
-.steer-half.on { background: rgba(0, 229, 255, 0.48); color: #fff; }
+.steer-half.left { border-right: 2px dashed rgba(255, 255, 255, 0.36); }
+.steer-half.on { background: rgba(0, 229, 255, 0.5); color: #fff; }
 .steer-knob {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: calc(var(--touch, 80px) * 0.46);
-  height: calc(var(--touch, 80px) * 0.46);
-  margin: calc(var(--touch, 80px) * -0.23) 0 0 calc(var(--touch, 80px) * -0.23);
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, #fff, #7ee8ff 60%, #0284c7);
   box-shadow: 0 0 14px rgba(0, 229, 255, 0.9);
@@ -738,72 +742,69 @@ kbd {
 }
 .steer-pad.active .steer-knob { opacity: 0.92; }
 
-/* 右手拇指弧形區：甩尾＋道具並排大圓鍵，煞車收在上方不擋路也不誤觸！ */
+/* 右側往上排直的精巧功能鍵（上：煞車倒車、中：道具 N2O、下：甩尾） */
 .touch-right {
   position: absolute;
-  right: max(16px, calc(env(safe-area-inset-right, 0px) + 12px));
-  bottom: max(26px, calc(env(safe-area-inset-bottom, 0px) + 18px));
-  display: grid;
-  grid-template-columns: auto auto;
-  grid-template-rows: auto auto;
-  grid-template-areas:
-    ". brake"
-    "drift use";
-  align-items: end;
-  justify-items: center;
-  gap: 10px 12px;
+  right: max(12px, calc(env(safe-area-inset-right, 0px) + 8px));
+  bottom: max(22px, calc(env(safe-area-inset-bottom, 0px) + 14px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
   pointer-events: auto;
+  touch-action: none;
 }
-#btn-brake { grid-area: brake; margin-bottom: 0; }
-#btn-drift { grid-area: drift; }
-#btn-use { grid-area: use; transform: translateY(-10px); }
+#btn-brake { order: 1; margin-bottom: 0; }
+#btn-use { order: 2; }
+#btn-drift { order: 3; }
 .touch-btn {
   border-radius: 50%;
-  border: 3px solid rgba(255, 255, 255, 0.65);
-  background: rgba(14, 24, 52, 0.76);
+  border: 2.5px solid rgba(255, 255, 255, 0.7);
+  background: rgba(14, 24, 52, 0.78);
   color: #fff;
   font-weight: 900;
   line-height: 1.1;
   cursor: pointer;
   touch-action: none;
-  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.38);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.38);
 }
 .touch-btn.big {
-  width: clamp(68px, min(20vw, calc(var(--touch, 80px) * 1.05)), 96px);
-  height: clamp(68px, min(20vw, calc(var(--touch, 80px) * 1.05)), 96px);
-  font-size: clamp(14px, calc(var(--touch, 80px) * 0.21), 20px);
+  width: 60px;
+  height: 60px;
+  font-size: 13px;
 }
 .touch-btn.small {
-  width: clamp(50px, min(14vw, calc(var(--touch, 80px) * 0.66)), 66px);
-  height: clamp(50px, min(14vw, calc(var(--touch, 80px) * 0.66)), 66px);
-  font-size: clamp(11px, calc(var(--touch, 80px) * 0.14), 14px);
+  width: 50px;
+  height: 50px;
+  font-size: 11px;
 }
 .touch-btn.pressed { transform: scale(0.92); filter: brightness(1.35); box-shadow: 0 0 18px rgba(255, 255, 255, 0.75); }
-#btn-use.pressed { transform: translateY(-10px) scale(0.92); }
-.touch-btn.accent-cyan { border-color: #00e5ff; background: rgba(0, 150, 200, 0.76); }
-.touch-btn.accent-orange { border-color: #ffaa00; background: rgba(235, 115, 0, 0.84); }
-.touch-btn.accent-red { border-color: #ff4d4d; background: rgba(190, 35, 35, 0.72); }
+.touch-btn.accent-cyan { border-color: #00e5ff; background: rgba(0, 150, 200, 0.8); }
+.touch-btn.accent-orange { border-color: #ffaa00; background: rgba(235, 115, 0, 0.88); }
+.touch-btn.accent-red { border-color: #ff4d4d; background: rgba(190, 35, 35, 0.78); }
 .touch-btn.has-item { animation: itemPulse 0.9s ease-in-out infinite; }
 @keyframes itemPulse { 50% { box-shadow: 0 0 22px #ffcc00, 0 0 4px #fff; } }
 
-/* 觸控模式時，避開左右拇指區：時速表與道具列自動讓位 */
-#hud.touch-on .p-speed-box { bottom: auto; top: 54px; right: max(12px, env(safe-area-inset-right, 12px)); transform: scale(0.86); transform-origin: top right; }
-#hud.touch-on .p-bottom-center { bottom: max(18px, calc(env(safe-area-inset-bottom, 0px) + 10px)); width: min(260px, 34vw); }
+/* 觸控模式時，時速表與道具列移到上方清淨區，絕不擋按鈕！ */
+#hud.touch-on .p-speed-box { bottom: auto; top: 54px; right: max(12px, env(safe-area-inset-right, 12px)); transform: scale(0.84); transform-origin: top right; }
+#hud.touch-on .p-bottom-center { bottom: auto; top: 50px; width: min(210px, 52vw); }
+#hud.touch-on .nitro-slot { width: 46px; height: 46px; }
+/* 手機直向：置中大轉向板稍微偏左留給右側直排按鈕，寬度拉大超好按！ */
 @media (max-width: 640px) {
-  #hud.touch-on .p-bottom-center {
-    bottom: auto;
-    top: 52px;
-    width: min(210px, 56vw);
-  }
-  #hud.touch-on .nitro-slot { width: 46px; height: 46px; }
   #hud.touch-on .steer-pad {
-    bottom: max(30px, calc(env(safe-area-inset-bottom, 0px) + 22px));
-    width: 45vw;
-    height: 92px;
+    left: 42%;
+    transform: translateX(-50%);
+    width: 66vw;
+    height: 108px;
+    bottom: max(26px, calc(env(safe-area-inset-bottom, 0px) + 18px));
   }
   #hud.touch-on .touch-right {
-    bottom: max(30px, calc(env(safe-area-inset-bottom, 0px) + 22px));
-    gap: 10px 10px;
+    bottom: max(26px, calc(env(safe-area-inset-bottom, 0px) + 18px));
+    gap: 9px;
   }
 }
 
@@ -969,8 +970,8 @@ kbd {
   .lap-time-box .p-name-tag { display: none; }
 }
 
-/* === 🎬 過場特寫：電影黑邊 + 大字蓋章 === */
-.cine-bars { position: absolute; inset: 0; pointer-events: none; z-index: 13; }
+/* === 🎬 過場特寫：電影黑邊 + 大字蓋章（層級低於觸控鍵，手機不擋按鍵！） === */
+.cine-bars { position: absolute; inset: 0; pointer-events: none; z-index: 11; }
 .cine-bars::before, .cine-bars::after {
   content: ''; position: absolute; left: 0; right: 0; height: 0; background: #000;
   transition: height 0.22s ease;
@@ -978,6 +979,8 @@ kbd {
 .cine-bars::before { top: 0; }
 .cine-bars::after { bottom: 0; }
 .cine-bars.on::before, .cine-bars.on::after { height: 11%; }
+#hud.touch-on ~ .cine-bars.on::after,
+#hud.touch-on .cine-bars.on::after { height: 0 !important; }
 .cine-stamp {
   position: absolute; top: 56%; left: 50%; transform: translate(-50%, -50%) rotate(-6deg);
   font-size: calc(46px * var(--hfs, 1)); font-weight: 900; font-style: italic; white-space: nowrap;
