@@ -550,6 +550,13 @@ function clearSkidMarks() {
 function showBannerFor(racer, text, color = '#00f0ff', duration = 1.15) {
   const idx = racer && racer.humanIndex === 1 ? 1 : 0;
   const h = pHudEls[idx];
+  // 手機：蓋章大字還在畫面上時，提示字排隊等它消失再出來
+  const wait = h.status && h.status.stampUntil ? h.status.stampUntil - performance.now() : 0;
+  if (wait > 0 && touchVisible && playType !== '2') {
+    clearTimeout(h.bannerQueue);
+    h.bannerQueue = setTimeout(() => showBannerFor(racer, text, color, duration), wait + 30);
+    return;
+  }
   h.banner.textContent = text;
   h.banner.style.color = color;
   h.banner.style.setProperty('--bc', color);
@@ -1137,6 +1144,12 @@ function showStamp(humanIdx, text, color) {
   st.stamp.classList.remove('go');
   void st.stamp.offsetWidth;
   st.stamp.classList.add('go');
+  st.stampUntil = performance.now() + 1250;
+  // 手機畫面比較小：蓋章大字出現時，先把同位置的一般提示字收起來，避免兩排字疊在一起
+  if (touchVisible && playType !== '2') {
+    pHudEls[humanIdx].banner.classList.add('hidden');
+    pHudEls[humanIdx].bannerTimer = 0;
+  }
 }
 
 function hitCinematic(victim, type, attacker) {
