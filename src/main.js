@@ -4,8 +4,12 @@ import { RaceTrack, TRACK_ORDER, TRACK_CONFIGS } from './track.js';
 import { SoundEngine } from './audio.js';
 import { ItemManager, ITEM_TYPES, attachKartStatusMeshes } from './items.js';
 import { RoomNetwork } from './network.js';
+import { TycoonGame } from './tycoon.js';
 
 const TOTAL_LAPS = 3;
+// 大亨賽車的挑戰賽：只跑 1 圈、兩個人單挑
+let challenge = null;
+const raceLaps = () => (challenge ? 1 : TOTAL_LAPS);
 const CUP_TRACKS = ['village', 'desert', 'sky', 'dino'];
 const EMOTE_PHRASES = ['😂 哈哈！', '🔥 借過啦！', '😎 太慢囉！', '🚀 追不上我！', '🦖 救命啊！', '⚡ 吃我尾氣！'];
 const SAVE_KEY = 'kart_lego_3d_save_v3';
@@ -1405,7 +1409,7 @@ function pollGamepads() {
     perPlayer = [mergePads([...states.values()]), { ...EMPTY_PAD }];
   }
 
-  if (gameState === 'menu' || gameState === 'finished' || gameState === 'paused') {
+  if (gameState === 'menu' || gameState === 'finished' || gameState === 'paused' || gameState === 'board') {
     menuNav(mergePads([...states.values()]));
   } else {
     menuNavPrev = null;
@@ -1437,6 +1441,7 @@ let menuFocusEl = null;
 const NAV_SELECTOR = 'button, .kart-card, [data-tab]';
 
 function menuRoot() {
+  if (gameState === 'board') return tycoon ? tycoon.navRoot : null;
   if (!pauseScreen.classList.contains('hidden')) return pauseScreen;
   if (!finishScreen.classList.contains('hidden')) return finishScreen;
   if (!startScreen.classList.contains('hidden')) return startScreen;
@@ -1790,7 +1795,7 @@ if (unlockAllBtn) {
 }
 
 function isItemModeActive() {
-  return selectedMode === 'item' || selectedMode === 'battle' || selectedMode === 'cup';
+  return selectedMode === 'item' || selectedMode === 'battle' || selectedMode === 'cup' || !!challenge;
 }
 
 // --- Track & Racers ---
@@ -1948,7 +1953,7 @@ function clearRacers() {
 }
 
 function spawnGhostKartIfAvailable() {
-  if (playType !== '1') return;
+  if (playType !== '1' || challenge) return;
   const savedGhost = saveData.ghosts[selectedTrackId];
   if (!savedGhost || savedGhost.length < 4) {
     ghostPlaybackData = null;
@@ -1985,6 +1990,17 @@ const AI_NAMES = ['積木小旋風', '氮氣阿強', '甩尾莉莉', '極速機�
 
 function setupShowcase(netStartMsg = null) {
   clearRacers();
+  if (challenge) {
+    let hIdx = 0;
+    racers = [challenge.opts.challenger, challenge.opts.owner].map((p, slot) => {
+      const human = p.isHuman;
+      const r = createRacer(p.kartId, slot, p.name, human ? 'human' : 'ai', human ? hIdx++ : -1, p.driverId);
+      r.tyId = slot === 0 ? 'challenger' : 'owner';
+      return r;
+    });
+    humanRacers = racers.filter((r) => r.isHuman);
+    return;
+  }
   const p1Name = (p1NameInput.value.trim() || '玩家 1').slice(0, 10);
   const p2Name = (p2NameInput.value.trim() || '玩家 2').slice(0, 10);
 
@@ -2033,7 +2049,70 @@ function setupShowcase(netStartMsg = null) {
   }
 }
 
+// ===================================================================
+// 🎲 積木大亨賽車：開局、挑戰賽接賽車引擎、回到棋盤
+// ===================================================================
+let tycoon = null;
+function startTycoon() {
+  audio.init();
+  if (!tycoon) {
+    tycoon = new TycoonGame({
+      audio,
+      startChallenge: (opts, cb) => startChallengeRace(opts, cb),
+      exit: () => returnToMenu(),
+      say: (p, kind) => sayLine({ isHuman: p.isHuman, driverKey: p.driverId, humanIndex: p.humanIndex || 0 }, kind, 2, false),
+    });
+  }
+  const p1Name = (p1NameInput.value.trim() || '玩家 1').slice(0, 10);
+  const p2Name = (p2NameInput.value.trim() || '玩家 2').slice(0, 10);
+  const humans = [{ name: p1Name, kartId: selectedKarts[0], driverId: selectedDrivers[0], isHuman: true, humanIndex: 0 }];
+  if (playType === '2') humans.push({ name: p2Name, kartId: selectedKarts[1], driverId: selectedDrivers[1], isHuman: true, humanIndex: 1 });
+  const aiKarts = pickRemainingKarts(humans.map((h) => h.kartId), 4 - humans.length);
+  aiDriverPool = [];
+  const players = [...humans];
+  for (let k = 0; players.length < 4; k++) {
+    players.push({ name: AI_NAMES[k], kartId: aiKarts[k], driverId: aiDriverFor(players.length), isHuman: false });
+  }
+  clearRacers();
+  clearPodium();
+  startScreen.classList.add('hidden');
+  finishScreen.classList.add('hidden');
+  hud.classList.add('hidden');
+  gameState = 'board';
+  tycoon.start({ players, rounds: 10 });
+}
+
+function startChallengeRace(opts, cb) {
+  challenge = { opts, cb, done: false, prevPlayType: playType };
+  const humans = [opts.challenger, opts.owner].filter((p) => p.isHuman).length;
+  playType = humans >= 2 ? '2' : '1';
+  selectedTrackId = opts.trackId;
+  startRace(false);
+  showBannerFor(humanRacers[0], `🏁 挑戰賽：${opts.challenger.name} vs ${opts.owner.name}，先跑完 1 圈的贏！`, '#ffd700', 2.6);
+}
+
+function endChallenge(challengerWon) {
+  if (!challenge) return;
+  const { cb, prevPlayType } = challenge;
+  challenge = null;
+  playType = prevPlayType;
+  audio.stopBgm();
+  audio.setFinalLap(false);
+  audio.updateDrive(0, false, false, false);
+  hud.classList.add('hidden');
+  hud.classList.remove('split-mode');
+  splitDivider.classList.add('hidden');
+  speedLinesEl.classList.remove('active');
+  retireEl.classList.add('hidden');
+  clearSkidMarks();
+  clearRacers();
+  gameState = 'board';
+  cb(challengerWon);
+}
+
 function returnToMenu() {
+  if (challenge) { playType = challenge.prevPlayType; challenge = null; }
+  if (tycoon) tycoon.stop();
   gameState = 'menu';
   audio.stopBgm();
   audio.setFinalLap(false);
@@ -2054,6 +2133,7 @@ function returnToMenu() {
 }
 
 function startRace(broadcastIfHost = true, netStartMsg = null) {
+  if (challenge) challenge.done = false;
   retireTimer = -1;
   retireEl.classList.add('hidden');
   if (playType === 'net' && net.connected && net.role === 'host' && broadcastIfHost) {
@@ -2091,7 +2171,10 @@ function startRace(broadcastIfHost = true, netStartMsg = null) {
     : selectedMode === 'cup'
       ? `🏆 第${cupRound + 1}/4關 ${track.config.icon}${track.config.name}`
       : `${track.config.icon} ${track.config.name}`;
-  hudModeTag.textContent = selectedMode === 'battle' ? '氣球亂鬥' : selectedMode === 'cup' ? '錦標賽' : selectedMode === 'item' ? '道具' : '競速';
+  hudModeTag.textContent = challenge ? '挑戰賽' : selectedMode === 'battle' ? '氣球亂鬥' : selectedMode === 'cup' ? '錦標賽' : selectedMode === 'item' ? '道具' : '競速';
+  if (challenge) hudTrackName.textContent = `🏁 單挑 ${track.config.icon}${track.config.name}`;
+  document.querySelectorAll('.lap-total').forEach((el) => { el.textContent = raceLaps(); });
+  document.querySelectorAll('.rank-total').forEach((el) => { el.textContent = `/ ${racers.length}`; });
   battleTimer = 90;
   pHudEls[0].name.textContent = humanRacers[0].name;
   pHudEls[0].banner.classList.add('hidden');
@@ -2136,6 +2219,7 @@ pauseRestartBtn.addEventListener('click', () => { isPaused = false; pauseScreen.
 pauseMenuBtn.addEventListener('click', () => { isPaused = false; pauseScreen.classList.add('hidden'); returnToMenu(); });
 
 startBtn.addEventListener('click', () => {
+  if (selectedMode === 'tycoon') { startTycoon(); return; }
   if (selectedMode === 'cup') {
     cupRound = 0;
     cupScores = {};
@@ -3278,9 +3362,20 @@ function updateRacerPhysics(r, dt) {
       r.passedHalfway = false;
       r.lap++;
 
-      if (r.lap > TOTAL_LAPS) {
+      if (r.lap > raceLaps()) {
         r.finished = true;
         r.finishTime = raceTime;
+        if (challenge) {
+          if (!challenge.done) {
+            challenge.done = true;
+            const won = r.tyId === 'challenger';
+            humanRacers.forEach((h) => showStamp(h.humanIndex, `🏁 ${r.name} 先衝線！`, r.isHuman ? '#38ef7d' : '#ff6b6b'));
+            if (r.isHuman) sayLine(r, 'win', 3);
+            audio.playLapChime();
+            setTimeout(() => endChallenge(won), 2200);
+          }
+          return;
+        }
         // ⏱️ 有人先衝線 → 還沒完賽的玩家開始 10 秒退賽倒數（真實卡丁車的緊張感！）
         if (selectedMode !== 'battle' && retireTimer < 0 && humanRacers.some((h) => !h.finished)) {
           retireTimer = 10;
@@ -3298,8 +3393,8 @@ function updateRacerPhysics(r, dt) {
         }
       } else if (r.isHuman) {
         audio.playLapChime();
-        if (r.lap === TOTAL_LAPS) { audio.setFinalLap(true); sayLine(r, 'finalLap', 2); }
-        showBannerFor(r, r.lap === TOTAL_LAPS ? '🔥 最後一圈 FINAL LAP!' : `LAP ${r.lap} / ${TOTAL_LAPS}`, '#4ce0ff', 1.5);
+        if (r.lap === raceLaps()) { audio.setFinalLap(true); sayLine(r, 'finalLap', 2); }
+        showBannerFor(r, r.lap === raceLaps() ? '🔥 最後一圈 FINAL LAP!' : `LAP ${r.lap} / ${raceLaps()}`, '#4ce0ff', 1.5);
       }
     }
 
@@ -3738,7 +3833,7 @@ function updateHUD() {
     r.lastRank = rank;
     h.rank.textContent = rank;
     h.suffix.textContent = suffixes[rank - 1] || 'th';
-    h.lap.textContent = selectedMode === 'battle' ? '🎈'.repeat(Math.max(0, r.balloons)) || '💥' : Math.min(r.lap, TOTAL_LAPS);
+    h.lap.textContent = selectedMode === 'battle' ? '🎈'.repeat(Math.max(0, r.balloons)) || '💥' : Math.min(r.lap, raceLaps());
     h.speed.textContent = Math.round(Math.abs(r.speed) * 3.8);
     h.nitroFill.style.width = `${Math.min(100, r.nitroGauge)}%`;
     if (h.ink) h.ink.classList.toggle('hidden', r.squidTimer <= 0);
@@ -4003,6 +4098,11 @@ function animate(now) {
       // Give AI racers a brisk launch on GO! so the pack stays competitive right away
       for (const r of racers) {
         if (r.controlType === 'ai') r.speed = r.kart.preset.maxSpeed * 0.55;
+        // 挑戰賽：地主的地等級越高，起跑噴射越久
+        if (challenge && r.tyId === 'owner' && challenge.opts.level > 0) {
+          r.boostTimer = Math.max(r.boostTimer, challenge.opts.level * 0.7);
+          if (r.isHuman) showBannerFor(r, `🏠 地主優勢：起跑噴射 ${(challenge.opts.level * 0.7).toFixed(1)} 秒！`, '#ffd700', 1.6);
+        }
       }
       // PERFECT START boost if holding gas right on GO!
       for (const h of humanRacers) {
@@ -4075,6 +4175,7 @@ function animate(now) {
     }
   }
   updateParticles(dt);
+  if (gameState === 'board' && tycoon) tycoon.update(dt);
   if (gameState === 'racing' || gameState === 'countdown') for (const r of racers) updateTrails(r, dt);
   updateStreaks(dt);
   trackPerformance(rawDt);
@@ -4103,6 +4204,12 @@ function animate(now) {
   // Render (Full-Screen or 2P Split-Screen)
   const w = window.innerWidth;
   const h = window.innerHeight;
+  if (gameState === 'board' && tycoon) {
+    renderer.setScissorTest(false);
+    renderer.setViewport(0, 0, w, h);
+    renderer.render(tycoon.scene, tycoon.camera);
+    return;
+  }
   if (playType === '2' && gameState !== 'menu' && gameState !== 'finished') {
     renderer.setScissorTest(true);
     const halfW = Math.floor(w / 2);
@@ -4132,5 +4239,5 @@ requestAnimationFrame(animate);
 
 // 測試用：網址加上 ?debug 可在主控台用 __kart.racers 查看/修改狀態
 if (location.search.includes('debug')) {
-  window.__kart = { get racers() { return racers; }, get humans() { return humanRacers; }, get state() { return gameState; }, get track() { return track; }, hit: hitCinematic, retire: (s = 10) => { retireTimer = s; }, audio, finish: () => { humanRacers.forEach((h) => { h.finished = true; h.finishTime = raceTime; }); onRaceFinish(); } };
+  window.__kart = { get racers() { return racers; }, get humans() { return humanRacers; }, get state() { return gameState; }, get track() { return track; }, get tycoon() { return tycoon; }, endChallenge: (w) => endChallenge(w), hit: hitCinematic, retire: (s = 10) => { retireTimer = s; }, audio, finish: () => { humanRacers.forEach((h) => { h.finished = true; h.finishTime = raceTime; }); onRaceFinish(); } };
 }

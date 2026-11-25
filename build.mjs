@@ -9,7 +9,7 @@ const root = dirname(fileURLToPath(import.meta.url));
 const src = (f) => readFileSync(join(root, 'src', f), 'utf8');
 
 const THREE_CDN = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
-const ORDER = ['audio', 'kart', 'track', 'items', 'network', 'main'];
+const ORDER = ['audio', 'kart', 'track', 'items', 'network', 'tycoon', 'main'];
 
 const strip = (code) => code
   .split('\n')

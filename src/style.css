@@ -1179,3 +1179,118 @@ kbd {
   #finish-screen .standing-item { font-size: calc(12px * var(--fs, 1)); padding: 3px 8px; }
   #finish-screen .finish-buttons { gap: 8px; }
 }
+
+/* ===================================================================
+   🎲 積木大亨賽車：棋盤畫面
+   =================================================================== */
+#tycoon-ui { position: absolute; inset: 0; z-index: 24; pointer-events: none; font-weight: 800; }
+#tycoon-ui button { pointer-events: auto; }
+.ty-players {
+  position: absolute; top: max(8px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
+  display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; width: min(96%, 980px);
+}
+.ty-pl {
+  display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 14px;
+  background: rgba(10, 18, 40, 0.86); border: 3px solid var(--pc); color: #fff;
+  font-size: calc(15px * var(--fs, 1)); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  transition: transform 0.2s;
+}
+.ty-pl.now { transform: scale(1.08); box-shadow: 0 0 18px var(--pc); background: rgba(30, 40, 80, 0.95); }
+.ty-pl.out { opacity: 0.4; filter: grayscale(1); }
+.ty-ic { font-size: 1.3em; }
+.ty-nm { color: var(--pc); }
+.ty-co { color: #ffe066; font-variant-numeric: tabular-nums; }
+.ty-round {
+  align-self: center; padding: 6px 12px; border-radius: 999px; background: rgba(255, 140, 0, 0.9);
+  color: #fff; font-size: calc(14px * var(--fs, 1));
+}
+.ty-log {
+  position: absolute; left: 12px; top: calc(70px * var(--fs, 1)); width: min(40%, 360px);
+  display: flex; flex-direction: column; gap: 4px; font-size: calc(13px * var(--fs, 1)); color: #fff;
+  text-shadow: 0 2px 4px #000;
+}
+.ty-log div { background: rgba(10, 18, 40, 0.55); padding: 3px 10px; border-radius: 8px; }
+.ty-log div:first-child { background: rgba(10, 18, 40, 0.85); }
+.ty-panel {
+  position: absolute; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+  width: min(94%, 720px); padding: 14px 18px; border-radius: 20px;
+  background: rgba(10, 18, 40, 0.92); border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); text-align: center;
+}
+.ty-msg {
+  color: #fff; font-size: calc(19px * var(--fs, 1)); line-height: 1.4; margin-bottom: 10px;
+  border-left: 6px solid var(--pc, #fff); padding-left: 10px; text-align: left;
+}
+.ty-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; min-height: 44px; }
+.ty-btns .primary-btn, .ty-btns .secondary-btn { font-size: calc(17px * var(--fs, 1)); padding: 10px 22px; letter-spacing: 1px; }
+.ty-thinking { color: #9ec0f5; font-size: calc(16px * var(--fs, 1)); align-self: center; }
+.ty-quit {
+  position: absolute; right: 12px; bottom: max(14px, env(safe-area-inset-bottom)); width: 44px; height: 44px;
+  border-radius: 12px; border: 2px solid rgba(255, 255, 255, 0.3); background: rgba(10, 18, 40, 0.8); color: #fff; font-size: 20px;
+}
+.ty-dice {
+  position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); display: flex; gap: 18px;
+  font-size: calc(110px * var(--fs, 1)); line-height: 1; color: #fff;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 8px 0 rgba(0, 0, 0, 0.4);
+}
+.ty-die { animation: diceShake 0.14s linear infinite; }
+.ty-dice.land .ty-die { animation: diceLand 0.4s cubic-bezier(.2, 1.6, .4, 1); color: #ffe066; }
+@keyframes diceShake { 50% { transform: rotate(14deg) translateY(-8px); } }
+@keyframes diceLand { 0% { transform: scale(1.8); } 100% { transform: scale(1); } }
+.ty-card {
+  position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%);
+  width: min(78%, 340px); padding: 20px; border-radius: 22px; text-align: center; color: #fff;
+  background: linear-gradient(160deg, #7c3aed, #db2777); border: 4px solid #fde047;
+  box-shadow: 0 0 40px rgba(253, 224, 71, 0.6);
+}
+.ty-card.pop { animation: cardFlip 0.55s cubic-bezier(.2, 1.4, .4, 1); }
+@keyframes cardFlip { 0% { transform: translate(-50%, -50%) rotateY(90deg) scale(0.6); } 100% { transform: translate(-50%, -50%) rotateY(0) scale(1); } }
+.ty-card-ic { font-size: calc(64px * var(--fs, 1)); }
+.ty-card-t { font-size: calc(26px * var(--fs, 1)); margin: 6px 0; color: #fde047; }
+.ty-card-x { font-size: calc(17px * var(--fs, 1)); }
+.ty-float {
+  position: absolute; transform: translate(-50%, -50%); white-space: nowrap; pointer-events: none;
+  font-size: calc(20px * var(--fs, 1)); font-weight: 900; -webkit-text-stroke: 1.5px rgba(0, 0, 0, 0.8); paint-order: stroke fill;
+  animation: tyFloat 1.6s ease-out forwards;
+}
+@keyframes tyFloat { 0% { opacity: 0; margin-top: 10px; } 15% { opacity: 1; } 100% { opacity: 0; margin-top: -60px; } }
+#tycoon-end { justify-content: center; z-index: 26; background: rgba(8, 14, 30, 0.7); }
+.ty-end-card { width: min(94%, 620px); display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.ty-rank { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+.ty-rank-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px;
+  background: rgba(16, 28, 56, 0.94); border-left: 6px solid var(--pc); color: #fff; font-size: calc(15px * var(--fs, 1));
+}
+.ty-rank-row.me { background: rgba(255, 204, 0, 0.18); }
+.ty-rank-row strong { color: #ffe066; }
+@media (orientation: portrait) {
+  .ty-pl { padding: 4px 8px; gap: 5px; font-size: calc(13px * var(--fs, 1)); }
+  .ty-log { top: auto; bottom: calc(150px * var(--fs, 1)); width: 70%; }
+  .ty-msg { font-size: calc(16px * var(--fs, 1)); }
+}
+@media (max-height: 500px) {
+  .ty-log { display: none; }
+  .ty-panel { padding: 8px 12px; }
+  .ty-msg { font-size: calc(15px * var(--fs, 1)); margin-bottom: 6px; }
+  .ty-btns .primary-btn, .ty-btns .secondary-btn { padding: 7px 16px; font-size: calc(15px * var(--fs, 1)); }
+}
+/* 大亨賽車：手機直拿 → 玩家卡 2×2 小格；手機橫放 → 玩家卡左邊直列 */
+@media (orientation: portrait) {
+  .ty-players { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: calc(100% - 16px); }
+  .ty-pl { font-size: calc(12px * var(--fs, 1)); padding: 4px 7px; gap: 4px; border-width: 2px; }
+  .ty-pl .ty-nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+  .ty-pl.now { transform: none; }
+  .ty-round { grid-column: 1 / -1; justify-self: center; padding: 2px 12px; font-size: calc(12px * var(--fs, 1)); }
+  .ty-log { display: none; }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .ty-players { left: max(8px, env(safe-area-inset-left)); transform: none; top: 8px; flex-direction: column; flex-wrap: nowrap; width: 200px; align-items: stretch; gap: 5px; }
+  .ty-pl { font-size: calc(12px * var(--fs, 1)); padding: 4px 8px; gap: 5px; border-width: 2px; }
+  .ty-pl .ty-nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+  .ty-pl.now { transform: none; }
+  .ty-round { align-self: flex-start; padding: 2px 10px; font-size: calc(12px * var(--fs, 1)); }
+  .ty-panel { left: calc(max(8px, env(safe-area-inset-left)) + 212px); right: 64px; transform: none; width: auto; }
+}
+@media (orientation: portrait) {
+  .ty-panel { left: 10px; right: 62px; transform: none; width: auto; }
+}
