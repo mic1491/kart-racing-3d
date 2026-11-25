@@ -482,12 +482,16 @@ export class SoundEngine {
   }
 
   // 倒數「嗶、嗶、嗶」＋ GO 的長音和弦
+  // 倒數：短促的和弦重擊（根音＋五度＋八度）＋鼓
   playCountdown(n) {
     if (!this.initialized || this.muted) return;
     if (this._sample('countdown')) return;
-    this.playBeep(n === 1 ? 660 : 587, 0.22, 0.2);
-    this.playBeep(n === 1 ? 1320 : 1174, 0.18, 0.06);
+    const t = this.ctx.currentTime;
+    const root = n === 1 ? 659 : 587;
+    for (const m of [1, 1.5, 2]) this._rich(root * m, t, 0.22, 0.045, 'bright');
+    this._tom(t, n === 1 ? 160 : 130, 0.24);
   }
+
 
   playGo() {
     if (!this.initialized || this.muted) return;
@@ -511,11 +515,13 @@ export class SoundEngine {
   }
 
   // 甩尾起跳的「吱！」
+  // 甩尾起跳的「吱！」：短促輪胎摩擦＋輕快的彈跳音
   playDriftChirp() {
     if (!this.initialized || this.muted) return;
     this._noiseBurst(0.22, 0.14, 2600, 1600);
-    this.playBeep(420, 0.06, 0.05);
+    this._rich(420, this.ctx.currentTime, 0.06, 0.045, 'pluck');
   }
+
 
   updateDrive(speedRatio, isDrifting, isBoosting, active) {
     if (!this.initialized || this.muted) return;
@@ -552,27 +558,63 @@ export class SoundEngine {
     this.driftGain.gain.setTargetAtTime(targetDrift, now, 0.04);
   }
 
-  playBeep(freq = 660, duration = 0.14, gainVal = 0.12) {
+  // 通用提示音（已不是單音）：基音＋八度＋微走音第二層＋起音「喀」＋一點回音
+  playBeep(freq = 660, duration = 0.14, gainVal = 0.12, timbre = 'pluck') {
     if (!this.initialized || this.muted) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(freq, now);
-    gain.gain.setValueAtTime(gainVal, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-    osc.connect(gain);
-    gain.connect(this.out);
-    osc.start(now);
-    osc.stop(now + duration);
+    this._rich(freq, this.ctx.currentTime, duration, gainVal, timbre);
   }
+
+  // 多層合成音色：pluck（清脆按鍵）、chime（鈴聲／金幣）、bright（街機亮音）
+  _rich(freq, t, dur, vol, timbre = 'pluck') {
+    this._ensureMusicBus();
+    const out = this.ctx.createGain();
+    out.gain.value = 1;
+    out.connect(this.out);
+    if (this.delay) {
+      const send = this.ctx.createGain();
+      send.gain.value = timbre === 'chime' ? 0.35 : 0.18;
+      out.connect(send);
+      send.connect(this.delay);
+    }
+    const layers = timbre === 'chime'
+      ? [['sine', 1, 1, 0], ['sine', 2, 0.45, 0], ['sine', 3.01, 0.22, 0], ['triangle', 0.5, 0.25, 0]]
+      : timbre === 'bright'
+        ? [['square', 1, 0.6, -7], ['square', 1, 0.6, 7], ['sawtooth', 2, 0.25, 0], ['triangle', 0.5, 0.4, 0]]
+        : [['triangle', 1, 1, 0], ['square', 2, 0.18, 5], ['sine', 1, 0.5, -9], ['sine', 3, 0.08, 0]];
+    const filt = this.ctx.createBiquadFilter();
+    filt.type = 'lowpass';
+    filt.frequency.setValueAtTime(Math.min(16000, freq * (timbre === 'chime' ? 10 : 7)), t);
+    filt.frequency.exponentialRampToValueAtTime(Math.max(400, freq * 1.5), t + dur + 0.1);
+    filt.connect(out);
+    for (const [type, mul, v, det] of layers) {
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(freq * mul, t);
+      o.detune.value = det;
+      const len = timbre === 'chime' ? dur * (mul > 1.5 ? 1.2 : 2.2) : dur;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol * v, t + 0.004);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + len + 0.05);
+      o.connect(g);
+      g.connect(filt);
+      o.start(t);
+      o.stop(t + len + 0.08);
+    }
+    // 起音的「喀」：讓聲音有顆粒感、不會悶
+    if (this._noiseBuf) this._noise(t, 0.015, vol * 0.5, 'highpass', Math.min(9000, freq * 4), out);
+  }
+
 
   playCoin() {
     if (!this.initialized || this.muted) return;
     if (this._sample('coin', 0.6)) return;
-    this.playBeep(988, 0.07, 0.09);
-    setTimeout(() => this.playBeep(1318, 0.12, 0.09), 55);
+    const t = this.ctx.currentTime;
+    this._rich(988, t, 0.08, 0.09, 'chime');
+    this._rich(1319, t + 0.06, 0.25, 0.1, 'chime');
+    this._rich(2637, t + 0.06, 0.15, 0.025, 'chime'); // 閃亮泛音
   }
+
 
   playBoost() {
     if (!this.initialized || this.muted) return;
@@ -587,193 +629,273 @@ export class SoundEngine {
     gain.gain.setValueAtTime(0.11, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.72);
     this._noiseBurst(0.35, 0.8, 400, 3800);
+    // 第二層（走音鋸齒）＋超低音，噴射更厚實
+    const o2 = this.ctx.createOscillator();
+    const g2 = this.ctx.createGain();
+    o2.type = 'sawtooth';
+    o2.detune.value = 18;
+    o2.frequency.setValueAtTime(160, now);
+    o2.frequency.exponentialRampToValueAtTime(560, now + 0.35);
+    o2.frequency.exponentialRampToValueAtTime(220, now + 0.7);
+    g2.gain.setValueAtTime(0.08, now);
+    g2.gain.exponentialRampToValueAtTime(0.001, now + 0.72);
+    o2.connect(g2);
+    g2.connect(this.out);
+    o2.start(now);
+    o2.stop(now + 0.75);
+    this._kickAt(now, 0.3);
     osc.connect(gain);
     gain.connect(this.out);
     osc.start(now);
     osc.stop(now + 0.75);
   }
 
+  // 小噴：上滑的雙層鋸齒＋「咻」
   playMiniBoost() {
     if (!this.initialized || this.muted) return;
     const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(320, now);
-    osc.frequency.exponentialRampToValueAtTime(720, now + 0.22);
-    gain.gain.setValueAtTime(0.09, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
-    osc.connect(gain);
-    gain.connect(this.out);
-    osc.start(now);
-    osc.stop(now + 0.25);
+    for (const [type, det, v] of [['sawtooth', -10, 0.05], ['sawtooth', 10, 0.05], ['sine', 0, 0.07]]) {
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = type;
+      o.detune.value = det;
+      o.frequency.setValueAtTime(300, now);
+      o.frequency.exponentialRampToValueAtTime(820, now + 0.22);
+      g.gain.setValueAtTime(v, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+      o.connect(g);
+      g.connect(this.out);
+      o.start(now);
+      o.stop(now + 0.28);
+    }
+    this._noiseBurst(0.22, 0.35, 600, 4500);
   }
 
+
   // 道具轉盤：「噠噠噠噠…叮！」
+  // 道具轉盤：「噠噠噠噠…」加速的清脆按鍵聲 →「叮～」和弦
   playItemPickup() {
     if (!this.initialized || this.muted) return;
     if (this._sample('item')) return;
-    for (let k = 0; k < 9; k++) setTimeout(() => this.playBeep(700 + k * 70, 0.04, 0.07), k * 45 + k * k * 4);
-    setTimeout(() => { this.playBeep(1568, 0.3, 0.13); this.playBeep(2093, 0.25, 0.05); }, 9 * 45 + 81 * 4 + 20);
+    const t0 = this.ctx.currentTime;
+    let t = 0;
+    for (let k = 0; k < 9; k++) {
+      this._rich(700 + k * 70, t0 + t, 0.04, 0.06, 'pluck');
+      t += 0.045 + k * 0.012;
+    }
+    for (const f of [1568, 1976, 2349]) this._rich(f, t0 + t + 0.02, 0.35, 0.06, 'chime');
   }
 
+
+  // 飛彈發射：點火「轟」＋下滑的雙鋸齒＋噴射氣流
   playMissileLaunch() {
     if (!this.initialized || this.muted) return;
     const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(480, now);
-    osc.frequency.exponentialRampToValueAtTime(140, now + 0.32);
-    gain.gain.setValueAtTime(0.12, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-    osc.connect(gain);
-    gain.connect(this.out);
-    osc.start(now);
-    osc.stop(now + 0.36);
+    for (const det of [-15, 15]) {
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = 'sawtooth';
+      o.detune.value = det;
+      o.frequency.setValueAtTime(520, now);
+      o.frequency.exponentialRampToValueAtTime(120, now + 0.4);
+      g.gain.setValueAtTime(0.07, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.42);
+      o.connect(g);
+      g.connect(this.out);
+      o.start(now);
+      o.stop(now + 0.45);
+    }
+    this._kickAt(now, 0.35);
+    this._noiseBurst(0.3, 0.6, 3000, 300);
   }
 
+
+  // 磁鐵：兩層走音的嗡嗡聲＋顫音＋往上掃的濾波
   playMagnet() {
     if (!this.initialized || this.muted) return;
     const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(240, now);
-    osc.frequency.exponentialRampToValueAtTime(880, now + 0.45);
-    gain.gain.setValueAtTime(0.12, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.48);
-    osc.connect(gain);
-    gain.connect(this.out);
-    osc.start(now);
-    osc.stop(now + 0.5);
+    const f = this.ctx.createBiquadFilter();
+    f.type = 'lowpass';
+    f.Q.value = 6;
+    f.frequency.setValueAtTime(300, now);
+    f.frequency.exponentialRampToValueAtTime(2800, now + 0.6);
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(0.1, now + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+    f.connect(g);
+    g.connect(this.out);
+    const lfo = this.ctx.createOscillator();
+    const lg = this.ctx.createGain();
+    lfo.frequency.value = 14;
+    lg.gain.value = 25;
+    lfo.connect(lg);
+    for (const [mul, type] of [[1, 'sawtooth'], [1.007, 'sawtooth'], [0.5, 'square']]) {
+      const o = this.ctx.createOscillator();
+      o.type = type;
+      o.frequency.value = 180 * mul;
+      lg.connect(o.frequency);
+      o.connect(f);
+      o.start(now);
+      o.stop(now + 0.72);
+    }
+    lfo.start(now);
+    lfo.stop(now + 0.72);
   }
 
+
+  // 閃電：「劈啪」爆裂＋雷鳴低頻＋電流嗡嗡
   playLightning() {
     if (!this.initialized || this.muted) return;
     const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(1100, now);
-    osc.frequency.exponentialRampToValueAtTime(80, now + 0.42);
-    gain.gain.setValueAtTime(0.16, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
-    osc.connect(gain);
-    gain.connect(this.out);
-    osc.start(now);
-    osc.stop(now + 0.46);
+    this._noise(now, 0.12, 0.5, 'highpass', 3000, this.out);
+    for (let k = 0; k < 5; k++) this._noise(now + 0.03 + k * 0.035, 0.03, 0.3, 'highpass', 5000, this.out);
+    this._noise(now + 0.05, 1.2, 0.35, 'lowpass', 220, this.out); // 遠方雷鳴
+    this._kickAt(now, 0.5);
+    for (const det of [-20, 20]) {
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = 'sawtooth';
+      o.detune.value = det;
+      o.frequency.setValueAtTime(1400, now);
+      o.frequency.exponentialRampToValueAtTime(70, now + 0.45);
+      g.gain.setValueAtTime(0.06, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      o.connect(g);
+      g.connect(this.out);
+      o.start(now);
+      o.stop(now + 0.52);
+    }
   }
 
+
+  // 被擊中：「碰！」低音＋金屬撞擊碎裂＋下墜的雙方波
   playHit() {
     if (!this.initialized || this.muted) return;
     if (this._sample('hit')) return;
     const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(190, now);
-    osc.frequency.exponentialRampToValueAtTime(52, now + 0.35);
+    for (const [type, det] of [['square', -12], ['sawtooth', 12]]) {
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = type;
+      o.detune.value = det;
+      o.frequency.setValueAtTime(200, now);
+      o.frequency.exponentialRampToValueAtTime(48, now + 0.35);
+      g.gain.setValueAtTime(0.09, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+      o.connect(g);
+      g.connect(this.out);
+      o.start(now);
+      o.stop(now + 0.4);
+    }
     this.playThump(0.55);
-    gain.gain.setValueAtTime(0.16, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
-    osc.connect(gain);
-    gain.connect(this.out);
-    osc.start(now);
-    osc.stop(now + 0.4);
+    this._noise(now, 0.25, 0.3, 'bandpass', 2400, this.out); // 金屬碎裂
   }
 
+
+  // 護盾：閃閃發亮的和弦（三層鈴聲＋顫音）＋上升的光
   playShield() {
     if (!this.initialized || this.muted) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(440, now);
-    osc.frequency.exponentialRampToValueAtTime(920, now + 0.28);
-    gain.gain.setValueAtTime(0.11, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
-    osc.connect(gain);
-    gain.connect(this.out);
-    osc.start(now);
-    osc.stop(now + 0.34);
+    const t = this.ctx.currentTime;
+    [784, 988, 1175, 1568].forEach((f, k) => this._rich(f, t + k * 0.05, 0.45, 0.05, 'chime'));
+    this._noiseBurst(0.08, 0.5, 2500, 8000);
   }
 
+
+  // 喇叭：真正汽車喇叭是「兩個音同時響」→ 兩組方波（大三度）＋輕微嗡嗡
   playHorn() {
     if (!this.initialized || this.muted) return;
     const now = this.ctx.currentTime;
-    // Playful dual-tone kart horn (beep-beep!)
-    [0, 0.16].forEach((offset) => {
-      [440, 554.37].forEach((freq) => {
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(freq, now + offset);
-        gain.gain.setValueAtTime(0.06, now + offset);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.12);
-        osc.connect(gain);
-        gain.connect(this.out);
-        osc.start(now + offset);
-        osc.stop(now + offset + 0.13);
-      });
-    });
+    const f = this.ctx.createBiquadFilter();
+    f.type = 'lowpass';
+    f.frequency.value = 1800;
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(0.09, now + 0.02);
+    g.gain.setValueAtTime(0.09, now + 0.16);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+    g.gain.setValueAtTime(0.0001, now + 0.24);
+    g.gain.exponentialRampToValueAtTime(0.09, now + 0.26);
+    g.gain.setValueAtTime(0.09, now + 0.5);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.58);
+    f.connect(g);
+    g.connect(this.out);
+    for (const [fr, det] of [[440, -6], [440, 6], [554, -4], [554, 4]]) {
+      const o = this.ctx.createOscillator();
+      o.type = 'square';
+      o.frequency.value = fr;
+      o.detune.value = det;
+      o.connect(f);
+      o.start(now);
+      o.stop(now + 0.6);
+    }
   }
 
+
+  // 氣球爆破：「啵！」爆裂噪音＋快速下墜的音＋碎片聲
   playBalloonPop() {
     if (!this.initialized || this.muted) return;
     const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(620, now);
-    osc.frequency.exponentialRampToValueAtTime(95, now + 0.11);
-    gain.gain.setValueAtTime(0.22, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-    osc.connect(gain);
-    gain.connect(this.out);
-    osc.start(now);
-    osc.stop(now + 0.13);
+    this._noise(now, 0.08, 0.55, 'highpass', 1200, this.out);
+    this._noise(now, 0.18, 0.25, 'bandpass', 500, this.out);
+    for (const [f0, type] of [[900, 'sine'], [450, 'triangle']]) {
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(f0, now);
+      o.frequency.exponentialRampToValueAtTime(f0 * 0.2, now + 0.12);
+      g.gain.setValueAtTime(0.12, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+      o.connect(g);
+      g.connect(this.out);
+      o.start(now);
+      o.stop(now + 0.16);
+    }
   }
 
+
+  // 空中特技：上升的鈴聲琶音＋旋轉的「咻～」
   playTrick() {
     if (!this.initialized || this.muted) return;
-    const now = this.ctx.currentTime;
-    [523.25, 659.25, 783.99, 1046.5].forEach((f, idx) => {
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(f, now + idx * 0.05);
-      gain.gain.setValueAtTime(0.11, now + idx * 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.18);
-      osc.connect(gain);
-      gain.connect(this.out);
-      osc.start(now + idx * 0.05);
-      osc.stop(now + idx * 0.05 + 0.2);
-    });
+    const t = this.ctx.currentTime;
+    [523, 659, 784, 1047, 1319].forEach((f, k) => this._rich(f, t + k * 0.055, 0.18, 0.06, k === 4 ? 'chime' : 'bright'));
+    this._noiseBurst(0.18, 0.4, 500, 5000);
   }
 
+
+  // 水花：「嘩啦」水聲（濾波往下掃）＋幾個泡泡「啵啵」聲
   playSplash() {
     if (!this.initialized || this.muted) return;
     const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(300, now);
-    osc.frequency.exponentialRampToValueAtTime(620, now + 0.12);
-    osc.frequency.exponentialRampToValueAtTime(180, now + 0.32);
-    gain.gain.setValueAtTime(0.13, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-    osc.connect(gain);
-    gain.connect(this.out);
-    osc.start(now);
-    osc.stop(now + 0.36);
+    this._noiseBurst(0.45, 0.6, 3500, 400);
+    this._noise(now, 0.3, 0.25, 'lowpass', 600, this.out);
+    for (let k = 0; k < 5; k++) {
+      const t = now + 0.1 + k * 0.07 + Math.random() * 0.05;
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      const f0 = 400 + Math.random() * 500;
+      o.type = 'sine';
+      o.frequency.setValueAtTime(f0, t);
+      o.frequency.exponentialRampToValueAtTime(f0 * 2.2, t + 0.05);
+      g.gain.setValueAtTime(0.06, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+      o.connect(g);
+      g.connect(this.out);
+      o.start(t);
+      o.stop(t + 0.08);
+    }
   }
 
+
+  // 過圈：上升的和弦琶音（亮音）＋最後一個長長的鈴聲和弦
   playLapChime() {
     if (!this.initialized || this.muted) return;
     if (this._sample('lap')) return;
-    [[784, 0], [988, 90], [1175, 180], [1568, 270]].forEach(([f, ms]) => setTimeout(() => this.playBeep(f, ms === 270 ? 0.4 : 0.12, 0.13), ms));
+    const t = this.ctx.currentTime;
+    [784, 988, 1175].forEach((f, k) => this._rich(f, t + k * 0.09, 0.12, 0.08, 'bright'));
+    for (const f of [1568, 1976, 2349]) this._rich(f, t + 0.27, 0.5, 0.05, 'chime');
   }
+
 
   playFireworkPop() {
     if (!this.initialized || this.muted) return;

@@ -1059,3 +1059,57 @@ kbd {
 }
 @keyframes gpFocusPulse { 50% { outline-color: #fff; } }
 .gp-press { transform: scale(0.94) !important; }
+
+/* === 讓出空間給 3D 車手／頒獎台：不再被選單或標題擋住 === */
+/* 手機橫放：大廳選單靠右（約 6 成寬），左邊留給車手 */
+@media (max-height: 560px) and (orientation: landscape) {
+  #start-screen { align-items: flex-end; padding-right: max(10px, env(safe-area-inset-right)); }
+  #start-screen .lobby-header { width: 62%; }
+  #start-screen .setup-summary { border-radius: 16px; }
+  #start-screen .lobby-console { width: 62%; max-width: 62%; }
+  #start-screen .tab-btn { font-size: calc(12px * var(--fs, 1)); padding: 8px 2px; }
+}
+
+/* 頒獎畫面 ── 橫向螢幕：標題＋成績表放右邊一欄，頒獎台在左邊 */
+@media (orientation: landscape) {
+  #finish-screen {
+    align-items: flex-end;
+    justify-content: center;
+    gap: 10px;
+    padding-right: max(16px, env(safe-area-inset-right));
+    background: linear-gradient(90deg, rgba(10, 18, 38, 0) 0%, rgba(10, 18, 38, 0) 45%, rgba(10, 18, 38, 0.78) 62%, rgba(10, 18, 38, 0.9) 100%);
+  }
+  #finish-screen .finish-top-header,
+  #finish-screen .finish-bottom-panel { width: min(44%, 520px); }
+  #finish-screen .results-card { width: 100%; margin: 8px 0 12px; }
+  #finish-screen .game-title { font-size: calc(clamp(20px, 3.2vw, 34px) * var(--fs, 1)); }
+}
+/* 頒獎畫面 ── 矮的橫向螢幕（手機）：成績表精簡，按鈕縮小 */
+@media (orientation: landscape) and (max-height: 560px) {
+  #finish-screen { overflow-y: auto; justify-content: flex-start; padding-top: 8px; }
+  #finish-screen .finish-subtitle, #finish-screen .unlock-banner { display: none; }
+  #finish-screen .results-card { padding: 8px 12px; margin: 4px 0 8px; }
+  #finish-screen .result-row { padding: 3px 0; }
+  #finish-screen .standing-item { padding: 4px 9px; }
+  #finish-screen .primary-btn, #finish-screen .secondary-btn { padding: 8px 18px; font-size: calc(14px * var(--fs, 1)); }
+}
+/* 頒獎畫面 ── 直向螢幕（手機直拿）：成績表只留名次，讓中間有空間 */
+@media (orientation: portrait) {
+  #finish-screen .result-row:nth-child(3) { display: none; }
+  #finish-screen .results-card { padding: 10px 14px; margin: 8px 0 10px; }
+  #finish-screen .standing-item { padding: 4px 10px; }
+}
+
+/* 寬螢幕（筆電、桌機）：大廳選單也靠右，左邊大大的展示車手 */
+@media (orientation: landscape) and (min-aspect-ratio: 13/9) and (min-height: 561px) {
+  #start-screen { align-items: flex-end; justify-content: center; gap: 14px; padding-right: max(20px, env(safe-area-inset-right)); }
+  #start-screen .lobby-header { width: min(60%, 860px); }
+  #start-screen .lobby-console { width: min(60%, 860px); max-width: min(60%, 860px); }
+  #start-screen .tab-body { max-height: 52vh; max-height: 52dvh; }
+}
+@media (orientation: landscape) and (max-height: 560px) {
+  #finish-screen .result-row:nth-child(1), #finish-screen .result-row:nth-child(3), #finish-screen .title-badge { display: none; }
+  #finish-screen .standings-list { gap: 4px; margin-top: 6px; }
+  #finish-screen .standing-item { font-size: calc(12px * var(--fs, 1)); padding: 3px 8px; }
+  #finish-screen .finish-buttons { gap: 8px; }
+}
