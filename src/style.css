@@ -695,18 +695,34 @@ kbd {
 .speed-value { font-size: calc(34px * var(--hfs, 1)); font-weight: 900; font-style: italic; line-height: 1; font-variant-numeric: tabular-nums; }
 .speed-unit { font-size: calc(10px * var(--hfs, 1)); font-weight: 800; color: #4ce0ff; letter-spacing: 1.5px; }
 
-/* Touch Controls：底部正中央超大左右轉向板 ＋ 右側三鍵排在轉向板正上方（零重疊、不擋左右鍵！） */
+/* ===================================================================
+   📱 手機觸控版面（直拿、橫放各一套，所有元素都有固定位置、互不重疊）
+   - 左下：大轉向板　- 右下：三顆鍵弧形排列（甩尾在最角落、道具在左、煞車在上）
+   - 道具欄：在轉向板與按鍵之間（橫放）／轉向板上方（直拿）
+   =================================================================== */
 #hud { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 #touch-controls { position: absolute; inset: 0; pointer-events: none; z-index: 22; touch-action: none; }
+#hud.touch-on {
+  --edge: max(12px, env(safe-area-inset-left, 0px));
+  --edge-r: max(12px, env(safe-area-inset-right, 0px));
+  --edge-b: max(12px, env(safe-area-inset-bottom, 0px));
+  --big: clamp(58px, 15vmin, 72px);
+  --small: clamp(46px, 12vmin, 56px);
+  --gap: 10px;
+  --cluster-w: calc(var(--big) * 2 + var(--gap));
+  --cluster-h: calc(var(--big) + var(--gap) + var(--small));
+  --pad-w: min(300px, 36vw);
+  --pad-h: clamp(84px, 24vmin, 112px);
+  --map: 96px;
+}
 .steer-pad {
   position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: max(20px, calc(env(safe-area-inset-bottom, 0px) + 12px));
-  width: min(76vw, 420px);
-  height: clamp(92px, 18vh, 126px);
+  left: var(--edge, 12px);
+  bottom: var(--edge-b, 12px);
+  width: var(--pad-w, 300px);
+  height: var(--pad-h, 100px);
   display: flex;
-  border-radius: 30px;
+  border-radius: 28px;
   background: rgba(14, 24, 52, 0.56);
   border: 3px solid rgba(255, 255, 255, 0.55);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.38);
@@ -721,7 +737,7 @@ kbd {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(38px, 8.5vw, 54px);
+  font-size: calc(var(--pad-h, 100px) * 0.42);
   color: rgba(255, 255, 255, 0.9);
   transition: background 0.08s;
 }
@@ -742,21 +758,20 @@ kbd {
 }
 .steer-pad.active .steer-knob { opacity: 0.92; }
 
-/* 右側三鍵往上直排，整體抬高到左右轉向板上方，絕不擋到左右鍵！ */
+/* 右下三鍵：固定在一個「弧形」方塊裡（寬 = 2 顆大鍵，高 = 大鍵 + 小鍵） */
 .touch-right {
   position: absolute;
-  right: max(12px, calc(env(safe-area-inset-right, 0px) + 8px));
-  bottom: calc(max(20px, calc(env(safe-area-inset-bottom, 0px) + 12px)) + clamp(92px, 18vh, 126px) + 14px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 9px;
-  pointer-events: auto;
+  right: var(--edge-r, 12px);
+  bottom: var(--edge-b, 12px);
+  width: var(--cluster-w, 136px);
+  height: var(--cluster-h, 124px);
+  pointer-events: none;
   touch-action: none;
 }
-#btn-brake { order: 1; margin-bottom: 0; }
-#btn-use { order: 2; }
-#btn-drift { order: 3; }
+.touch-right .touch-btn { position: absolute; pointer-events: auto; }
+#btn-drift { right: 0; bottom: 0; }
+#btn-use { right: calc(var(--big, 64px) + var(--gap, 10px)); bottom: calc(var(--big, 64px) * 0.28); }
+#btn-brake { right: calc(var(--big, 64px) * 0.12); bottom: calc(var(--big, 64px) + var(--gap, 10px)); }
 .touch-btn {
   border-radius: 50%;
   border: 2.5px solid rgba(255, 255, 255, 0.7);
@@ -772,16 +787,8 @@ kbd {
   -webkit-tap-highlight-color: transparent;
   box-shadow: 0 4px 0 rgba(0, 0, 0, 0.38);
 }
-.touch-btn.big {
-  width: 58px;
-  height: 58px;
-  font-size: 13px;
-}
-.touch-btn.small {
-  width: 48px;
-  height: 48px;
-  font-size: 11px;
-}
+.touch-btn.big { width: var(--big, 64px); height: var(--big, 64px); font-size: calc(var(--big, 64px) * 0.22); }
+.touch-btn.small { width: var(--small, 50px); height: var(--small, 50px); font-size: calc(var(--small, 50px) * 0.22); }
 .touch-btn.pressed { transform: scale(0.92); filter: brightness(1.35); box-shadow: 0 0 18px rgba(255, 255, 255, 0.75); }
 .touch-btn.accent-cyan { border-color: #00e5ff; background: rgba(0, 150, 200, 0.8); }
 .touch-btn.accent-orange { border-color: #ffaa00; background: rgba(235, 115, 0, 0.88); }
@@ -789,23 +796,71 @@ kbd {
 .touch-btn.has-item { animation: itemPulse 0.9s ease-in-out infinite; }
 @keyframes itemPulse { 50% { box-shadow: 0 0 22px #ffcc00, 0 0 4px #fff; } }
 
-/* 觸控模式時，時速表與道具列移到上方清淨區，絕不擋按鈕！ */
-#hud.touch-on .p-speed-box { bottom: auto; top: 54px; right: max(12px, env(safe-area-inset-right, 12px)); transform: scale(0.84); transform-origin: top right; }
-#hud.touch-on .p-bottom-center { bottom: auto; top: 50px; width: min(210px, 52vw); }
-#hud.touch-on .nitro-slot { width: 46px; height: 46px; }
-/* 手機直向：左右鍵正中央超大塊，右側三鍵整齊排在它正上方！ */
-@media (max-width: 640px) {
-  #hud.touch-on .steer-pad {
-    left: 50%;
-    transform: translateX(-50%);
-    width: 88vw;
-    height: 110px;
-    bottom: max(22px, calc(env(safe-area-inset-bottom, 0px) + 14px));
+/* 手機頂列：只留 暫停、靜音、觸控開關（重新開始／回大廳在暫停選單裡） */
+#hud.touch-on #horn-btn, #hud.touch-on #restart-btn, #hud.touch-on #menu-btn { display: none; }
+#hud.touch-on .hud-actions button { width: 32px; height: 32px; font-size: 14px; }
+#hud.touch-on #minimap { top: 8px; right: var(--edge-r, 12px); width: var(--map); height: var(--map); }
+#hud.touch-on .p-top-left { top: 8px; left: var(--edge, 12px); }
+#hud.touch-on .p-speed-box { min-width: 0; padding: 4px 10px; }
+#hud.touch-on .speed-value { font-size: calc(24px * var(--hfs, 1)); }
+
+/* ---- 橫放 ---- */
+@media (orientation: landscape) {
+  /* 計時列放在小地圖左邊 */
+  #hud.touch-on .hud-global-top { top: 8px; left: auto; right: calc(var(--edge-r, 12px) + var(--map) + 10px); transform: none; }
+  /* 時速表：小地圖正下方 */
+  #hud.touch-on .p-speed-box { top: calc(8px + var(--map) + 8px); bottom: auto; right: var(--edge-r, 12px); }
+  /* 道具欄：轉向板和三鍵之間的底部 */
+  #hud.touch-on .p-bottom-center {
+    top: auto; bottom: var(--edge-b, 12px); transform: none;
+    left: calc(var(--edge, 12px) + var(--pad-w) + 12px);
+    right: calc(var(--edge-r, 12px) + var(--cluster-w) + 12px);
+    width: auto; align-items: center;
   }
-  #hud.touch-on .touch-right {
-    bottom: calc(max(22px, calc(env(safe-area-inset-bottom, 0px) + 14px)) + 124px);
-    gap: 9px;
+  #hud.touch-on .gauge-wrap { max-width: 220px; }
+  /* 中間的提示框不要伸到右邊小地圖、時速表 */
+  #hud.touch-on .status-alert { max-width: calc(100% - 2 * (var(--map) + 30px)); top: 34%; }
+  #hud.touch-on .p-banner { top: 21%; }
+}
+@media (orientation: landscape) and (max-height: 430px) {
+  #hud.touch-on { --map: 84px; --pad-h: clamp(80px, 24vh, 100px); }
+  #hud.touch-on .status-alert { padding: 6px 14px 6px 8px; gap: 8px; }
+  #hud.touch-on .status-main { width: calc(52px * var(--hfs, 1)); height: calc(52px * var(--hfs, 1)); }
+  #hud.touch-on .status-title { font-size: calc(22px * var(--hfs, 1)); }
+  #hud.touch-on .status-hint { font-size: calc(13px * var(--hfs, 1)); }
+}
+
+/* ---- 直拿 ---- */
+@media (orientation: portrait) {
+  #hud.touch-on {
+    --map: 84px;
+    --pad-w: calc(100% - var(--edge, 12px) - var(--edge-r, 12px) - var(--cluster-w) - 12px);
+    --pad-h: clamp(90px, 13vh, 112px);
+    --big: clamp(58px, 16vw, 70px);
+    --small: clamp(46px, 13vw, 54px);
   }
+  /* 第二排：計時列（靠左）；時速表（靠右，在小地圖下方） */
+  #hud.touch-on .hud-global-top { top: calc(8px + var(--map) + 8px); left: var(--edge, 12px); right: auto; transform: none; }
+  #hud.touch-on #touch-toggle-btn { display: none; }
+  #hud.touch-on .p-speed-box { top: calc(8px + var(--map) + 8px); bottom: auto; right: var(--edge-r, 12px); }
+  /* 道具欄：轉向板正上方（左側），不碰右下三鍵 */
+  #hud.touch-on .p-bottom-center {
+    top: auto; transform: none;
+    bottom: calc(var(--edge-b, 12px) + var(--pad-h) + 10px);
+    left: var(--edge, 12px);
+    width: var(--pad-w);
+    align-items: center;
+  }
+  #hud.touch-on .p-banner { top: 19%; white-space: normal; width: 92%; text-align: center; }
+  /* 提示框改成橫的一條，比較矮，不會蓋到自己的車 */
+  #hud.touch-on .status-alert { top: 25%; flex-wrap: nowrap; max-width: 94%; padding: 8px 14px 8px 8px; gap: 10px; }
+  #hud.touch-on .status-title { font-size: calc(23px * var(--hfs, 1)); white-space: nowrap; }
+  #hud.touch-on .status-text { min-width: 0; flex: 1 1 auto; }
+  #hud.touch-on .status-hint { font-size: calc(13px * var(--hfs, 1)); }
+  #hud.touch-on .status-main { width: calc(54px * var(--hfs, 1)); height: calc(54px * var(--hfs, 1)); }
+  #hud.touch-on .status-more { display: none; }
+  #hud.touch-on .retire-countdown { top: calc(8px + var(--map) + 56px); }
+  #hud.touch-on .cine-stamp { top: 52%; font-size: calc(32px * var(--hfs, 1)); }
 }
 
 /* Finish Screen */
