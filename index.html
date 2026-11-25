@@ -702,18 +702,19 @@ kbd {
 .speed-value { font-size: calc(34px * var(--hfs, 1)); font-weight: 900; font-style: italic; line-height: 1; font-variant-numeric: tabular-nums; }
 .speed-unit { font-size: calc(10px * var(--hfs, 1)); font-weight: 800; color: #4ce0ff; letter-spacing: 1.5px; }
 
-/* Touch Controls：大轉向板 + 大圓按鍵（尺寸由 --touch 依螢幕自動決定） */
+/* Touch Controls：人體工學拇指弧形配置（直向 / 橫向手機都不重疊、不誤觸！） */
 #touch-controls { position: absolute; inset: 0; pointer-events: none; z-index: 12; }
 .steer-pad {
   position: absolute;
-  left: max(14px, env(safe-area-inset-left));
-  bottom: max(14px, env(safe-area-inset-bottom));
-  width: calc(var(--touch, 84px) * 2.7);
-  height: calc(var(--touch, 84px) * 1.3);
+  left: max(16px, calc(env(safe-area-inset-left, 0px) + 12px));
+  bottom: max(26px, calc(env(safe-area-inset-bottom, 0px) + 18px));
+  width: min(44vw, calc(var(--touch, 80px) * 2.35));
+  height: clamp(78px, calc(var(--touch, 80px) * 1.25), 116px);
   display: flex;
-  border-radius: calc(var(--touch, 84px) * 0.45);
-  background: rgba(14, 24, 52, 0.45);
-  border: 3px solid rgba(255, 255, 255, 0.45);
+  border-radius: 28px;
+  background: rgba(14, 24, 52, 0.52);
+  border: 3px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
   pointer-events: auto;
   touch-action: none;
   overflow: hidden;
@@ -723,57 +724,95 @@ kbd {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: calc(var(--touch, 84px) * 0.5);
-  color: rgba(255, 255, 255, 0.85);
+  font-size: clamp(28px, calc(var(--touch, 80px) * 0.44), 44px);
+  color: rgba(255, 255, 255, 0.88);
   transition: background 0.08s;
 }
-.steer-half.left { border-right: 2px dashed rgba(255, 255, 255, 0.3); }
-.steer-half.on { background: rgba(0, 229, 255, 0.45); color: #fff; }
+.steer-half.left { border-right: 2px dashed rgba(255, 255, 255, 0.32); }
+.steer-half.on { background: rgba(0, 229, 255, 0.48); color: #fff; }
 .steer-knob {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: calc(var(--touch, 84px) * 0.5);
-  height: calc(var(--touch, 84px) * 0.5);
-  margin: calc(var(--touch, 84px) * -0.25) 0 0 calc(var(--touch, 84px) * -0.25);
+  width: calc(var(--touch, 80px) * 0.46);
+  height: calc(var(--touch, 80px) * 0.46);
+  margin: calc(var(--touch, 80px) * -0.23) 0 0 calc(var(--touch, 80px) * -0.23);
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, #fff, #7ee8ff 60%, #0284c7);
   box-shadow: 0 0 14px rgba(0, 229, 255, 0.9);
   opacity: 0;
   pointer-events: none;
 }
-.steer-pad.active .steer-knob { opacity: 0.9; }
+.steer-pad.active .steer-knob { opacity: 0.92; }
+
+/* 右手拇指弧形區：甩尾＋道具並排大圓鍵，煞車收在上方不擋路也不誤觸！ */
 .touch-right {
   position: absolute;
-  right: max(14px, env(safe-area-inset-right));
-  bottom: max(14px, env(safe-area-inset-bottom));
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
+  right: max(16px, calc(env(safe-area-inset-right, 0px) + 12px));
+  bottom: max(26px, calc(env(safe-area-inset-bottom, 0px) + 18px));
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  grid-template-areas:
+    ". brake"
+    "drift use";
+  align-items: end;
+  justify-items: center;
+  gap: 10px 12px;
   pointer-events: auto;
 }
+#btn-brake { grid-area: brake; margin-bottom: 0; }
+#btn-drift { grid-area: drift; }
+#btn-use { grid-area: use; transform: translateY(-10px); }
 .touch-btn {
   border-radius: 50%;
-  border: 3px solid rgba(255, 255, 255, 0.6);
-  background: rgba(14, 24, 52, 0.72);
+  border: 3px solid rgba(255, 255, 255, 0.65);
+  background: rgba(14, 24, 52, 0.76);
   color: #fff;
   font-weight: 900;
   line-height: 1.1;
   cursor: pointer;
   touch-action: none;
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.38);
 }
-.touch-btn.big { width: calc(var(--touch, 84px) * 1.12); height: calc(var(--touch, 84px) * 1.12); font-size: calc(var(--touch, 84px) * 0.22); }
-.touch-btn.small { width: calc(var(--touch, 84px) * 0.78); height: calc(var(--touch, 84px) * 0.78); font-size: calc(var(--touch, 84px) * 0.17); margin-bottom: calc(var(--touch, 84px) * 0.6); }
-.touch-btn.pressed { transform: scale(0.92); filter: brightness(1.35); box-shadow: 0 0 18px rgba(255, 255, 255, 0.7); }
-.touch-btn.accent-cyan { border-color: #00e5ff; background: rgba(0, 150, 200, 0.7); }
-.touch-btn.accent-orange { border-color: #ffaa00; background: rgba(230, 110, 0, 0.78); }
+.touch-btn.big {
+  width: clamp(68px, min(20vw, calc(var(--touch, 80px) * 1.05)), 96px);
+  height: clamp(68px, min(20vw, calc(var(--touch, 80px) * 1.05)), 96px);
+  font-size: clamp(14px, calc(var(--touch, 80px) * 0.21), 20px);
+}
+.touch-btn.small {
+  width: clamp(50px, min(14vw, calc(var(--touch, 80px) * 0.66)), 66px);
+  height: clamp(50px, min(14vw, calc(var(--touch, 80px) * 0.66)), 66px);
+  font-size: clamp(11px, calc(var(--touch, 80px) * 0.14), 14px);
+}
+.touch-btn.pressed { transform: scale(0.92); filter: brightness(1.35); box-shadow: 0 0 18px rgba(255, 255, 255, 0.75); }
+#btn-use.pressed { transform: translateY(-10px) scale(0.92); }
+.touch-btn.accent-cyan { border-color: #00e5ff; background: rgba(0, 150, 200, 0.76); }
+.touch-btn.accent-orange { border-color: #ffaa00; background: rgba(235, 115, 0, 0.84); }
 .touch-btn.accent-red { border-color: #ff4d4d; background: rgba(190, 35, 35, 0.72); }
 .touch-btn.has-item { animation: itemPulse 0.9s ease-in-out infinite; }
 @keyframes itemPulse { 50% { box-shadow: 0 0 22px #ffcc00, 0 0 4px #fff; } }
-/* 觸控模式時，時速表移到按鍵上方，避免被手指擋住 */
-#hud.touch-on .p-speed-box { bottom: calc(var(--touch, 84px) * 1.12 + 28px); }
-#hud.touch-on .p-bottom-center { bottom: 10px; width: min(300px, calc(100% - var(--touch, 84px) * 6.4)); }
+
+/* 觸控模式時，避開左右拇指區：時速表與道具列自動讓位 */
+#hud.touch-on .p-speed-box { bottom: auto; top: 54px; right: max(12px, env(safe-area-inset-right, 12px)); transform: scale(0.86); transform-origin: top right; }
+#hud.touch-on .p-bottom-center { bottom: max(18px, calc(env(safe-area-inset-bottom, 0px) + 10px)); width: min(260px, 34vw); }
+@media (max-width: 640px) {
+  #hud.touch-on .p-bottom-center {
+    bottom: auto;
+    top: 52px;
+    width: min(210px, 56vw);
+  }
+  #hud.touch-on .nitro-slot { width: 46px; height: 46px; }
+  #hud.touch-on .steer-pad {
+    bottom: max(30px, calc(env(safe-area-inset-bottom, 0px) + 22px));
+    width: 45vw;
+    height: 92px;
+  }
+  #hud.touch-on .touch-right {
+    bottom: max(30px, calc(env(safe-area-inset-bottom, 0px) + 22px));
+    gap: 10px 10px;
+  }
+}
 
 /* Finish Screen */
 .unlock-banner { margin-top: 10px; padding: 10px 22px; border-radius: 14px; background: linear-gradient(135deg, #ff9500, #ffdd00); color: #1a1000; font-size: calc(17px * var(--fs, 1)); font-weight: 900; }
