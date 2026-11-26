@@ -4,8 +4,12 @@ import { RaceTrack, TRACK_ORDER, TRACK_CONFIGS } from './track.js';
 import { SoundEngine } from './audio.js';
 import { ItemManager, ITEM_TYPES, attachKartStatusMeshes } from './items.js';
 import { RoomNetwork } from './network.js';
+import { MonopolyController } from './monopoly.js';
 
 const TOTAL_LAPS = 3;
+function getTargetLaps() {
+  return selectedMode === 'monopoly' ? 1 : TOTAL_LAPS;
+}
 const CUP_TRACKS = ['village', 'desert', 'sky', 'dino'];
 const EMOTE_PHRASES = ['😂 哈哈！', '🔥 借過啦！', '😎 太慢囉！', '🚀 追不上我！', '🦖 救命啊！', '⚡ 吃我尾氣！'];
 const SAVE_KEY = 'kart_lego_3d_save_v3';
@@ -1777,7 +1781,7 @@ if (unlockAllBtn) {
 }
 
 function isItemModeActive() {
-  return selectedMode === 'item' || selectedMode === 'battle' || selectedMode === 'cup';
+  return selectedMode === 'item' || selectedMode === 'battle' || selectedMode === 'cup' || selectedMode === 'monopoly';
 }
 
 // --- Track & Racers ---
@@ -2078,7 +2082,7 @@ function startRace(broadcastIfHost = true, netStartMsg = null) {
     : selectedMode === 'cup'
       ? `🏆 第${cupRound + 1}/4關 ${track.config.icon}${track.config.name}`
       : `${track.config.icon} ${track.config.name}`;
-  hudModeTag.textContent = selectedMode === 'battle' ? '氣球亂鬥' : selectedMode === 'cup' ? '錦標賽' : selectedMode === 'item' ? '道具' : '競速';
+  hudModeTag.textContent = selectedMode === 'battle' ? '氣球亂鬥' : selectedMode === 'cup' ? '錦標賽' : selectedMode === 'monopoly' ? '大富翁搶地(1圈)' : selectedMode === 'item' ? '道具' : '競速';
   battleTimer = 90;
   pHudEls[0].name.textContent = humanRacers[0].name;
   pHudEls[0].banner.classList.add('hidden');
@@ -2122,7 +2126,29 @@ resumeBtn.addEventListener('click', () => togglePause(false));
 pauseRestartBtn.addEventListener('click', () => { isPaused = false; pauseScreen.classList.add('hidden'); startRace(true); });
 pauseMenuBtn.addEventListener('click', () => { isPaused = false; pauseScreen.classList.add('hidden'); returnToMenu(); });
 
+const monopoly = new MonopolyController({
+  audio,
+  launchTrackRace: (trackId, bannerTitle) => {
+    selectedTrackId = trackId;
+    startRace(true);
+    if (hudTrackName && bannerTitle) hudTrackName.textContent = bannerTitle;
+  },
+  onExitToLobby: () => returnToMenu(),
+  onAwardGarageCoins: (coins) => {
+    saveData.coins += coins;
+    writeSave();
+    renderGarageUI();
+  },
+});
+
 startBtn.addEventListener('click', () => {
+  if (selectedMode === 'monopoly') {
+    audio.init();
+    setupShowcase();
+    startScreen.classList.add('hidden');
+    monopoly.startNew(racers.map((r, i) => ({ name: r.name, isHuman: r.isHuman, slotIndex: i })));
+    return;
+  }
   if (selectedMode === 'cup') {
     cupRound = 0;
     cupScores = {};
@@ -3265,7 +3291,8 @@ function updateRacerPhysics(r, dt) {
       r.passedHalfway = false;
       r.lap++;
 
-      if (r.lap > TOTAL_LAPS) {
+      const targetLaps = getTargetLaps();
+      if (r.lap > targetLaps) {
         r.finished = true;
         r.finishTime = raceTime;
         // ⏱️ 有人先衝線 → 還沒完賽的玩家開始 10 秒退賽倒數（真實卡丁車的緊張感！）
@@ -3285,8 +3312,8 @@ function updateRacerPhysics(r, dt) {
         }
       } else if (r.isHuman) {
         audio.playLapChime();
-        if (r.lap === TOTAL_LAPS) { audio.setFinalLap(true); sayLine(r, 'finalLap', 2); }
-        showBannerFor(r, r.lap === TOTAL_LAPS ? '🔥 最後一圈 FINAL LAP!' : `LAP ${r.lap} / ${TOTAL_LAPS}`, '#4ce0ff', 1.5);
+        if (r.lap === targetLaps) { audio.setFinalLap(true); sayLine(r, 'finalLap', 2); }
+        showBannerFor(r, r.lap === targetLaps ? '🔥 最後一圈 FINAL LAP!' : `LAP ${r.lap} / ${targetLaps}`, '#4ce0ff', 1.5);
       }
     }
 
@@ -3665,7 +3692,7 @@ function updateHUD() {
     r.lastRank = rank;
     h.rank.textContent = rank;
     h.suffix.textContent = suffixes[rank - 1] || 'th';
-    h.lap.textContent = selectedMode === 'battle' ? '🎈'.repeat(Math.max(0, r.balloons)) || '💥' : Math.min(r.lap, TOTAL_LAPS);
+    h.lap.textContent = selectedMode === 'battle' ? '🎈'.repeat(Math.max(0, r.balloons)) || '💥' : Math.min(r.lap, getTargetLaps());
     h.speed.textContent = Math.round(Math.abs(r.speed) * 3.8);
     h.nitroFill.style.width = `${Math.min(100, r.nitroGauge)}%`;
     if (h.ink) h.ink.classList.toggle('hidden', r.squidTimer <= 0);
@@ -3749,9 +3776,19 @@ function onRaceFinish() {
   speedLinesEl.classList.remove('active');
   hud.classList.add('hidden');
   splitDivider.classList.add('hidden');
-  finishScreen.classList.remove('hidden');
 
   const sorted = getSortedRacers();
+
+  // 🎲 大富翁搶地模式：完賽直接回到大富翁地圖，讓贏家買地！
+  if (selectedMode === 'monopoly' && monopoly.active) {
+    audio.stopBgm();
+    audio.playVictory(sorted.findIndex((r) => r.isHuman) + 1);
+    gameState = 'menu';
+    monopoly.onRealRaceFinished(sorted);
+    return;
+  }
+
+  finishScreen.classList.remove('hidden');
   const p1 = humanRacers[0];
   const p1Rank = sorted.indexOf(p1) + 1;
   const bestHumanRank = Math.min(...humanRacers.map((h) => sorted.indexOf(h) + 1));

@@ -61,6 +61,7 @@
                   <button class="pill-btn" data-mode="speed">⚡ 競速賽</button>
                   <button class="pill-btn" data-mode="battle">🎈 氣球大亂鬥</button>
                   <button class="pill-btn" data-mode="cup">🏆 冠軍錦標賽</button>
+                  <button class="pill-btn" data-mode="monopoly">🎲 大富翁搶地</button>
                 </div>
               </div>
 
@@ -183,6 +184,21 @@
           </div>
           <button id="start-btn" class="primary-btn">開始比賽 🏁</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Monopoly Board Map Overlay (uses REAL 3D tracks for every property!) -->
+    <div id="monopoly-screen" class="overlay mono-overlay hidden">
+      <div class="mono-header">
+        <div id="mono-round-tag" class="mono-round-tag">🎲 第 1 / 8 回合</div>
+        <div id="mono-players-bar" class="mono-players-bar"></div>
+        <div class="mono-header-btns">
+          <button id="mono-finish-btn" class="secondary-btn mono-sm-btn">🏆 結算</button>
+          <button id="mono-exit-btn" class="secondary-btn mono-sm-btn">🏠 大廳</button>
+        </div>
+      </div>
+      <div id="mono-board-grid" class="mono-board-grid">
+        <div id="mono-center-box" class="mono-center-box"></div>
       </div>
     </div>
 
