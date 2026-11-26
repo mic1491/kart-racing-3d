@@ -702,20 +702,38 @@ kbd {
 .speed-value { font-size: calc(34px * var(--hfs, 1)); font-weight: 900; font-style: italic; line-height: 1; font-variant-numeric: tabular-nums; }
 .speed-unit { font-size: calc(10px * var(--hfs, 1)); font-weight: 800; color: #4ce0ff; letter-spacing: 1.5px; }
 
-/* Touch Controls：底部正中央超大左右轉向板 ＋ 右側三鍵排在轉向板正上方（零重疊、不擋左右鍵！） */
+/* ===================================================================
+   📱 手機觸控版面（直拿、橫放各一套，所有元素都有固定位置、互不重疊）
+   - 左下：大轉向板　- 右下：三顆鍵弧形排列（甩尾在最角落、道具在左、煞車在上）
+   - 道具欄：在轉向板與按鍵之間（橫放）／轉向板上方（直拿）
+   =================================================================== */
 #hud { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 #touch-controls { position: absolute; inset: 0; pointer-events: none; z-index: 22; touch-action: none; }
+#hud.touch-on {
+  --edge: max(12px, env(safe-area-inset-left, 0px));
+  --edge-r: max(12px, env(safe-area-inset-right, 0px));
+  --edge-b: max(12px, env(safe-area-inset-bottom, 0px));
+  --big: clamp(58px, 15vmin, 70px);
+  --small: clamp(48px, 12vmin, 56px);
+  --gap: 14px;
+  --row-h: var(--big);
+  --pad-w: min(62vw, 500px);
+  --pad-h: clamp(92px, 26vmin, 120px);
+  --map: 96px;
+  --above-pad: calc(var(--edge-b) + var(--pad-h) + 10px);
+}
+/* 左右鍵：底部正中央，大大一塊 */
 .steer-pad {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: max(20px, calc(env(safe-area-inset-bottom, 0px) + 12px));
-  width: min(76vw, 420px);
-  height: clamp(92px, 18vh, 126px);
+  bottom: var(--edge-b, 12px);
+  width: var(--pad-w, 420px);
+  height: var(--pad-h, 110px);
   display: flex;
   border-radius: 30px;
   background: rgba(14, 24, 52, 0.56);
-  border: 3px solid rgba(255, 255, 255, 0.55);
+  border: 3px solid rgba(255, 255, 255, 0.6);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.38);
   pointer-events: auto;
   touch-action: none;
@@ -728,8 +746,8 @@ kbd {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(38px, 8.5vw, 54px);
-  color: rgba(255, 255, 255, 0.9);
+  font-size: calc(var(--pad-h, 110px) * 0.45);
+  color: rgba(255, 255, 255, 0.92);
   transition: background 0.08s;
 }
 .steer-half.left { border-right: 2px dashed rgba(255, 255, 255, 0.36); }
@@ -738,9 +756,9 @@ kbd {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 44px;
-  height: 44px;
-  margin: -22px 0 0 -22px;
+  width: 48px;
+  height: 48px;
+  margin: -24px 0 0 -24px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, #fff, #7ee8ff 60%, #0284c7);
   box-shadow: 0 0 14px rgba(0, 229, 255, 0.9);
@@ -749,21 +767,21 @@ kbd {
 }
 .steer-pad.active .steer-knob { opacity: 0.92; }
 
-/* 右側三鍵往上直排，整體抬高到左右轉向板上方，絕不擋到左右鍵！ */
+/* 三顆鍵：靠右直排（由下往上：甩尾 → 道具 → 煞車），右手拇指最好按 */
 .touch-right {
   position: absolute;
-  right: max(12px, calc(env(safe-area-inset-right, 0px) + 8px));
-  bottom: calc(max(20px, calc(env(safe-area-inset-bottom, 0px) + 12px)) + clamp(92px, 18vh, 126px) + 14px);
+  right: var(--edge-r, 12px);
+  bottom: var(--edge-b, 12px);
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   align-items: center;
-  gap: 9px;
+  gap: var(--gap, 10px);
   pointer-events: auto;
   touch-action: none;
 }
-#btn-brake { order: 1; margin-bottom: 0; }
+#btn-drift { order: 1; }
 #btn-use { order: 2; }
-#btn-drift { order: 3; }
+#btn-brake { order: 3; }
 .touch-btn {
   border-radius: 50%;
   border: 2.5px solid rgba(255, 255, 255, 0.7);
@@ -779,16 +797,8 @@ kbd {
   -webkit-tap-highlight-color: transparent;
   box-shadow: 0 4px 0 rgba(0, 0, 0, 0.38);
 }
-.touch-btn.big {
-  width: 58px;
-  height: 58px;
-  font-size: 13px;
-}
-.touch-btn.small {
-  width: 48px;
-  height: 48px;
-  font-size: 11px;
-}
+.touch-btn.big { width: var(--big, 64px); height: var(--big, 64px); font-size: calc(var(--big, 64px) * 0.22); }
+.touch-btn.small { width: var(--small, 50px); height: var(--small, 50px); font-size: calc(var(--small, 50px) * 0.22); }
 .touch-btn.pressed { transform: scale(0.92); filter: brightness(1.35); box-shadow: 0 0 18px rgba(255, 255, 255, 0.75); }
 .touch-btn.accent-cyan { border-color: #00e5ff; background: rgba(0, 150, 200, 0.8); }
 .touch-btn.accent-orange { border-color: #ffaa00; background: rgba(235, 115, 0, 0.88); }
@@ -796,23 +806,78 @@ kbd {
 .touch-btn.has-item { animation: itemPulse 0.9s ease-in-out infinite; }
 @keyframes itemPulse { 50% { box-shadow: 0 0 22px #ffcc00, 0 0 4px #fff; } }
 
-/* 觸控模式時，時速表與道具列移到上方清淨區，絕不擋按鈕！ */
-#hud.touch-on .p-speed-box { bottom: auto; top: 54px; right: max(12px, env(safe-area-inset-right, 12px)); transform: scale(0.84); transform-origin: top right; }
-#hud.touch-on .p-bottom-center { bottom: auto; top: 50px; width: min(210px, 52vw); }
-#hud.touch-on .nitro-slot { width: 46px; height: 46px; }
-/* 手機直向：左右鍵正中央超大塊，右側三鍵整齊排在它正上方！ */
-@media (max-width: 640px) {
-  #hud.touch-on .steer-pad {
-    left: 50%;
-    transform: translateX(-50%);
-    width: 88vw;
-    height: 110px;
-    bottom: max(22px, calc(env(safe-area-inset-bottom, 0px) + 14px));
+/* 手機頂列：只留 暫停、靜音、觸控開關（重新開始／回大廳在暫停選單裡） */
+#hud.touch-on #horn-btn, #hud.touch-on #restart-btn, #hud.touch-on #menu-btn { display: none; }
+#hud.touch-on .hud-actions button { width: 32px; height: 32px; font-size: 14px; }
+#hud.touch-on #minimap { top: 8px; right: var(--edge-r, 12px); width: var(--map); height: var(--map); }
+#hud.touch-on .p-top-left { top: 8px; left: var(--edge, 12px); }
+#hud.touch-on .p-speed-box { min-width: 0; padding: 4px 10px; }
+#hud.touch-on .speed-value { font-size: calc(24px * var(--hfs, 1)); }
+#hud.touch-on .nitro-slot { min-width: 54px; height: 44px; }
+/* 被擊中提示框改成矮的一條 */
+#hud.touch-on .status-alert { flex-wrap: nowrap; max-width: 94%; padding: 6px 14px 6px 8px; gap: 10px; }
+#hud.touch-on .status-title { font-size: calc(22px * var(--hfs, 1)); white-space: nowrap; }
+#hud.touch-on .status-text { min-width: 0; flex: 1 1 auto; }
+#hud.touch-on .status-hint { font-size: calc(13px * var(--hfs, 1)); }
+#hud.touch-on .status-main { width: calc(52px * var(--hfs, 1)); height: calc(52px * var(--hfs, 1)); }
+#hud.touch-on .status-more { display: none; }
+#hud.touch-on .p-banner { white-space: normal; width: 92%; text-align: center; }
+#hud.touch-on .cine-stamp { font-size: calc(30px * var(--hfs, 1)); }
+
+/* ---- 橫放 ---- */
+@media (orientation: landscape) {
+  /* 左右鍵：置中，但寬度要讓出右邊直排按鍵的位置 */
+  #hud.touch-on { --gap: 8px; --pad-w: min(52vw, 460px, calc(100% - 2 * (var(--big) + 28px))); }
+  #hud.touch-on .hud-global-top { top: 8px; left: auto; right: calc(var(--edge-r, 12px) + var(--map) + 10px); transform: none; }
+  #hud.touch-on .p-speed-box { top: calc(8px + var(--map) + 8px); bottom: auto; right: var(--edge-r, 12px); }
+  /* 道具欄：左下角，在左右鍵旁邊 */
+  #hud.touch-on .p-bottom-center {
+    top: auto; transform: none;
+    bottom: var(--edge-b, 12px);
+    left: var(--edge, 12px);
+    width: calc((100% - var(--pad-w)) / 2 - var(--edge, 12px) - 12px);
+    align-items: center;
   }
-  #hud.touch-on .touch-right {
-    bottom: calc(max(22px, calc(env(safe-area-inset-bottom, 0px) + 14px)) + 124px);
-    gap: 9px;
+  #hud.touch-on .nitro-slots { gap: 6px; }
+  /* 由上到下：大字 → 提示框 → 三顆鍵 → 左右鍵 */
+  #hud.touch-on .p-banner { top: 19%; }
+  #hud.touch-on .cine-stamp { top: 24%; }
+  #hud.touch-on .status-alert { top: 31%; max-width: calc(100% - 2 * (var(--map) + 30px)); }
+  /* 右邊直排很高：時速表改放左邊名次下方，避免撞到 */
+  #hud.touch-on .p-speed-box { top: calc(8px + 52px); right: auto; left: var(--edge, 12px); }
+}
+@media (orientation: landscape) and (max-height: 430px) {
+  #hud.touch-on { --map: 84px; --pad-h: clamp(84px, 24vh, 100px); --big: clamp(52px, 15vh, 60px); --small: clamp(44px, 12vh, 50px); }
+}
+
+/* ---- 直拿 ---- */
+@media (orientation: portrait) {
+  #hud.touch-on {
+    --map: 84px;
+    --pad-w: calc(100% - var(--edge, 12px) - var(--edge-r, 12px));
+    --pad-h: clamp(100px, 15vh, 128px);
+    --big: clamp(60px, 17vw, 74px);
+    --small: clamp(50px, 14vw, 58px);
+    --gap: 10px;
   }
+  /* 直拿：右邊直排疊在左右鍵上方 */
+  #hud.touch-on .touch-right { bottom: var(--above-pad); }
+  #hud.touch-on #touch-toggle-btn { display: none; }
+  /* 第二排：計時列（左）＋時速表（右） */
+  #hud.touch-on .hud-global-top { top: calc(8px + var(--map) + 8px); left: var(--edge, 12px); right: auto; transform: none; }
+  #hud.touch-on .p-speed-box { top: calc(8px + var(--map) + 8px); bottom: auto; right: var(--edge-r, 12px); }
+  /* 第三排：道具欄（左上，不蓋到車） */
+  #hud.touch-on .p-bottom-center {
+    bottom: auto; transform: none;
+    top: calc(8px + var(--map) + 58px);
+    left: var(--edge, 12px);
+    width: min(200px, 52vw);
+    align-items: flex-start;
+  }
+  #hud.touch-on .p-banner { top: 31%; }
+  #hud.touch-on .cine-stamp { top: 34%; }
+  #hud.touch-on .status-alert { top: 39%; }
+  #hud.touch-on .retire-countdown { top: auto; bottom: calc(var(--above-pad) + var(--big) + 16px); left: var(--edge, 12px); font-size: calc(46px * var(--hfs, 1)); }
 }
 
 /* Finish Screen */
@@ -987,7 +1052,8 @@ kbd {
 .cine-bars::after { bottom: 0; }
 .cine-bars.on::before, .cine-bars.on::after { height: 11%; }
 #hud.touch-on ~ .cine-bars.on::after,
-#hud.touch-on .cine-bars.on::after { height: 0 !important; }
+#hud.touch-on .cine-bars.on::after,
+#hud.touch-on .cine-bars.on::before { height: 0 !important; } /* 手機：不加電影黑邊，避免蓋住名次和按鍵 */
 .cine-stamp {
   position: absolute; top: 56%; left: 50%; transform: translate(-50%, -50%) rotate(-6deg);
   font-size: calc(46px * var(--hfs, 1)); font-weight: 900; font-style: italic; white-space: nowrap;
@@ -1067,138 +1133,83 @@ kbd {
 @keyframes gpFocusPulse { 50% { outline-color: #fff; } }
 .gp-press { transform: scale(0.94) !important; }
 
+/* === 讓出空間給 3D 車手／頒獎台：不再被選單或標題擋住 === */
+/* 手機橫放：大廳選單靠右（約 6 成寬），左邊留給車手 */
+@media (max-height: 560px) and (orientation: landscape) {
+  #start-screen { align-items: flex-end; padding-right: max(10px, env(safe-area-inset-right)); }
+  #start-screen .lobby-header { width: 62%; }
+  #start-screen .setup-summary { border-radius: 16px; }
+  #start-screen .lobby-console { width: 62%; max-width: 62%; }
+  #start-screen .tab-btn { font-size: calc(12px * var(--fs, 1)); padding: 8px 2px; }
+}
+
+/* 頒獎畫面 ── 橫向螢幕：標題＋成績表放右邊一欄，頒獎台在左邊 */
+@media (orientation: landscape) {
+  #finish-screen {
+    align-items: flex-end;
+    justify-content: center;
+    gap: 10px;
+    padding-right: max(16px, env(safe-area-inset-right));
+    background: linear-gradient(90deg, rgba(10, 18, 38, 0) 0%, rgba(10, 18, 38, 0) 45%, rgba(10, 18, 38, 0.78) 62%, rgba(10, 18, 38, 0.9) 100%);
+  }
+  #finish-screen .finish-top-header,
+  #finish-screen .finish-bottom-panel { width: min(44%, 520px); }
+  #finish-screen .results-card { width: 100%; margin: 8px 0 12px; }
+  #finish-screen .game-title { font-size: calc(clamp(20px, 3.2vw, 34px) * var(--fs, 1)); }
+}
+/* 頒獎畫面 ── 矮的橫向螢幕（手機）：成績表精簡，按鈕縮小 */
+@media (orientation: landscape) and (max-height: 560px) {
+  #finish-screen { overflow-y: auto; justify-content: flex-start; padding-top: 8px; }
+  #finish-screen .finish-subtitle, #finish-screen .unlock-banner { display: none; }
+  #finish-screen .results-card { padding: 8px 12px; margin: 4px 0 8px; }
+  #finish-screen .result-row { padding: 3px 0; }
+  #finish-screen .standing-item { padding: 4px 9px; }
+  #finish-screen .primary-btn, #finish-screen .secondary-btn { padding: 8px 18px; font-size: calc(14px * var(--fs, 1)); }
+}
+/* 頒獎畫面 ── 直向螢幕（手機直拿）：成績表只留名次，讓中間有空間 */
+@media (orientation: portrait) {
+  #finish-screen .result-row:nth-child(3) { display: none; }
+  #finish-screen .results-card { padding: 10px 14px; margin: 8px 0 10px; }
+  #finish-screen .standing-item { padding: 4px 10px; }
+}
+
+/* 寬螢幕（筆電、桌機）：大廳選單也靠右，左邊大大的展示車手 */
+@media (orientation: landscape) and (min-aspect-ratio: 13/9) and (min-height: 561px) {
+  #start-screen { align-items: flex-end; justify-content: center; gap: 14px; padding-right: max(20px, env(safe-area-inset-right)); }
+  #start-screen .lobby-header { width: min(60%, 860px); }
+  #start-screen .lobby-console { width: min(60%, 860px); max-width: min(60%, 860px); }
+  #start-screen .tab-body { max-height: 52vh; max-height: 52dvh; }
+}
+@media (orientation: landscape) and (max-height: 560px) {
+  #finish-screen .result-row:nth-child(1), #finish-screen .result-row:nth-child(3), #finish-screen .title-badge { display: none; }
+  #finish-screen .standings-list { gap: 4px; margin-top: 6px; }
+  #finish-screen .standing-item { font-size: calc(12px * var(--fs, 1)); padding: 3px 8px; }
+  #finish-screen .finish-buttons { gap: 8px; }
+}
+
 
 /* === 🎲 大富翁搶地地圖模式 === */
-.mono-overlay {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  padding: max(8px, env(safe-area-inset-top)) 10px max(12px, env(safe-area-inset-bottom));
-  background: rgba(8, 15, 34, 0.88);
-  backdrop-filter: blur(8px);
-  z-index: 32;
-  gap: 8px;
-}
-.mono-header {
-  width: min(920px, 100%);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.mono-round-tag {
-  background: linear-gradient(135deg, #f59e0b, #ef4444);
-  padding: 5px 12px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 900;
-  color: #fff;
-}
-.mono-players-bar {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  justify-content: center;
-  flex: 1;
-}
-.mono-p-chip {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 9px;
-  border-radius: 10px;
-  background: rgba(15, 23, 42, 0.9);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  font-size: 12px;
-  transition: 0.15s;
-}
-.mono-p-chip.active {
-  border-color: var(--pc, #fde047);
-  box-shadow: 0 0 14px var(--pc, #fde047);
-  transform: scale(1.05);
-}
+.mono-overlay { display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: max(8px, env(safe-area-inset-top)) 10px max(12px, env(safe-area-inset-bottom)); background: rgba(8, 15, 34, 0.88); backdrop-filter: blur(8px); z-index: 32; gap: 8px; }
+.mono-header { width: min(920px, 100%); display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.mono-round-tag { background: linear-gradient(135deg, #f59e0b, #ef4444); padding: 5px 12px; border-radius: 999px; font-size: 13px; font-weight: 900; color: #fff; }
+.mono-players-bar { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; flex: 1; }
+.mono-p-chip { display: flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 10px; background: rgba(15, 23, 42, 0.9); border: 2px solid rgba(255, 255, 255, 0.2); font-size: 12px; transition: 0.15s; }
+.mono-p-chip.active { border-color: var(--pc, #fde047); box-shadow: 0 0 14px var(--pc, #fde047); transform: scale(1.05); }
 .mono-dot { width: 10px; height: 10px; border-radius: 50%; }
 .mono-money { color: #fde047; font-weight: 900; }
 .mono-lands { color: #86efac; font-weight: 800; }
 .mono-header-btns { display: flex; gap: 6px; }
 .mono-sm-btn { padding: 6px 12px !important; font-size: 12px !important; border-radius: 10px !important; }
-
-.mono-board-grid {
-  width: min(880px, 98vw);
-  flex: 1;
-  max-height: calc(100dvh - 82px);
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  grid-template-rows: repeat(5, 1fr);
-  gap: 6px;
-}
-.mono-tile {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  background: rgba(20, 32, 62, 0.94);
-  border: 2px solid rgba(255, 255, 255, 0.22);
-  border-radius: 12px;
-  overflow: hidden;
-  padding-bottom: 4px;
-  text-align: center;
-}
-.mono-tile.owned {
-  border-color: var(--tc, #fde047);
-  box-shadow: inset 0 0 14px var(--tc, #fde047);
-}
-.mt-head {
-  width: 100%;
-  padding: 2px 4px;
-  font-size: clamp(10px, 1.8vw, 13px);
-  font-weight: 900;
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+.mono-board-grid { width: min(880px, 98vw); flex: 1; max-height: calc(100dvh - 82px); display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(5, 1fr); gap: 6px; }
+.mono-tile { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: space-between; background: rgba(20, 32, 62, 0.94); border: 2px solid rgba(255, 255, 255, 0.22); border-radius: 12px; overflow: hidden; padding-bottom: 4px; text-align: center; }
+.mono-tile.owned { border-color: var(--tc, #fde047); box-shadow: inset 0 0 14px var(--tc, #fde047); }
+.mt-head { width: 100%; padding: 2px 4px; font-size: clamp(10px, 1.8vw, 13px); font-weight: 900; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mt-icon { font-size: clamp(20px, 3.6vw, 30px); line-height: 1; }
 .mt-sub { font-size: clamp(10px, 1.6vw, 12px); font-weight: 800; color: #fde047; }
 .mt-lv { font-size: 11px; }
-.mt-tokens {
-  position: absolute;
-  bottom: 2px;
-  right: 3px;
-  display: flex;
-  gap: 2px;
-}
-.mt-tok {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  border: 2px solid #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
-}
-
-.mono-center-box {
-  grid-row: 2 / 5;
-  grid-column: 2 / 5;
-  background: rgba(12, 22, 48, 0.96);
-  border: 2.5px solid rgba(251, 191, 36, 0.6);
-  border-radius: 18px;
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  gap: 10px;
-  overflow-y: auto;
-}
+.mt-tokens { position: absolute; bottom: 2px; right: 3px; display: flex; gap: 2px; }
+.mt-tok { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6); }
+.mono-center-box { grid-row: 2 / 5; grid-column: 2 / 5; background: rgba(12, 22, 48, 0.96); border: 2.5px solid rgba(251, 191, 36, 0.6); border-radius: 18px; padding: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; overflow-y: auto; }
 .mc-big { font-size: clamp(34px, 6vw, 52px); line-height: 1; margin-bottom: 4px; }
 .mc-spin { animation: bannerPop 0.45s ease-out; }
 .mono-center-box h3 { font-size: clamp(15px, 2.6vw, 22px); color: #fde047; margin-bottom: 4px; }
@@ -2795,12 +2806,16 @@ class SoundEngine {
   }
 
   // 倒數「嗶、嗶、嗶」＋ GO 的長音和弦
+  // 倒數：短促的和弦重擊（根音＋五度＋八度）＋鼓
   playCountdown(n) {
     if (!this.initialized || this.muted) return;
     if (this._sample('countdown')) return;
-    this.playBeep(n === 1 ? 660 : 587, 0.22, 0.2);
-    this.playBeep(n === 1 ? 1320 : 1174, 0.18, 0.06);
+    const t = this.ctx.currentTime;
+    const root = n === 1 ? 659 : 587;
+    for (const m of [1, 1.5, 2]) this._rich(root * m, t, 0.22, 0.045, 'bright');
+    this._tom(t, n === 1 ? 160 : 130, 0.24);
   }
+
 
   playGo() {
     if (!this.initialized || this.muted) return;
@@ -2824,11 +2839,13 @@ class SoundEngine {
   }
 
   // 甩尾起跳的「吱！」
+  // 甩尾起跳的「吱！」：短促輪胎摩擦＋輕快的彈跳音
   playDriftChirp() {
     if (!this.initialized || this.muted) return;
     this._noiseBurst(0.22, 0.14, 2600, 1600);
-    this.playBeep(420, 0.06, 0.05);
+    this._rich(420, this.ctx.currentTime, 0.06, 0.045, 'pluck');
   }
+
 
   updateDrive(speedRatio, isDrifting, isBoosting, active) {
     if (!this.initialized || this.muted) return;
@@ -2865,27 +2882,63 @@ class SoundEngine {
     this.driftGain.gain.setTargetAtTime(targetDrift, now, 0.04);
   }
 
-  playBeep(freq = 660, duration = 0.14, gainVal = 0.12) {
+  // 通用提示音（已不是單音）：基音＋八度＋微走音第二層＋起音「喀」＋一點回音
+  playBeep(freq = 660, duration = 0.14, gainVal = 0.12, timbre = 'pluck') {
     if (!this.initialized || this.muted) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(freq, now);
-    gain.gain.setValueAtTime(gainVal, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-    osc.connect(gain);
-    gain.connect(this.out);
-    osc.start(now);
-    osc.stop(now + duration);
+    this._rich(freq, this.ctx.currentTime, duration, gainVal, timbre);
   }
+
+  // 多層合成音色：pluck（清脆按鍵）、chime（鈴聲／金幣）、bright（街機亮音）
+  _rich(freq, t, dur, vol, timbre = 'pluck') {
+    this._ensureMusicBus();
+    const out = this.ctx.createGain();
+    out.gain.value = 1;
+    out.connect(this.out);
+    if (this.delay) {
+      const send = this.ctx.createGain();
+      send.gain.value = timbre === 'chime' ? 0.35 : 0.18;
+      out.connect(send);
+      send.connect(this.delay);
+    }
+    const layers = timbre === 'chime'
+      ? [['sine', 1, 1, 0], ['sine', 2, 0.45, 0], ['sine', 3.01, 0.22, 0], ['triangle', 0.5, 0.25, 0]]
+      : timbre === 'bright'
+        ? [['square', 1, 0.6, -7], ['square', 1, 0.6, 7], ['sawtooth', 2, 0.25, 0], ['triangle', 0.5, 0.4, 0]]
+        : [['triangle', 1, 1, 0], ['square', 2, 0.18, 5], ['sine', 1, 0.5, -9], ['sine', 3, 0.08, 0]];
+    const filt = this.ctx.createBiquadFilter();
+    filt.type = 'lowpass';
+    filt.frequency.setValueAtTime(Math.min(16000, freq * (timbre === 'chime' ? 10 : 7)), t);
+    filt.frequency.exponentialRampToValueAtTime(Math.max(400, freq * 1.5), t + dur + 0.1);
+    filt.connect(out);
+    for (const [type, mul, v, det] of layers) {
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(freq * mul, t);
+      o.detune.value = det;
+      const len = timbre === 'chime' ? dur * (mul > 1.5 ? 1.2 : 2.2) : dur;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol * v, t + 0.004);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + len + 0.05);
+      o.connect(g);
+      g.connect(filt);
+      o.start(t);
+      o.stop(t + len + 0.08);
+    }
+    // 起音的「喀」：讓聲音有顆粒感、不會悶
+    if (this._noiseBuf) this._noise(t, 0.015, vol * 0.5, 'highpass', Math.min(9000, freq * 4), out);
+  }
+
 
   playCoin() {
     if (!this.initialized || this.muted) return;
     if (this._sample('coin', 0.6)) return;
-    this.playBeep(988, 0.07, 0.09);
-    setTimeout(() => this.playBeep(1318, 0.12, 0.09), 55);
+    const t = this.ctx.currentTime;
+    this._rich(988, t, 0.08, 0.09, 'chime');
+    this._rich(1319, t + 0.06, 0.25, 0.1, 'chime');
+    this._rich(2637, t + 0.06, 0.15, 0.025, 'chime'); // 閃亮泛音
   }
+
 
   playBoost() {
     if (!this.initialized || this.muted) return;
@@ -2900,193 +2953,273 @@ class SoundEngine {
     gain.gain.setValueAtTime(0.11, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.72);
     this._noiseBurst(0.35, 0.8, 400, 3800);
+    // 第二層（走音鋸齒）＋超低音，噴射更厚實
+    const o2 = this.ctx.createOscillator();
+    const g2 = this.ctx.createGain();
+    o2.type = 'sawtooth';
+    o2.detune.value = 18;
+    o2.frequency.setValueAtTime(160, now);
+    o2.frequency.exponentialRampToValueAtTime(560, now + 0.35);
+    o2.frequency.exponentialRampToValueAtTime(220, now + 0.7);
+    g2.gain.setValueAtTime(0.08, now);
+    g2.gain.exponentialRampToValueAtTime(0.001, now + 0.72);
+    o2.connect(g2);
+    g2.connect(this.out);
+    o2.start(now);
+    o2.stop(now + 0.75);
+    this._kickAt(now, 0.3);
     osc.connect(gain);
     gain.connect(this.out);
     osc.start(now);
     osc.stop(now + 0.75);
   }
 
+  // 小噴：上滑的雙層鋸齒＋「咻」
   playMiniBoost() {
     if (!this.initialized || this.muted) return;
     const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(320, now);
-    osc.frequency.exponentialRampToValueAtTime(720, now + 0.22);
-    gain.gain.setValueAtTime(0.09, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
-    osc.connect(gain);
-    gain.connect(this.out);
-    osc.start(now);
-    osc.stop(now + 0.25);
+    for (const [type, det, v] of [['sawtooth', -10, 0.05], ['sawtooth', 10, 0.05], ['sine', 0, 0.07]]) {
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = type;
+      o.detune.value = det;
+      o.frequency.setValueAtTime(300, now);
+      o.frequency.exponentialRampToValueAtTime(820, now + 0.22);
+      g.gain.setValueAtTime(v, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+      o.connect(g);
+      g.connect(this.out);
+      o.start(now);
+      o.stop(now + 0.28);
+    }
+    this._noiseBurst(0.22, 0.35, 600, 4500);
   }
 
+
   // 道具轉盤：「噠噠噠噠…叮！」
+  // 道具轉盤：「噠噠噠噠…」加速的清脆按鍵聲 →「叮～」和弦
   playItemPickup() {
     if (!this.initialized || this.muted) return;
     if (this._sample('item')) return;
-    for (let k = 0; k < 9; k++) setTimeout(() => this.playBeep(700 + k * 70, 0.04, 0.07), k * 45 + k * k * 4);
-    setTimeout(() => { this.playBeep(1568, 0.3, 0.13); this.playBeep(2093, 0.25, 0.05); }, 9 * 45 + 81 * 4 + 20);
+    const t0 = this.ctx.currentTime;
+    let t = 0;
+    for (let k = 0; k < 9; k++) {
+      this._rich(700 + k * 70, t0 + t, 0.04, 0.06, 'pluck');
+      t += 0.045 + k * 0.012;
+    }
+    for (const f of [1568, 1976, 2349]) this._rich(f, t0 + t + 0.02, 0.35, 0.06, 'chime');
   }
 
+
+  // 飛彈發射：點火「轟」＋下滑的雙鋸齒＋噴射氣流
   playMissileLaunch() {
     if (!this.initialized || this.muted) return;
     const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(480, now);
-    osc.frequency.exponentialRampToValueAtTime(140, now + 0.32);
-    gain.gain.setValueAtTime(0.12, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-    osc.connect(gain);
-    gain.connect(this.out);
-    osc.start(now);
-    osc.stop(now + 0.36);
+    for (const det of [-15, 15]) {
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = 'sawtooth';
+      o.detune.value = det;
+      o.frequency.setValueAtTime(520, now);
+      o.frequency.exponentialRampToValueAtTime(120, now + 0.4);
+      g.gain.setValueAtTime(0.07, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.42);
+      o.connect(g);
+      g.connect(this.out);
+      o.start(now);
+      o.stop(now + 0.45);
+    }
+    this._kickAt(now, 0.35);
+    this._noiseBurst(0.3, 0.6, 3000, 300);
   }
 
+
+  // 磁鐵：兩層走音的嗡嗡聲＋顫音＋往上掃的濾波
   playMagnet() {
     if (!this.initialized || this.muted) return;
     const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(240, now);
-    osc.frequency.exponentialRampToValueAtTime(880, now + 0.45);
-    gain.gain.setValueAtTime(0.12, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.48);
-    osc.connect(gain);
-    gain.connect(this.out);
-    osc.start(now);
-    osc.stop(now + 0.5);
+    const f = this.ctx.createBiquadFilter();
+    f.type = 'lowpass';
+    f.Q.value = 6;
+    f.frequency.setValueAtTime(300, now);
+    f.frequency.exponentialRampToValueAtTime(2800, now + 0.6);
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(0.1, now + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+    f.connect(g);
+    g.connect(this.out);
+    const lfo = this.ctx.createOscillator();
+    const lg = this.ctx.createGain();
+    lfo.frequency.value = 14;
+    lg.gain.value = 25;
+    lfo.connect(lg);
+    for (const [mul, type] of [[1, 'sawtooth'], [1.007, 'sawtooth'], [0.5, 'square']]) {
+      const o = this.ctx.createOscillator();
+      o.type = type;
+      o.frequency.value = 180 * mul;
+      lg.connect(o.frequency);
+      o.connect(f);
+      o.start(now);
+      o.stop(now + 0.72);
+    }
+    lfo.start(now);
+    lfo.stop(now + 0.72);
   }
 
+
+  // 閃電：「劈啪」爆裂＋雷鳴低頻＋電流嗡嗡
   playLightning() {
     if (!this.initialized || this.muted) return;
     const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(1100, now);
-    osc.frequency.exponentialRampToValueAtTime(80, now + 0.42);
-    gain.gain.setValueAtTime(0.16, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
-    osc.connect(gain);
-    gain.connect(this.out);
-    osc.start(now);
-    osc.stop(now + 0.46);
+    this._noise(now, 0.12, 0.5, 'highpass', 3000, this.out);
+    for (let k = 0; k < 5; k++) this._noise(now + 0.03 + k * 0.035, 0.03, 0.3, 'highpass', 5000, this.out);
+    this._noise(now + 0.05, 1.2, 0.35, 'lowpass', 220, this.out); // 遠方雷鳴
+    this._kickAt(now, 0.5);
+    for (const det of [-20, 20]) {
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = 'sawtooth';
+      o.detune.value = det;
+      o.frequency.setValueAtTime(1400, now);
+      o.frequency.exponentialRampToValueAtTime(70, now + 0.45);
+      g.gain.setValueAtTime(0.06, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      o.connect(g);
+      g.connect(this.out);
+      o.start(now);
+      o.stop(now + 0.52);
+    }
   }
 
+
+  // 被擊中：「碰！」低音＋金屬撞擊碎裂＋下墜的雙方波
   playHit() {
     if (!this.initialized || this.muted) return;
     if (this._sample('hit')) return;
     const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(190, now);
-    osc.frequency.exponentialRampToValueAtTime(52, now + 0.35);
+    for (const [type, det] of [['square', -12], ['sawtooth', 12]]) {
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = type;
+      o.detune.value = det;
+      o.frequency.setValueAtTime(200, now);
+      o.frequency.exponentialRampToValueAtTime(48, now + 0.35);
+      g.gain.setValueAtTime(0.09, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+      o.connect(g);
+      g.connect(this.out);
+      o.start(now);
+      o.stop(now + 0.4);
+    }
     this.playThump(0.55);
-    gain.gain.setValueAtTime(0.16, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
-    osc.connect(gain);
-    gain.connect(this.out);
-    osc.start(now);
-    osc.stop(now + 0.4);
+    this._noise(now, 0.25, 0.3, 'bandpass', 2400, this.out); // 金屬碎裂
   }
 
+
+  // 護盾：閃閃發亮的和弦（三層鈴聲＋顫音）＋上升的光
   playShield() {
     if (!this.initialized || this.muted) return;
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(440, now);
-    osc.frequency.exponentialRampToValueAtTime(920, now + 0.28);
-    gain.gain.setValueAtTime(0.11, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
-    osc.connect(gain);
-    gain.connect(this.out);
-    osc.start(now);
-    osc.stop(now + 0.34);
+    const t = this.ctx.currentTime;
+    [784, 988, 1175, 1568].forEach((f, k) => this._rich(f, t + k * 0.05, 0.45, 0.05, 'chime'));
+    this._noiseBurst(0.08, 0.5, 2500, 8000);
   }
 
+
+  // 喇叭：真正汽車喇叭是「兩個音同時響」→ 兩組方波（大三度）＋輕微嗡嗡
   playHorn() {
     if (!this.initialized || this.muted) return;
     const now = this.ctx.currentTime;
-    // Playful dual-tone kart horn (beep-beep!)
-    [0, 0.16].forEach((offset) => {
-      [440, 554.37].forEach((freq) => {
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(freq, now + offset);
-        gain.gain.setValueAtTime(0.06, now + offset);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.12);
-        osc.connect(gain);
-        gain.connect(this.out);
-        osc.start(now + offset);
-        osc.stop(now + offset + 0.13);
-      });
-    });
+    const f = this.ctx.createBiquadFilter();
+    f.type = 'lowpass';
+    f.frequency.value = 1800;
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(0.09, now + 0.02);
+    g.gain.setValueAtTime(0.09, now + 0.16);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+    g.gain.setValueAtTime(0.0001, now + 0.24);
+    g.gain.exponentialRampToValueAtTime(0.09, now + 0.26);
+    g.gain.setValueAtTime(0.09, now + 0.5);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.58);
+    f.connect(g);
+    g.connect(this.out);
+    for (const [fr, det] of [[440, -6], [440, 6], [554, -4], [554, 4]]) {
+      const o = this.ctx.createOscillator();
+      o.type = 'square';
+      o.frequency.value = fr;
+      o.detune.value = det;
+      o.connect(f);
+      o.start(now);
+      o.stop(now + 0.6);
+    }
   }
 
+
+  // 氣球爆破：「啵！」爆裂噪音＋快速下墜的音＋碎片聲
   playBalloonPop() {
     if (!this.initialized || this.muted) return;
     const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(620, now);
-    osc.frequency.exponentialRampToValueAtTime(95, now + 0.11);
-    gain.gain.setValueAtTime(0.22, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-    osc.connect(gain);
-    gain.connect(this.out);
-    osc.start(now);
-    osc.stop(now + 0.13);
+    this._noise(now, 0.08, 0.55, 'highpass', 1200, this.out);
+    this._noise(now, 0.18, 0.25, 'bandpass', 500, this.out);
+    for (const [f0, type] of [[900, 'sine'], [450, 'triangle']]) {
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(f0, now);
+      o.frequency.exponentialRampToValueAtTime(f0 * 0.2, now + 0.12);
+      g.gain.setValueAtTime(0.12, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+      o.connect(g);
+      g.connect(this.out);
+      o.start(now);
+      o.stop(now + 0.16);
+    }
   }
 
+
+  // 空中特技：上升的鈴聲琶音＋旋轉的「咻～」
   playTrick() {
     if (!this.initialized || this.muted) return;
-    const now = this.ctx.currentTime;
-    [523.25, 659.25, 783.99, 1046.5].forEach((f, idx) => {
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(f, now + idx * 0.05);
-      gain.gain.setValueAtTime(0.11, now + idx * 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.18);
-      osc.connect(gain);
-      gain.connect(this.out);
-      osc.start(now + idx * 0.05);
-      osc.stop(now + idx * 0.05 + 0.2);
-    });
+    const t = this.ctx.currentTime;
+    [523, 659, 784, 1047, 1319].forEach((f, k) => this._rich(f, t + k * 0.055, 0.18, 0.06, k === 4 ? 'chime' : 'bright'));
+    this._noiseBurst(0.18, 0.4, 500, 5000);
   }
 
+
+  // 水花：「嘩啦」水聲（濾波往下掃）＋幾個泡泡「啵啵」聲
   playSplash() {
     if (!this.initialized || this.muted) return;
     const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(300, now);
-    osc.frequency.exponentialRampToValueAtTime(620, now + 0.12);
-    osc.frequency.exponentialRampToValueAtTime(180, now + 0.32);
-    gain.gain.setValueAtTime(0.13, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-    osc.connect(gain);
-    gain.connect(this.out);
-    osc.start(now);
-    osc.stop(now + 0.36);
+    this._noiseBurst(0.45, 0.6, 3500, 400);
+    this._noise(now, 0.3, 0.25, 'lowpass', 600, this.out);
+    for (let k = 0; k < 5; k++) {
+      const t = now + 0.1 + k * 0.07 + Math.random() * 0.05;
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      const f0 = 400 + Math.random() * 500;
+      o.type = 'sine';
+      o.frequency.setValueAtTime(f0, t);
+      o.frequency.exponentialRampToValueAtTime(f0 * 2.2, t + 0.05);
+      g.gain.setValueAtTime(0.06, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+      o.connect(g);
+      g.connect(this.out);
+      o.start(t);
+      o.stop(t + 0.08);
+    }
   }
 
+
+  // 過圈：上升的和弦琶音（亮音）＋最後一個長長的鈴聲和弦
   playLapChime() {
     if (!this.initialized || this.muted) return;
     if (this._sample('lap')) return;
-    [[784, 0], [988, 90], [1175, 180], [1568, 270]].forEach(([f, ms]) => setTimeout(() => this.playBeep(f, ms === 270 ? 0.4 : 0.12, 0.13), ms));
+    const t = this.ctx.currentTime;
+    [784, 988, 1175].forEach((f, k) => this._rich(f, t + k * 0.09, 0.12, 0.08, 'bright'));
+    for (const f of [1568, 1976, 2349]) this._rich(f, t + 0.27, 0.5, 0.05, 'chime');
   }
+
 
   playFireworkPop() {
     if (!this.initialized || this.muted) return;
@@ -9425,6 +9558,13 @@ function clearSkidMarks() {
 function showBannerFor(racer, text, color = '#00f0ff', duration = 1.15) {
   const idx = racer && racer.humanIndex === 1 ? 1 : 0;
   const h = pHudEls[idx];
+  // 手機：蓋章大字還在畫面上時，提示字排隊等它消失再出來
+  const wait = h.status && h.status.stampUntil ? h.status.stampUntil - performance.now() : 0;
+  if (wait > 0 && touchVisible && playType !== '2') {
+    clearTimeout(h.bannerQueue);
+    h.bannerQueue = setTimeout(() => showBannerFor(racer, text, color, duration), wait + 30);
+    return;
+  }
   h.banner.textContent = text;
   h.banner.style.color = color;
   h.banner.style.setProperty('--bc', color);
@@ -10012,6 +10152,12 @@ function showStamp(humanIdx, text, color) {
   st.stamp.classList.remove('go');
   void st.stamp.offsetWidth;
   st.stamp.classList.add('go');
+  st.stampUntil = performance.now() + 1250;
+  // 手機畫面比較小：蓋章大字出現時，先把同位置的一般提示字收起來，避免兩排字疊在一起
+  if (touchVisible && playType !== '2') {
+    pHudEls[humanIdx].banner.classList.add('hidden');
+    pHudEls[humanIdx].bannerTimer = 0;
+  }
 }
 
 function hitCinematic(victim, type, attacker) {
@@ -12456,6 +12602,69 @@ function updateFollowCamera(cam, state, r, dt) {
   cam.updateProjectionMatrix();
 }
 
+// 📐 找出畫面上「沒被選單／標題擋住」的最大空白區，把主角放在那裡正中間
+function findClearRect(blockers) {
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  const rects = blockers.filter((el) => el && el.offsetParent !== null).map((el) => el.getBoundingClientRect()).filter((r) => r.width > 0 && r.height > 0);
+  const cands = [];
+  // 候選 1：所有擋住物之間的上下空隙（全寬）
+  const ys = [0, H];
+  rects.forEach((r) => ys.push(r.top, r.bottom));
+  ys.sort((a, b) => a - b);
+  for (let i = 0; i < ys.length - 1; i++) {
+    const top = ys[i], bottom = ys[i + 1];
+    if (bottom - top < 40) continue;
+    const blocked = rects.filter((r) => r.top < bottom - 1 && r.bottom > top + 1);
+    let left = 0, right = W;
+    // 這條帶子上若有擋住物，取左右兩側較寬的那一邊
+    let best = blocked.length === 0 ? { left: 0, right: W } : null;
+    if (!best) {
+      const l = Math.min(...blocked.map((r) => r.left));
+      const rr = Math.max(...blocked.map((r) => r.right));
+      best = l > W - rr ? { left: 0, right: l } : { left: rr, right: W };
+    }
+    left = best.left; right = best.right;
+    cands.push({ left, right, top, bottom });
+  }
+  // 候選 2：擋住物左邊／右邊的整條直向空間
+  const minL = Math.min(W, ...rects.map((r) => r.left));
+  const maxR = Math.max(0, ...rects.map((r) => r.right));
+  cands.push({ left: 0, right: minL, top: 0, bottom: H }, { left: maxR, right: W, top: 0, bottom: H });
+  let best = null, bestScore = -1;
+  for (const c of cands) {
+    const w = c.right - c.left, h = c.bottom - c.top;
+    if (w < 60 || h < 60) continue;
+    const score = Math.min(w, h * 1.5) * Math.min(h, w);
+    if (score > bestScore) { bestScore = score; best = c; }
+  }
+  return best || { left: 0, right: W, top: 0, bottom: H };
+}
+
+// 把 target 放到 rect 的中心，並調整距離讓 objW × objH 剛好塞進去（保留邊距）
+function frameInRect(cam, rect, target, dir, objW, objH, dt, fov = 45) {
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  cam.fov = THREE.MathUtils.lerp(cam.fov, fov, Math.min(1, dt * 6));
+  cam.aspect = W / H;
+  const tanH = Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2) * 2;
+  const rw = Math.max(60, rect.right - rect.left);
+  const rh = Math.max(60, rect.bottom - rect.top);
+  const dist = THREE.MathUtils.clamp(Math.max((objH * H) / (0.78 * rh * tanH), (objW * H) / (0.86 * rw * tanH)), 4, 80);
+  cam.userData.frameDist = THREE.MathUtils.lerp(cam.userData.frameDist || dist, dist, Math.min(1, dt * 4));
+  cam.position.copy(target).addScaledVector(dir, cam.userData.frameDist);
+  cam.lookAt(target);
+  const cx = (rect.left + rect.right) / 2;
+  const cy = (rect.top + rect.bottom) / 2;
+  cam.setViewOffset(W, H, W / 2 - cx, H / 2 - cy, W, H);
+  cam.updateProjectionMatrix();
+}
+
+const lobbyHeaderEl = document.querySelector('#start-screen .lobby-header');
+const lobbyConsoleEl = document.querySelector('#start-screen .lobby-console');
+const finishHeaderEl = document.querySelector('#finish-screen .finish-top-header');
+const finishPanelEl = document.querySelector('#finish-screen .finish-bottom-panel');
+
 function updateCameras(dt) {
   if (humanRacers.length === 0) return;
 
@@ -12463,30 +12672,27 @@ function updateCameras(dt) {
     showcaseAngle += dt * 0.55;
     const focusRacer = playType === '2' ? (humanRacers[activePickSlot] || humanRacers[0]) : humanRacers[0];
     const p = focusRacer.pos;
-    const radius = 6.4;
-    // Frame kart in the clear upper-middle showcase area above the lobby UI!
-    camera1.position.set(p.x + Math.sin(showcaseAngle) * radius, p.y + 2.75, p.z + Math.cos(showcaseAngle) * radius);
-    camera1.lookAt(p.x, p.y - 0.55, p.z);
-    camera1.fov = THREE.MathUtils.lerp(camera1.fov, 50, Math.min(1, dt * 6));
-    camera1.updateProjectionMatrix();
+    racers.forEach((r) => { if (r.nameplate) r.nameplate.visible = false; }); // 大廳展示不需要名牌
+    // 車子＋車手（含帽子）約 4.6 寬 × 3.2 高，放進大廳的空白區
+    const rect = findClearRect([lobbyHeaderEl, lobbyConsoleEl]);
+    const dir = new THREE.Vector3(Math.sin(showcaseAngle), 0.42, Math.cos(showcaseAngle)).normalize();
+    frameInRect(camera1, rect, new THREE.Vector3(p.x, p.y + 1.25, p.z), dir, 4.6, 3.2, dt);
     return;
   }
 
   if (gameState === 'finished' && podiumGroup) {
-    // Cinematic slow orbit around the 3D Victory Podium & Fireworks!
+    // 頒獎台緩慢環繞：整個頒獎台（約 13 寬 × 6.5 高，含車手）放進空白區
     const baseYaw = podiumGroup.rotation.y;
     const orbit = baseYaw + Math.sin(podiumTimer * 0.45) * 0.55;
-    const radius = 15.5;
-    camera1.position.set(
-      podiumCenter.x + Math.sin(orbit) * radius,
-      podiumCenter.y + 6.2,
-      podiumCenter.z + Math.cos(orbit) * radius
-    );
-    camera1.lookAt(podiumCenter.x, podiumCenter.y + 1.4, podiumCenter.z);
-    camera1.fov = THREE.MathUtils.lerp(camera1.fov, 52, Math.min(1, dt * 5));
-    camera1.updateProjectionMatrix();
+    const rect = findClearRect([finishHeaderEl, finishPanelEl]);
+    const dir = new THREE.Vector3(Math.sin(orbit), 0.36, Math.cos(orbit)).normalize();
+    frameInRect(camera1, rect, new THREE.Vector3(podiumCenter.x, podiumCenter.y + 3.2, podiumCenter.z), dir, 16, 6.5, dt, 48);
     return;
   }
+
+  // 比賽中：取消畫面偏移
+  if (camera1.view && camera1.view.enabled) camera1.clearViewOffset();
+  if (camera2.view && camera2.view.enabled) camera2.clearViewOffset();
 
   updateFollowCamera(camera1, camStates[0], humanRacers[0], dt);
   if (playType === '2' && humanRacers[1]) {
@@ -12967,7 +13173,7 @@ requestAnimationFrame(animate);
 
 // 測試用：網址加上 ?debug 可在主控台用 __kart.racers 查看/修改狀態
 if (location.search.includes('debug')) {
-  window.__kart = { get racers() { return racers; }, get humans() { return humanRacers; }, get state() { return gameState; }, get track() { return track; }, hit: hitCinematic, retire: (s = 10) => { retireTimer = s; }, audio };
+  window.__kart = { get racers() { return racers; }, get humans() { return humanRacers; }, get state() { return gameState; }, get track() { return track; }, hit: hitCinematic, retire: (s = 10) => { retireTimer = s; }, audio, finish: () => { humanRacers.forEach((h) => { h.finished = true; h.finishTime = raceTime; }); onRaceFinish(); } };
 }
 
 

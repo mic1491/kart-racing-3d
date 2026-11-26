@@ -554,6 +554,13 @@ function clearSkidMarks() {
 function showBannerFor(racer, text, color = '#00f0ff', duration = 1.15) {
   const idx = racer && racer.humanIndex === 1 ? 1 : 0;
   const h = pHudEls[idx];
+  // 手機：蓋章大字還在畫面上時，提示字排隊等它消失再出來
+  const wait = h.status && h.status.stampUntil ? h.status.stampUntil - performance.now() : 0;
+  if (wait > 0 && touchVisible && playType !== '2') {
+    clearTimeout(h.bannerQueue);
+    h.bannerQueue = setTimeout(() => showBannerFor(racer, text, color, duration), wait + 30);
+    return;
+  }
   h.banner.textContent = text;
   h.banner.style.color = color;
   h.banner.style.setProperty('--bc', color);
@@ -1141,6 +1148,12 @@ function showStamp(humanIdx, text, color) {
   st.stamp.classList.remove('go');
   void st.stamp.offsetWidth;
   st.stamp.classList.add('go');
+  st.stampUntil = performance.now() + 1250;
+  // 手機畫面比較小：蓋章大字出現時，先把同位置的一般提示字收起來，避免兩排字疊在一起
+  if (touchVisible && playType !== '2') {
+    pHudEls[humanIdx].banner.classList.add('hidden');
+    pHudEls[humanIdx].bannerTimer = 0;
+  }
 }
 
 function hitCinematic(victim, type, attacker) {
@@ -3585,6 +3598,69 @@ function updateFollowCamera(cam, state, r, dt) {
   cam.updateProjectionMatrix();
 }
 
+// 📐 找出畫面上「沒被選單／標題擋住」的最大空白區，把主角放在那裡正中間
+function findClearRect(blockers) {
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  const rects = blockers.filter((el) => el && el.offsetParent !== null).map((el) => el.getBoundingClientRect()).filter((r) => r.width > 0 && r.height > 0);
+  const cands = [];
+  // 候選 1：所有擋住物之間的上下空隙（全寬）
+  const ys = [0, H];
+  rects.forEach((r) => ys.push(r.top, r.bottom));
+  ys.sort((a, b) => a - b);
+  for (let i = 0; i < ys.length - 1; i++) {
+    const top = ys[i], bottom = ys[i + 1];
+    if (bottom - top < 40) continue;
+    const blocked = rects.filter((r) => r.top < bottom - 1 && r.bottom > top + 1);
+    let left = 0, right = W;
+    // 這條帶子上若有擋住物，取左右兩側較寬的那一邊
+    let best = blocked.length === 0 ? { left: 0, right: W } : null;
+    if (!best) {
+      const l = Math.min(...blocked.map((r) => r.left));
+      const rr = Math.max(...blocked.map((r) => r.right));
+      best = l > W - rr ? { left: 0, right: l } : { left: rr, right: W };
+    }
+    left = best.left; right = best.right;
+    cands.push({ left, right, top, bottom });
+  }
+  // 候選 2：擋住物左邊／右邊的整條直向空間
+  const minL = Math.min(W, ...rects.map((r) => r.left));
+  const maxR = Math.max(0, ...rects.map((r) => r.right));
+  cands.push({ left: 0, right: minL, top: 0, bottom: H }, { left: maxR, right: W, top: 0, bottom: H });
+  let best = null, bestScore = -1;
+  for (const c of cands) {
+    const w = c.right - c.left, h = c.bottom - c.top;
+    if (w < 60 || h < 60) continue;
+    const score = Math.min(w, h * 1.5) * Math.min(h, w);
+    if (score > bestScore) { bestScore = score; best = c; }
+  }
+  return best || { left: 0, right: W, top: 0, bottom: H };
+}
+
+// 把 target 放到 rect 的中心，並調整距離讓 objW × objH 剛好塞進去（保留邊距）
+function frameInRect(cam, rect, target, dir, objW, objH, dt, fov = 45) {
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  cam.fov = THREE.MathUtils.lerp(cam.fov, fov, Math.min(1, dt * 6));
+  cam.aspect = W / H;
+  const tanH = Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2) * 2;
+  const rw = Math.max(60, rect.right - rect.left);
+  const rh = Math.max(60, rect.bottom - rect.top);
+  const dist = THREE.MathUtils.clamp(Math.max((objH * H) / (0.78 * rh * tanH), (objW * H) / (0.86 * rw * tanH)), 4, 80);
+  cam.userData.frameDist = THREE.MathUtils.lerp(cam.userData.frameDist || dist, dist, Math.min(1, dt * 4));
+  cam.position.copy(target).addScaledVector(dir, cam.userData.frameDist);
+  cam.lookAt(target);
+  const cx = (rect.left + rect.right) / 2;
+  const cy = (rect.top + rect.bottom) / 2;
+  cam.setViewOffset(W, H, W / 2 - cx, H / 2 - cy, W, H);
+  cam.updateProjectionMatrix();
+}
+
+const lobbyHeaderEl = document.querySelector('#start-screen .lobby-header');
+const lobbyConsoleEl = document.querySelector('#start-screen .lobby-console');
+const finishHeaderEl = document.querySelector('#finish-screen .finish-top-header');
+const finishPanelEl = document.querySelector('#finish-screen .finish-bottom-panel');
+
 function updateCameras(dt) {
   if (humanRacers.length === 0) return;
 
@@ -3592,30 +3668,27 @@ function updateCameras(dt) {
     showcaseAngle += dt * 0.55;
     const focusRacer = playType === '2' ? (humanRacers[activePickSlot] || humanRacers[0]) : humanRacers[0];
     const p = focusRacer.pos;
-    const radius = 6.4;
-    // Frame kart in the clear upper-middle showcase area above the lobby UI!
-    camera1.position.set(p.x + Math.sin(showcaseAngle) * radius, p.y + 2.75, p.z + Math.cos(showcaseAngle) * radius);
-    camera1.lookAt(p.x, p.y - 0.55, p.z);
-    camera1.fov = THREE.MathUtils.lerp(camera1.fov, 50, Math.min(1, dt * 6));
-    camera1.updateProjectionMatrix();
+    racers.forEach((r) => { if (r.nameplate) r.nameplate.visible = false; }); // 大廳展示不需要名牌
+    // 車子＋車手（含帽子）約 4.6 寬 × 3.2 高，放進大廳的空白區
+    const rect = findClearRect([lobbyHeaderEl, lobbyConsoleEl]);
+    const dir = new THREE.Vector3(Math.sin(showcaseAngle), 0.42, Math.cos(showcaseAngle)).normalize();
+    frameInRect(camera1, rect, new THREE.Vector3(p.x, p.y + 1.25, p.z), dir, 4.6, 3.2, dt);
     return;
   }
 
   if (gameState === 'finished' && podiumGroup) {
-    // Cinematic slow orbit around the 3D Victory Podium & Fireworks!
+    // 頒獎台緩慢環繞：整個頒獎台（約 13 寬 × 6.5 高，含車手）放進空白區
     const baseYaw = podiumGroup.rotation.y;
     const orbit = baseYaw + Math.sin(podiumTimer * 0.45) * 0.55;
-    const radius = 15.5;
-    camera1.position.set(
-      podiumCenter.x + Math.sin(orbit) * radius,
-      podiumCenter.y + 6.2,
-      podiumCenter.z + Math.cos(orbit) * radius
-    );
-    camera1.lookAt(podiumCenter.x, podiumCenter.y + 1.4, podiumCenter.z);
-    camera1.fov = THREE.MathUtils.lerp(camera1.fov, 52, Math.min(1, dt * 5));
-    camera1.updateProjectionMatrix();
+    const rect = findClearRect([finishHeaderEl, finishPanelEl]);
+    const dir = new THREE.Vector3(Math.sin(orbit), 0.36, Math.cos(orbit)).normalize();
+    frameInRect(camera1, rect, new THREE.Vector3(podiumCenter.x, podiumCenter.y + 3.2, podiumCenter.z), dir, 16, 6.5, dt, 48);
     return;
   }
+
+  // 比賽中：取消畫面偏移
+  if (camera1.view && camera1.view.enabled) camera1.clearViewOffset();
+  if (camera2.view && camera2.view.enabled) camera2.clearViewOffset();
 
   updateFollowCamera(camera1, camStates[0], humanRacers[0], dt);
   if (playType === '2' && humanRacers[1]) {
@@ -4096,5 +4169,5 @@ requestAnimationFrame(animate);
 
 // 測試用：網址加上 ?debug 可在主控台用 __kart.racers 查看/修改狀態
 if (location.search.includes('debug')) {
-  window.__kart = { get racers() { return racers; }, get humans() { return humanRacers; }, get state() { return gameState; }, get track() { return track; }, hit: hitCinematic, retire: (s = 10) => { retireTimer = s; }, audio };
+  window.__kart = { get racers() { return racers; }, get humans() { return humanRacers; }, get state() { return gameState; }, get track() { return track; }, hit: hitCinematic, retire: (s = 10) => { retireTimer = s; }, audio, finish: () => { humanRacers.forEach((h) => { h.finished = true; h.finishTime = raceTime; }); onRaceFinish(); } };
 }
